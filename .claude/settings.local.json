@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(du -sh \"C:/Users/user/\"* 2>/dev/null | sort -rh | head -10)",
+      "Bash(powershell -File - << 'PSEOF'\nAdd-Type -AssemblyName System.Windows.Forms\nAdd-Type -AssemblyName System.Drawing\n$wshell = New-Object -ComObject wscript.shell\n$wshell.AppActivate\\('5176'\\) | Out-Null\nStart-Sleep -Milliseconds 2000\n$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds\n$bitmap = New-Object System.Drawing.Bitmap\\($screen.Width, $screen.Height\\)\n$graphics = [System.Drawing.Graphics]::FromImage\\($bitmap\\)\n$graphics.CopyFromScreen\\($screen.Location, [System.Drawing.Point]::Empty, $screen.Size\\)\n$bitmap.Save\\('C:\\\\Users\\\\user\\\\Desktop\\\\screenshot.png'\\)\n$graphics.Dispose\\(\\)\n$bitmap.Dispose\\(\\)\nWrite-Host \"Done\"\nPSEOF)",
+      "Bash(powershell -File - << 'PSEOF'\nAdd-Type -AssemblyName System.Windows.Forms\nAdd-Type -AssemblyName System.Drawing\n\n# Open browser and wait for it to load\nStart-Process \"http://localhost:5176\"\nStart-Sleep -Milliseconds 3000\n\n$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds\n$bitmap = New-Object System.Drawing.Bitmap\\($screen.Width, $screen.Height\\)\n$graphics = [System.Drawing.Graphics]::FromImage\\($bitmap\\)\n$graphics.CopyFromScreen\\($screen.Location, [System.Drawing.Point]::Empty, $screen.Size\\)\n$bitmap.Save\\('C:\\\\Users\\\\user\\\\Desktop\\\\screenshot.png'\\)\n$graphics.Dispose\\(\\)\n$bitmap.Dispose\\(\\)\nWrite-Host \"Done\"\nPSEOF)",
+      "Bash(powershell -File - << 'PSEOF'\nAdd-Type -AssemblyName Microsoft.Office.Interop.Word\n$word = New-Object -ComObject Word.Application\n$word.Visible = $false\n$doc = $word.Documents.Open\\('c:\\\\Users\\\\user\\\\Downloads\\\\i wear.docx'\\)\n$text = $doc.Content.Text\n$doc.Close\\(\\)\n$word.Quit\\(\\)\n$text\nPSEOF)",
+      "Bash(cd:*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -r \"UserManagement\\\\|admin.*user\\\\|getUsers\\\\|deleteUser\" C:/Users/user/Desktop/ecommerce-project --include=*.java --include=*.jsx)",
+      "Bash(grep -r \"bulk\\\\|import\\\\|csv\\\\|excel\" C:/Users/user/Desktop/ecommerce-project --include=*.java --include=*.jsx)",
+      "Bash(python3:*)",
+      "Bash(node:*)"
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "products": "المنتجات",
+    "categories": "الفئات",
+    "cart": "السلة",
+    "orders": "الطلبات",
+    "profile": "الحساب",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "shop": "المتجر",
+    "wishlist": "المفضلة",
+    "myOrders": "طلباتي",
+    "adminPanel": "لوحة الإدارة",
+    "signOut": "تسجيل الخروج",
+    "shopAll": "كل المنتجات",
+    "home_label": "الرئيسية",
+    "createAccount": "إنشاء حساب",
+    "signIn": "تسجيل الدخول"
+  },
+  "search": {
+    "placeholder": "ابحثي عن فساتين، عباءات، حجابات…"
+  },
+  "common": {
+    "signUp": "إنشاء حساب",
+    "language": "اللغة"
+  },
+  "home": {
+    "featured_brand": "آي وير",
+    "featured_by": "بقلم أريج",
+    "new_arrivals": "وصل حديثاً",
+    "new_arrivals_desc": "اكتشفي أحدث مجموعتنا من الفساتين والعباءات وأزياء الحجاب",
+    "shop_now": "تسوقي الآن",
+    "view_all": "عرض الكل",
+    "no_products": "لا توجد منتجات بعد",
+    "shop_by_category": "تسوقي حسب الفئة",
+    "cta_title": "أناقة خالدة",
+    "cta_subtitle": "موضة محتشمة بُنيت بمحبة",
+    "join_us": "انضمي إلينا",
+    "best_sellers": "الأكثر مبيعاً",
+    "best_sellers_desc": "أحب القطع لديكِ، تختارها أنتِ",
+    "offers": "عروض خاصة",
+    "offers_desc": "صفقات حصرية على أجمل مجموعاتنا",
+    "shop_sale": "تسوقي العروض"
+  }
+}
