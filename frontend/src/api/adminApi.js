@@ -12,7 +12,6 @@ export const updateSettings = (data) => api.put('/settings', data)
 
 export const getAdminUsers = (params) => api.get('/admin/users', { params })
 export const getAdminUser = (id) => api.get(`/admin/users/${id}`)
-export const changeUserRole = (id, role) => api.patch(`/admin/users/${id}/role`, null, { params: { role } })
 export const deleteAdminUser = (id) => api.delete(`/admin/users/${id}`)
 
 export const updateActiveSeason = (season) => api.put('/admin/settings/season', null, { params: { season } })

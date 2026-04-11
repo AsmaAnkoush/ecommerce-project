@@ -1,5 +1,6 @@
 package com.ecommerce.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +20,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -30,7 +32,7 @@ public class Order {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = Order.OrderStatusConverter.class)
     @Column(nullable = false)
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING;
@@ -63,6 +65,31 @@ public class Order {
     }
 
     public enum OrderStatus {
-        PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+        PENDING, CONFIRMED, CANCELLED;
+
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public static OrderStatus fromValue(String value) {
+            if (value == null) return PENDING;
+            try {
+                return OrderStatus.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return PENDING;
+            }
+        }
+    }
+
+    @jakarta.persistence.Converter
+    public static class OrderStatusConverter
+            implements jakarta.persistence.AttributeConverter<OrderStatus, String> {
+
+        @Override
+        public String convertToDatabaseColumn(OrderStatus status) {
+            return status == null ? OrderStatus.PENDING.name() : status.name();
+        }
+
+        @Override
+        public OrderStatus convertToEntityAttribute(String dbValue) {
+            return OrderStatus.fromValue(dbValue);
+        }
     }
 }

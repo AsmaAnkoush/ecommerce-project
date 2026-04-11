@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { useWishlist } from '../../context/WishlistContext'
 import { useUI } from '../../context/UIContext'
+import { useLanguage } from '../../context/LanguageContext'
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 const HomeIcon = () => (
@@ -89,6 +90,7 @@ function SidebarContent({ onClose }) {
   const { cart } = useCart()
   const { wishlist } = useWishlist()
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   const handleLogout = () => {
     logout()
@@ -129,13 +131,13 @@ function SidebarContent({ onClose }) {
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="px-3 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">{'Shop'}</p>
+        <p className="px-3 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('nav.shop')}</p>
 
         <NavLink to="/" end onClick={close} className={linkClass}>
           {({ isActive }) => (
             <>
               <HomeIcon />
-              <span>{'Home'}</span>
+              <span>{t('nav.home')}</span>
             </>
           )}
         </NavLink>
@@ -144,24 +146,24 @@ function SidebarContent({ onClose }) {
           {({ isActive }) => (
             <>
               <ShopIcon />
-              <span>{'Products'}</span>
+              <span>{t('admin.products')}</span>
             </>
           )}
         </NavLink>
 
         <NavLink to="/products" onClick={close} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-black transition-all">
           <CategoryIcon />
-          <span>{'Categories'}</span>
+          <span>{t('admin.categories')}</span>
         </NavLink>
 
         <div className="pt-3">
-          <p className="px-3 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">{'Orders'}</p>
+          <p className="px-3 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('admin.orders')}</p>
 
           <NavLink to="/cart" onClick={close} className={linkClass}>
             {({ isActive }) => (
               <>
                 <CartIcon />
-                <span>{'Cart'}</span>
+                <span>{t('nav.cart')}</span>
                 <Badge count={cart?.totalItems} active={isActive} />
               </>
             )}
@@ -172,7 +174,7 @@ function SidebarContent({ onClose }) {
               {() => (
                 <>
                   <OrdersIcon />
-                  <span>{'Orders'}</span>
+                  <span>{t('admin.orders')}</span>
                 </>
               )}
             </NavLink>
@@ -183,7 +185,7 @@ function SidebarContent({ onClose }) {
               {({ isActive }) => (
                 <>
                   <HeartIcon />
-                  <span>{'Wishlist'}</span>
+                  <span>{t('nav.wishlist')}</span>
                   <Badge count={wishlist?.length} active={isActive} />
                 </>
               )}
@@ -193,13 +195,13 @@ function SidebarContent({ onClose }) {
 
         {isLoggedIn && (
           <div className="pt-3">
-            <p className="px-3 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">{'Profile'}</p>
+            <p className="px-3 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('nav.profile')}</p>
 
             <NavLink to="/profile" onClick={close} className={linkClass}>
               {() => (
                 <>
                   <ProfileIcon />
-                  <span>{'Profile'}</span>
+                  <span>{t('nav.profile')}</span>
                 </>
               )}
             </NavLink>
@@ -215,7 +217,7 @@ function SidebarContent({ onClose }) {
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
           >
             <LogoutIcon />
-            <span>{'Sign out'}</span>
+            <span>{t('nav.signOut')}</span>
           </button>
         ) : (
           <>
@@ -223,7 +225,7 @@ function SidebarContent({ onClose }) {
               {() => (
                 <>
                   <LoginIcon />
-                  <span>{'Sign In'}</span>
+                  <span>{t('nav.signIn')}</span>
                 </>
               )}
             </NavLink>
@@ -233,7 +235,7 @@ function SidebarContent({ onClose }) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-black text-white hover:bg-gray-800 transition-all"
             >
               <ProfileIcon />
-              <span>{'Register'}</span>
+              <span>{t('nav.register')}</span>
             </Link>
           </>
         )}

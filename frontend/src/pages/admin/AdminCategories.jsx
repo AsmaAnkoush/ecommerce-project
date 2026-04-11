@@ -3,8 +3,11 @@ import { getCategories, createCategory, updateCategory, deleteCategory } from '.
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Spinner from '../../components/ui/Spinner'
+import ImagePreviewModal from '../../components/ui/ImagePreviewModal'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function AdminCategories() {
+  const { t } = useLanguage()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ name: '', description: '' })
@@ -14,6 +17,7 @@ export default function AdminCategories() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
+  const [lightboxSrc, setLightboxSrc] = useState(null)
 
   const fetchCategories = () =>
     getCategories().then(r => setCategories(r.data.data ?? [])).finally(() => setLoading(false))
@@ -41,7 +45,7 @@ export default function AdminCategories() {
       resetForm()
       await fetchCategories()
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save')
+      setError(err.response?.data?.message || t('admin.failedSave'))
     } finally { setSaving(false) }
   }
 
@@ -64,31 +68,31 @@ export default function AdminCategories() {
   const cancelEdit = () => resetForm()
 
   const handleDelete = async id => {
-    if (!confirm('Delete this category?')) return
+    if (!confirm(t('admin.deleteCategory'))) return
     try {
       await deleteCategory(id)
       setCategories(prev => prev.filter(c => c.id !== id))
     } catch (err) {
-      alert('Failed to delete category. Please try again.')
+      alert(t('admin.failedDelete'))
     }
   }
 
   return (
     <div className="p-8 max-w-4xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Categories</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('admin.categories')}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="font-semibold text-gray-900 mb-4">{editingId ? 'Edit Category' : 'Add Category'}</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">{editingId ? t('admin.editCategory') : t('admin.addCategory')}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input label="Name *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
-            <Input label="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+            <Input label={t('admin.name') + ' *'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+            <Input label={t('admin.description')} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
 
             {/* Image upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {editingId ? 'Replace Image' : 'Image'}
+                {editingId ? t('admin.replaceImage') : t('admin.image')}
               </label>
               <input
                 ref={fileInputRef}
@@ -104,15 +108,16 @@ export default function AdminCategories() {
               />
               {previewUrl && (
                 <div className="mt-2 w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
-                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover cursor-pointer"
+                       onClick={() => setLightboxSrc(previewUrl)} />
                 </div>
               )}
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
             <div className="flex gap-2">
-              <Button type="submit" loading={saving}>{editingId ? 'Update' : 'Add Category'}</Button>
-              {editingId && <Button type="button" variant="secondary" onClick={cancelEdit}>Cancel</Button>}
+              <Button type="submit" loading={saving}>{editingId ? t('admin.update') : t('admin.addCategory')}</Button>
+              {editingId && <Button type="button" variant="secondary" onClick={cancelEdit}>{t('admin.cancel')}</Button>}
             </div>
           </form>
         </div>
@@ -120,7 +125,7 @@ export default function AdminCategories() {
         {/* List */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">All Categories ({categories?.length ?? 0})</h2>
+            <h2 className="font-semibold text-gray-900">{t('admin.allCategories')} ({categories?.length ?? 0})</h2>
           </div>
           {loading ? (
             <div className="flex justify-center py-10"><Spinner /></div>
@@ -130,7 +135,8 @@ export default function AdminCategories() {
                 <li key={c.id} className="flex items-center gap-3 px-5 py-3">
                   {c.imageUrl && (
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                      <img src={c.imageUrl} alt={c.name} className="w-full h-full object-cover" />
+                      <img src={c.imageUrl} alt={c.name} className="w-full h-full object-cover cursor-pointer"
+                           onClick={() => setLightboxSrc(c.imageUrl)} />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -138,8 +144,8 @@ export default function AdminCategories() {
                     {c.description && <p className="text-xs text-gray-400 truncate">{c.description}</p>}
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <button onClick={() => startEdit(c)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">Edit</button>
-                    <button onClick={() => handleDelete(c.id)} className="text-xs text-red-500 hover:text-red-600 font-medium">Delete</button>
+                    <button onClick={() => startEdit(c)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">{t('admin.edit')}</button>
+                    <button onClick={() => handleDelete(c.id)} className="text-xs text-red-500 hover:text-red-600 font-medium">{t('admin.delete')}</button>
                   </div>
                 </li>
               ))}
@@ -147,6 +153,16 @@ export default function AdminCategories() {
           )}
         </div>
       </div>
+
+      {/* Image preview lightbox */}
+      {lightboxSrc && (
+        <ImagePreviewModal
+          images={[lightboxSrc]}
+          index={0}
+          onClose={() => setLightboxSrc(null)}
+          onChange={() => {}}
+        />
+      )}
     </div>
   )
 }

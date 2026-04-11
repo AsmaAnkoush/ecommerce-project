@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
-import { getAdminUsers, changeUserRole, deleteAdminUser } from '../../api/adminApi'
+import { getAdminUsers, deleteAdminUser } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 
 function RoleBadge({ role }) {
+  const { t } = useLanguage()
   return role === 'ADMIN'
-    ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#6B1F2A] text-white">Admin</span>
-    : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Customer</span>
+    ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#6B1F2A] text-white">{t('profile.admin')}</span>
+    : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">{t('admin.customer')}</span>
 }
 
 function formatDate(iso) {
@@ -15,6 +17,7 @@ function formatDate(iso) {
 }
 
 export default function AdminUsers() {
+  const { t } = useLanguage()
   const { user: me } = useAuth()
   const [users, setUsers] = useState([])
   const [total, setTotal] = useState(0)
@@ -53,17 +56,6 @@ export default function AdminUsers() {
     setPage(0)
   }
 
-  const handleRoleToggle = async (user) => {
-    const newRole = user.role === 'ADMIN' ? 'CUSTOMER' : 'ADMIN'
-    setActionLoading(`role-${user.id}`)
-    try {
-      await changeUserRole(user.id, newRole)
-      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u))
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
   const handleDelete = async (id) => {
     setActionLoading(`delete-${id}`)
     try {
@@ -80,8 +72,8 @@ export default function AdminUsers() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{total} total {total === 1 ? 'user' : 'users'}</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('admin.users')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{total} {t('admin.totalUsers')} {total === 1 ? t('admin.user') : t('admin.userPlural')}</p>
         </div>
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <div className="relative">
@@ -91,16 +83,16 @@ export default function AdminUsers() {
             <input
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
-              placeholder="Search name or email…"
+              placeholder={t('admin.searchNameEmail')}
               className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#DFA3AD] w-64"
             />
           </div>
           <button type="submit" className="px-4 py-2 text-sm font-medium rounded-xl text-white transition-colors" style={{ background: '#6B1F2A' }}>
-            Search
+            {t('admin.search')}
           </button>
           {search && (
             <button type="button" onClick={handleClearSearch} className="px-3 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50">
-              Clear
+              {t('admin.clear')}
             </button>
           )}
         </form>
@@ -115,7 +107,7 @@ export default function AdminUsers() {
             <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <p>No users found</p>
+            <p>{t('admin.noUsersFound')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -123,13 +115,13 @@ export default function AdminUsers() {
               <thead>
                 <tr className="text-left border-b border-gray-100" style={{ background: '#FDF6F7' }}>
                   <th className="px-5 py-3.5 font-semibold text-gray-600 w-8">#</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">Name</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">Email</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">Phone</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">Role</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600 text-center">Orders</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">Joined</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600 text-right">Actions</th>
+                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.name')}</th>
+                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.email')}</th>
+                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.phone')}</th>
+                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.role')}</th>
+                  <th className="px-5 py-3.5 font-semibold text-gray-600 text-center">{t('admin.orders')}</th>
+                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.joined')}</th>
+                  <th className="px-5 py-3.5 font-semibold text-gray-600 text-right">{t('admin.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -146,7 +138,7 @@ export default function AdminUsers() {
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
-                            {isSelf && <p className="text-[10px] text-[#9B3F4D]">(you)</p>}
+                            {isSelf && <p className="text-[10px] text-[#9B3F4D]">{t('admin.you')}</p>}
                           </div>
                         </div>
                       </td>
@@ -161,27 +153,11 @@ export default function AdminUsers() {
                       <td className="px-5 py-3.5 text-gray-500">{formatDate(user.createdAt)}</td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-end gap-2">
-                          {/* Toggle role */}
-                          <button
-                            disabled={isSelf || actionLoading === `role-${user.id}`}
-                            onClick={() => handleRoleToggle(user)}
-                            title={isSelf ? 'Cannot change your own role' : user.role === 'ADMIN' ? 'Demote to Customer' : 'Promote to Admin'}
-                            className="px-2.5 py-1 text-xs rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            style={user.role === 'ADMIN'
-                              ? { borderColor: '#DFA3AD', color: '#6B1F2A' }
-                              : { borderColor: '#d1d5db', color: '#374151' }
-                            }
-                          >
-                            {actionLoading === `role-${user.id}`
-                              ? '…'
-                              : user.role === 'ADMIN' ? 'Demote' : 'Make Admin'
-                            }
-                          </button>
                           {/* Delete */}
                           <button
                             disabled={isSelf || actionLoading === `delete-${user.id}`}
                             onClick={() => setConfirmDelete(user)}
-                            title={isSelf ? 'Cannot delete your own account' : 'Delete user'}
+                            title={isSelf ? t('admin.cannotDeleteOwn') : t('admin.deleteUser')}
                             className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -203,7 +179,7 @@ export default function AdminUsers() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-5">
           <p className="text-sm text-gray-500">
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+            {t('admin.showing')} {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} {t('admin.of')} {total}
           </p>
           <div className="flex gap-2">
             <button
@@ -211,7 +187,7 @@ export default function AdminUsers() {
               onClick={() => setPage(p => p - 1)}
               className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
+              {t('admin.previous')}
             </button>
             <span className="px-3 py-1.5 text-sm text-gray-700">
               {page + 1} / {totalPages}
@@ -221,7 +197,7 @@ export default function AdminUsers() {
               onClick={() => setPage(p => p + 1)}
               className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              {t('admin.next')}
             </button>
           </div>
         </div>
@@ -236,20 +212,20 @@ export default function AdminUsers() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
             </div>
-            <h3 className="font-bold text-gray-900 mb-1">Delete user?</h3>
+            <h3 className="font-bold text-gray-900 mb-1">{t('admin.deleteUser')}</h3>
             <p className="text-sm text-gray-500 mb-5">
-              <span className="font-medium text-gray-700">{confirmDelete.firstName} {confirmDelete.lastName}</span> ({confirmDelete.email}) will be permanently deleted along with all their data.
+              <span className="font-medium text-gray-700">{confirmDelete.firstName} {confirmDelete.lastName}</span> ({confirmDelete.email}) {t('admin.deleteUserDesc')}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDelete(null)}
                 className="flex-1 py-2 rounded-xl border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors">
-                Cancel
+                {t('admin.cancel')}
               </button>
               <button
                 onClick={() => handleDelete(confirmDelete.id)}
                 disabled={actionLoading === `delete-${confirmDelete.id}`}
                 className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 disabled:opacity-60 transition-colors">
-                {actionLoading === `delete-${confirmDelete.id}` ? 'Deleting…' : 'Delete'}
+                {actionLoading === `delete-${confirmDelete.id}` ? t('admin.deleting') : t('admin.delete')}
               </button>
             </div>
           </div>

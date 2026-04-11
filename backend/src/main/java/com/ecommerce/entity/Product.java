@@ -72,7 +72,11 @@ public class Product {
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean isNew = false;
+    private Long confirmedOrderCount = 0L;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isNew = true;
 
     @Column(nullable = false)
     @Builder.Default

@@ -6,8 +6,15 @@ import { getCategories } from '../../api/categoryApi'
 import { uploadImages } from '../../api/uploadApi'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
+import ImageCropModal from '../../components/ui/ImageCropModal'
+import ImagePreviewModal from '../../components/ui/ImagePreviewModal'
+import { useLanguage } from '../../context/LanguageContext'
 
-const SEASONS = ['SPRING', 'SUMMER', 'FALL', 'WINTER', 'ALL']
+const SEASONS = [
+  { value: 'SUMMER',     label: 'Summer' },
+  { value: 'WINTER',     label: 'Winter' },
+  { value: 'ALL_SEASON', label: 'All Season' },
+]
 const MEASUREMENT_FIELDS = [
   { key: 'chest', label: 'Chest' },
   { key: 'waist', label: 'Waist' },
@@ -40,6 +47,7 @@ const loadCustomColors = () => {
 }
 
 export default function AdminProductForm() {
+  const { t } = useLanguage()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -52,9 +60,23 @@ export default function AdminProductForm() {
   const [form, setForm] = useState({
     name: '', description: '', price: '', stockQuantity: 0,
     imageUrl: '', brand: '', size: '', color: '', material: '',
-    isBestSeller: false, isNew: false, season: '', categoryId: '',
-    discountType: '', discountValue: '',
+    isBestSeller: false, isNew: true, season: '', categoryId: '',
+    discountType: '', discountValue: '', confirmedOrderCount: 0,
   })
+
+  // Main image upload
+  const [mainImageFile, setMainImageFile] = useState(null)
+  const [mainImagePreview, setMainImagePreview] = useState('')
+  const [uploadingMain, setUploadingMain] = useState(false)
+  const mainImageRef = useRef()
+
+  // Crop modal
+  const [cropSrc, setCropSrc] = useState(null)        // image source to crop
+  const [cropTarget, setCropTarget] = useState(null)   // 'main' | 'general' | {type:'color', color: string}
+
+  // Image preview lightbox
+  const [previewImages, setPreviewImages] = useState(null)  // array of URLs
+  const [previewIndex, setPreviewIndex] = useState(0)
 
   // General (non-color-specific) images
   const [generalImages, setGeneralImages] = useState([])
@@ -89,12 +111,14 @@ export default function AdminProductForm() {
           color: p.color ?? '',
           material: p.material ?? '',
           isBestSeller: p.isBestSeller ?? false,
+          confirmedOrderCount: p.confirmedOrderCount ?? 0,
           isNew: p.isNew ?? false,
           season: p.season ?? '',
           categoryId: p.categoryId ?? '',
           discountType: p.discountType ?? '',
           discountValue: p.discountValue ?? '',
         })
+        if (p.imageUrl) setMainImagePreview(p.imageUrl)
         setGeneralImages([...new Set(p.imageUrls ?? [])])
         if (p.colorImages || p.variants?.length) {
           const map = {}
@@ -134,17 +158,18 @@ export default function AdminProductForm() {
   const handleGeneralImageFiles = async (files) => {
     const fileArr = Array.from(files)
     if (!fileArr.length) return
-    const previews = fileArr.map(file => ({ file, previewUrl: URL.createObjectURL(file) }))
-    setGeneralPreviews(prev => [...prev, ...previews])
+    // Single file → open crop modal
+    if (fileArr.length === 1) {
+      setCropSrc(URL.createObjectURL(fileArr[0]))
+      setCropTarget('general')
+      return
+    }
+    // Multiple files → upload directly (no crop)
     setUploadingGeneral(true)
     try {
       const urls = await uploadImages(fileArr)
       setGeneralImages(prev => [...new Set([...prev, ...urls])])
-    } finally {
-      setUploadingGeneral(false)
-      previews.forEach(p => URL.revokeObjectURL(p.previewUrl))
-      setGeneralPreviews([])
-    }
+    } finally { setUploadingGeneral(false) }
   }
 
   const removeGeneralImage = (idx) => setGeneralImages(prev => prev.filter((_, i) => i !== idx))
@@ -176,19 +201,20 @@ export default function AdminProductForm() {
   const handleColorImageFiles = async (color, files) => {
     const fileArr = Array.from(files)
     if (!fileArr.length) return
-    const previews = fileArr.map(file => ({ file, previewUrl: URL.createObjectURL(file) }))
-    setColorPreviews(prev => ({ ...prev, [color]: [...(prev[color] || []), ...previews] }))
+    // Single file → open crop modal
+    if (fileArr.length === 1) {
+      setCropSrc(URL.createObjectURL(fileArr[0]))
+      setCropTarget({ type: 'color', color })
+      return
+    }
+    // Multiple files → upload directly
     setUploadingColor(color)
     try {
       const urls = await uploadImages(fileArr)
       setColorEntries(prev => prev.map(e =>
         e.color === color ? { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] } : e
       ))
-    } finally {
-      setUploadingColor(null)
-      previews.forEach(p => URL.revokeObjectURL(p.previewUrl))
-      setColorPreviews(prev => ({ ...prev, [color]: [] }))
-    }
+    } finally { setUploadingColor(null) }
   }
 
   const removeColorImage = (color, idx) => setColorEntries(prev => prev.map(e =>
@@ -254,18 +280,101 @@ export default function AdminProductForm() {
     })
   }
 
+  // ── Main image handlers ─────────────────────────────────────────────────────
+  const handleMainImageSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setCropSrc(URL.createObjectURL(file))
+    setCropTarget('main')
+    if (mainImageRef.current) mainImageRef.current.value = ''
+  }
+
+  const removeMainImage = () => {
+    setMainImageFile(null)
+    setMainImagePreview('')
+    setField('imageUrl', '')
+    if (mainImageRef.current) mainImageRef.current.value = ''
+  }
+
+  // ── Crop confirm handler ───────────────────────────────────────────────────
+  const handleCropConfirm = async (croppedFile) => {
+    const preview = URL.createObjectURL(croppedFile)
+    const target = cropTarget
+
+    setCropSrc(null)
+    setCropTarget(null)
+
+    if (target === 'main') {
+      setMainImageFile(croppedFile)
+      setMainImagePreview(preview)
+
+    } else if (target === 'general') {
+      // Show instant preview while uploading
+      setGeneralPreviews(prev => [...prev, { file: croppedFile, previewUrl: preview }])
+      setUploadingGeneral(true)
+      try {
+        const urls = await uploadImages([croppedFile])
+        setGeneralImages(prev => [...prev, ...urls])
+      } finally {
+        setUploadingGeneral(false)
+        setGeneralPreviews(prev => prev.filter(p => p.previewUrl !== preview))
+        URL.revokeObjectURL(preview)
+      }
+
+    } else if (target?.type === 'color') {
+      const color = target.color
+      // Show instant preview while uploading
+      setColorPreviews(prev => ({
+        ...prev,
+        [color]: [...(prev[color] || []), { file: croppedFile, previewUrl: preview }],
+      }))
+      setUploadingColor(color)
+      try {
+        const urls = await uploadImages([croppedFile])
+        setColorEntries(prev =>
+          prev.map(e =>
+            e.color === color
+              ? { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] }
+              : e
+          )
+        )
+      } finally {
+        setUploadingColor(null)
+        setColorPreviews(prev => ({
+          ...prev,
+          [color]: (prev[color] || []).filter(p => p.previewUrl !== preview),
+        }))
+        URL.revokeObjectURL(preview)
+      }
+    }
+  }
+
+  const handleCropCancel = () => {
+    setCropSrc(null)
+    setCropTarget(null)
+  }
+
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSaving(true)
     try {
+      // Upload main image if a new file was selected
+      let mainImageUrl = form.imageUrl || null
+      if (mainImageFile) {
+        setUploadingMain(true)
+        const urls = await uploadImages([mainImageFile])
+        mainImageUrl = urls[0] || null
+        setUploadingMain(false)
+      }
+
       const payload = {
         name: form.name,
         description: form.description || null,
         price: parseFloat(form.price),
         stockQuantity: colorEntries.reduce((sum, e) => sum + e.sizes.reduce((s2, sz) => s2 + (parseInt(sz.stockQuantity) || 0), 0), 0),
-        imageUrl: form.imageUrl || null,
+        imageUrl: mainImageUrl,
         brand: form.brand || null,
         size: form.size || null,
         color: form.color || null,
@@ -303,7 +412,7 @@ export default function AdminProductForm() {
       }
       navigate('/admin/products')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save product')
+      setError(err.response?.data?.message || t('admin.failedSave'))
     } finally {
       setSaving(false)
     }
@@ -314,25 +423,25 @@ export default function AdminProductForm() {
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{isEdit ? 'Edit Product' : 'New Product'}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{isEdit ? t('admin.edit') : t('admin.addProduct')}</h1>
         <div className="flex gap-3">
-          <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>Cancel</Button>
-          <Button type="submit" loading={saving}>Save Product</Button>
+          <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>{t('admin.cancel')}</Button>
+          <Button type="submit" loading={saving}>{t('admin.save')}</Button>
         </div>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>}
 
       {/* ── Basic Info ── */}
-      <Section title="Basic Information">
+      <Section title={t('admin.description')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Label>Product Name *</Label>
+            <Label>{t('admin.name')} *</Label>
             <input required value={form.name} onChange={e => setField('name', e.target.value)}
               className={inputCls} placeholder="e.g. Classic Linen Shirt" />
           </div>
           <div className="md:col-span-2">
-            <Label>Description</Label>
+            <Label>{t('product.description')}</Label>
             <textarea value={form.description} onChange={e => setField('description', e.target.value)}
               rows={3} className={`${inputCls} resize-none`} placeholder="Product description..." />
           </div>
@@ -342,13 +451,13 @@ export default function AdminProductForm() {
               onChange={e => setField('price', e.target.value)} className={inputCls} placeholder="0.00" />
           </div>
           <div>
-            <Label>Total Stock <span className="text-gray-400 font-normal text-xs">(auto-calculated)</span></Label>
+            <Label>{t('product.quantity')} <span className="text-gray-400 font-normal text-xs">(auto-calculated)</span></Label>
             <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-default select-none`}>
               {colorEntries.reduce((sum, e) => sum + e.sizes.reduce((s2, sz) => s2 + (parseInt(sz.stockQuantity) || 0), 0), 0)} pcs
             </div>
           </div>
           <div>
-            <Label>Category</Label>
+            <Label>{t('admin.categories')}</Label>
             <select value={form.categoryId} onChange={e => setField('categoryId', e.target.value)} className={inputCls}>
               <option value="">— None —</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -368,35 +477,73 @@ export default function AdminProductForm() {
             <Label>Season</Label>
             <select value={form.season} onChange={e => setField('season', e.target.value)} className={inputCls}>
               <option value="">— None —</option>
-              {SEASONS.map(s => <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
+              {SEASONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
           <div>
-            <Label>Default Size <span className="text-gray-400 font-normal text-xs">(non-variant)</span></Label>
+            <Label>{t('product.size')} <span className="text-gray-400 font-normal text-xs">(non-variant)</span></Label>
             <input value={form.size} onChange={e => setField('size', e.target.value)}
               className={inputCls} placeholder="e.g. M" />
           </div>
           <div>
-            <Label>Default Color <span className="text-gray-400 font-normal text-xs">(non-variant)</span></Label>
+            <Label>{t('product.color')} <span className="text-gray-400 font-normal text-xs">(non-variant)</span></Label>
             <input value={form.color} onChange={e => setField('color', e.target.value)}
               className={inputCls} placeholder="e.g. Black" />
           </div>
           <div className="md:col-span-2">
-            <Label>Main Image URL</Label>
-            <input value={form.imageUrl} onChange={e => setField('imageUrl', e.target.value)}
-              className={inputCls} placeholder="https://..." />
+            <Label>{t('admin.image')}</Label>
+            <input ref={mainImageRef} type="file" accept="image/*" onChange={handleMainImageSelect} className="hidden" />
+            <div className="flex items-center gap-4">
+              {/* Preview */}
+              <div className="w-20 h-20 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                {(uploadingMain) ? (
+                  <Spinner size="sm" />
+                ) : mainImagePreview ? (
+                  <img src={mainImagePreview} alt="Main preview" className="w-full h-full object-cover cursor-pointer"
+                       onClick={() => { setPreviewImages([mainImagePreview]); setPreviewIndex(0) }} />
+                ) : (
+                  <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </div>
+              {/* Buttons */}
+              <div className="space-y-1.5">
+                <button type="button" onClick={() => mainImageRef.current?.click()}
+                  className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
+                  {mainImagePreview ? t('admin.replaceImage') : t('admin.uploadLogo')}
+                </button>
+                {mainImagePreview && (
+                  <button type="button" onClick={removeMainImage}
+                    className="block text-xs text-red-500 hover:text-red-700 transition-colors">
+                    {t('admin.remove')}
+                  </button>
+                )}
+                <p className="text-xs text-gray-400">JPEG, PNG, WEBP</p>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-3 md:col-span-2">
             <input type="checkbox" id="bestSeller" checked={form.isBestSeller}
               onChange={e => setField('isBestSeller', e.target.checked)}
               className="w-4 h-4 rounded border-gray-300 accent-[#6B1F2A]" />
-            <label htmlFor="bestSeller" className="text-sm font-medium text-gray-700 cursor-pointer">Mark as Best Seller</label>
+            <label htmlFor="bestSeller" className="text-sm font-medium text-gray-700 cursor-pointer">{t('product.bestSeller')}</label>
+            {isEdit && form.confirmedOrderCount > 0 && (
+              <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                🏆 {form.confirmedOrderCount} confirmed orders
+              </span>
+            )}
+            {isEdit && !form.isBestSeller && form.confirmedOrderCount < 3 && (
+              <span className="text-xs text-gray-400">
+                auto-promotes at 3 confirmed orders ({3 - (form.confirmedOrderCount || 0)} remaining)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3 md:col-span-2">
             <input type="checkbox" id="isNew" checked={form.isNew}
               onChange={e => setField('isNew', e.target.checked)}
               className="w-4 h-4 rounded border-gray-300 accent-[#6B1F2A]" />
-            <label htmlFor="isNew" className="text-sm font-medium text-gray-700 cursor-pointer">Mark as New Arrival</label>
+            <label htmlFor="isNew" className="text-sm font-medium text-gray-700 cursor-pointer">{t('product.newArrival')}</label>
           </div>
         </div>
       </Section>
@@ -424,21 +571,38 @@ export default function AdminProductForm() {
       </Section>
 
       {/* ── General Images ── */}
-      <Section title="Product Images (General)">
+      <Section title={t('admin.image')}>
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2 min-h-[5rem]">
             {generalImages.map((url, i) => (
               <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 group">
                 <img src={url} alt="" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => removeGeneralImage(i)}
-                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-2xl font-bold">
-                  ×
-                </button>
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                  <button type="button" onClick={() => { setPreviewImages(generalImages); setPreviewIndex(i) }}
+                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <button type="button" onClick={() => removeGeneralImage(i)}
+                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500/80 flex items-center justify-center transition-colors">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))}
             {generalPreviews.map((p, i) => (
-              <div key={`gp-${i}`} className="w-20 h-20 rounded-xl overflow-hidden border border-dashed border-gray-300 opacity-50">
+              <div key={`gp-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
                 <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
+                  <svg className="animate-spin w-4 h-4 text-[#6B1F2A]" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                </div>
               </div>
             ))}
             {generalImages.length === 0 && generalPreviews.length === 0 && (
@@ -457,7 +621,7 @@ export default function AdminProductForm() {
       </Section>
 
       {/* ── Color Entries ── */}
-      <Section title="Product Colors">
+      <Section title={t('product.color')}>
         <div className="space-y-6">
           {/* Add color UI */}
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
@@ -523,27 +687,44 @@ export default function AdminProductForm() {
                   </div>
                   <button type="button" onClick={() => removeColorEntry(color)}
                     className="text-red-400 hover:text-red-600 transition-colors text-sm font-medium">
-                    Remove
+                    {t('admin.delete')}
                   </button>
                 </div>
 
                 <div className="p-4 space-y-5">
                   {/* Images for this color */}
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Images</p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('admin.image')}</p>
                     <div className="flex flex-wrap gap-2">
                       {imageUrls.map((url, i) => (
                         <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 group">
                           <img src={url} alt="" className="w-full h-full object-cover" />
-                          <button type="button" onClick={() => removeColorImage(color, i)}
-                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-2xl font-bold">
-                            ×
-                          </button>
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                            <button type="button" onClick={() => { setPreviewImages(imageUrls); setPreviewIndex(i) }}
+                              className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button type="button" onClick={() => removeColorImage(color, i)}
+                              className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500/80 flex items-center justify-center transition-colors">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       ))}
                       {previews.map((p, i) => (
-                        <div key={`cp-${i}`} className="w-20 h-20 rounded-xl overflow-hidden border border-dashed border-gray-300 opacity-50">
+                        <div key={`cp-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
                           <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
+                            <svg className="animate-spin w-4 h-4 text-[#6B1F2A]" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                          </div>
                         </div>
                       ))}
                       <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#6B1F2A] transition-colors text-gray-400 hover:text-[#6B1F2A]">
@@ -559,7 +740,7 @@ export default function AdminProductForm() {
 
                   {/* Sizes & Measurements */}
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Sizes & Stock</p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('product.size')} & {t('product.quantity')}</p>
 
                     {/* Size rows */}
                     <div className="space-y-2">
@@ -628,7 +809,7 @@ export default function AdminProductForm() {
                         className="w-28 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#6B1F2A]"
                         placeholder="Custom size…" />
                       <Button type="button" size="sm" variant="secondary" onClick={() => addSizeToColor(color)}>
-                        Add Size
+                        {t('product.size')}
                       </Button>
                     </div>
                   </div>
@@ -642,9 +823,29 @@ export default function AdminProductForm() {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>}
 
       <div className="flex justify-end gap-3 pb-8">
-        <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>Cancel</Button>
-        <Button type="submit" loading={saving}>Save Product</Button>
+        <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>{t('admin.cancel')}</Button>
+        <Button type="submit" loading={saving}>{t('admin.save')}</Button>
       </div>
+
+      {/* Crop modal */}
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspect={3 / 4}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
+
+      {/* Image preview lightbox */}
+      {previewImages && (
+        <ImagePreviewModal
+          images={previewImages}
+          index={previewIndex}
+          onClose={() => setPreviewImages(null)}
+          onChange={setPreviewIndex}
+        />
+      )}
     </form>
   )
 }

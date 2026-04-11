@@ -34,9 +34,9 @@ public class AdminService {
         LocalDateTime endOfDay   = startOfDay.plusDays(1);
         long ordersToday = orderRepository.countByCreatedAtBetween(startOfDay, endOfDay);
 
-        BigDecimal totalRevenue = orderRepository.sumRevenueExcludingStatus(Order.OrderStatus.CANCELLED);
+        BigDecimal totalRevenue = orderRepository.sumRevenueByStatus(Order.OrderStatus.CONFIRMED);
 
-        List<BestSellerItem> bestSellers = orderRepository.findTopSellingProducts(Order.OrderStatus.CANCELLED, PageRequest.of(0, 5));
+        List<BestSellerItem> bestSellers = orderRepository.findTopSellingProductsByStatus(Order.OrderStatus.CONFIRMED, PageRequest.of(0, 5));
 
         return AdminDashboardResponse.builder()
                 .totalProducts(totalProducts)

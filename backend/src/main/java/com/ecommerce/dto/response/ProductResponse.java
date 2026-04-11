@@ -35,6 +35,7 @@ public class ProductResponse {
     private String material;
     private Boolean active;
     private Boolean isBestSeller;
+    private Long confirmedOrderCount;
     private Boolean isNew;
     private Long categoryId;
     private String categoryName;

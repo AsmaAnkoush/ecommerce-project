@@ -23,6 +23,7 @@ public class UserService {
     }
 
     // ── Profile (self) ────────────────────────────────────────────────────────
+    @Transactional(readOnly = true)
     public UserResponse getProfile(Long id) {
         return toResponse(findById(id));
     }
@@ -38,23 +39,19 @@ public class UserService {
     }
 
     // ── Admin ─────────────────────────────────────────────────────────────────
+    @Transactional(readOnly = true)
     public Page<UserResponse> findAll(Pageable pageable) {
         return userRepository.findAll(pageable).map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public Page<UserResponse> search(String keyword, Pageable pageable) {
         return userRepository.search(keyword, pageable).map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public UserResponse getUser(Long id) {
         return toResponse(findById(id));
-    }
-
-    @Transactional
-    public UserResponse changeRole(Long id, User.Role role) {
-        User user = findById(id);
-        user.setRole(role);
-        return toResponse(userRepository.save(user));
     }
 
     @Transactional

@@ -27,6 +27,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
 
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderRequest request) {
@@ -57,12 +58,6 @@ public class OrderService {
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
 
-            if (product.getStockQuantity() < cartItem.getQuantity())
-                throw new BadRequestException("Insufficient stock for: " + product.getName());
-
-            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
-            productRepository.save(product);
-
             BigDecimal unitPrice = product.getDiscountPrice() != null ? product.getDiscountPrice() : product.getPrice();
 
             OrderItem orderItem = OrderItem.builder()
@@ -88,11 +83,13 @@ public class OrderService {
         return toResponse(order);
     }
 
+    @Transactional(readOnly = true)
     public List<OrderResponse> getUserOrders(Long userId) {
         return orderRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public Page<OrderResponse> getAllOrders(Pageable pageable) {
         return orderRepository.findAll(pageable).map(this::toResponse);
     }
@@ -118,12 +115,6 @@ public class OrderService {
             Product product = productRepository.findById(itemReq.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product", itemReq.getProductId()));
 
-            if (product.getStockQuantity() < itemReq.getQuantity())
-                throw new BadRequestException("Insufficient stock for: " + product.getName());
-
-            product.setStockQuantity(product.getStockQuantity() - itemReq.getQuantity());
-            productRepository.save(product);
-
             BigDecimal unitPrice = product.getDiscountPrice() != null ? product.getDiscountPrice() : product.getPrice();
 
             OrderItem orderItem = OrderItem.builder()
@@ -145,6 +136,7 @@ public class OrderService {
         return toResponse(orderRepository.save(order));
     }
 
+    @Transactional(readOnly = true)
     public OrderResponse getOrder(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
@@ -153,36 +145,108 @@ public class OrderService {
         return toResponse(order);
     }
 
+    @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long orderId) {
         return toResponse(orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId)));
     }
 
+    private static final int BEST_SELLER_THRESHOLD = 3;
+
     @Transactional
     public OrderResponse updateStatus(Long orderId, Order.OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        Order.OrderStatus current = order.getStatus();
+
+        // Validate transitions: only PENDING can change
+        if (current == Order.OrderStatus.CONFIRMED) {
+            throw new BadRequestException("Confirmed orders cannot be changed");
+        }
+        if (current == Order.OrderStatus.CANCELLED) {
+            throw new BadRequestException("Cancelled orders cannot be changed");
+        }
+        // PENDING can only go to CONFIRMED or CANCELLED
+        if (current == Order.OrderStatus.PENDING
+                && status != Order.OrderStatus.CONFIRMED
+                && status != Order.OrderStatus.CANCELLED) {
+            throw new BadRequestException("Pending orders can only be confirmed or cancelled");
+        }
+
+        boolean becomingConfirmed = status == Order.OrderStatus.CONFIRMED;
+
         order.setStatus(status);
-        return toResponse(orderRepository.save(order));
+        orderRepository.save(order);
+
+        if (becomingConfirmed) {
+            for (OrderItem item : order.getItems()) {
+                Product product = item.getProduct();
+                if (product == null) continue;
+
+                deductStock(product, item);
+
+                long newCount = product.getConfirmedOrderCount() + 1;
+                product.setConfirmedOrderCount(newCount);
+                if (newCount >= BEST_SELLER_THRESHOLD) {
+                    product.setIsBestSeller(true);
+                }
+                productRepository.save(product);
+            }
+        }
+
+        return toResponse(order);
+    }
+
+    private void deductStock(Product product, OrderItem item) {
+        int qty = item.getQuantity();
+        String color = item.getColor();
+        String size  = item.getSize();
+
+        if (color != null && !color.isBlank() && size != null && !size.isBlank()) {
+            // Variant-level deduction
+            productVariantRepository
+                    .findByProductIdAndColorIgnoreCaseAndSizeIgnoreCase(product.getId(), color, size)
+                    .ifPresent(variant -> {
+                        int newStock = Math.max(0, variant.getStockQuantity() - qty);
+                        variant.setStockQuantity(newStock);
+                        productVariantRepository.save(variant);
+                    });
+
+            // Recompute flat total from all variants
+            int total = productVariantRepository.findByProductId(product.getId())
+                    .stream().mapToInt(ProductVariant::getStockQuantity).sum();
+            product.setStockQuantity(total);
+        } else {
+            // No variant info — deduct from flat stock, floor at 0
+            int newStock = Math.max(0, product.getStockQuantity() - qty);
+            product.setStockQuantity(newStock);
+        }
     }
 
     public OrderResponse toResponse(Order order) {
         List<OrderResponse.OrderItemResponse> items = order.getItems().stream()
                 .map(item -> {
+                    Product product = item.getProduct();
                     // Use snapshot fields; fall back to live product only for old orders without snapshots
                     String name = item.getProductName() != null
-                            ? item.getProductName() : item.getProduct().getName();
+                            ? item.getProductName()
+                            : (product != null ? product.getName() : "Unknown Product");
                     String image = item.getProductImage() != null
-                            ? item.getProductImage() : item.getProduct().getImageUrl();
-                    Long productId = item.getProduct() != null ? item.getProduct().getId() : null;
+                            ? item.getProductImage()
+                            : (product != null ? product.getImageUrl() : null);
+                    Long productId = product != null ? product.getId() : null;
+                    BigDecimal unitPrice = item.getUnitPrice() != null
+                            ? item.getUnitPrice() : BigDecimal.ZERO;
                     return OrderResponse.OrderItemResponse.builder()
                             .id(item.getId())
                             .productId(productId)
                             .productName(name)
                             .productImage(image)
                             .quantity(item.getQuantity())
-                            .unitPrice(item.getUnitPrice())
-                            .subtotal(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .unitPrice(unitPrice)
+                            .subtotal(unitPrice.multiply(BigDecimal.valueOf(
+                                    item.getQuantity() != null ? item.getQuantity() : 0)))
                             .size(item.getSize())
                             .color(item.getColor())
                             .build();

@@ -72,7 +72,7 @@ public class ProductService {
     }
 
     public List<ProductResponse> findBestSellers() {
-        return productRepository.findTop8ByActiveTrueAndIsBestSellerTrueOrderByViewCountDesc()
+        return productRepository.findTop8ByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc()
                 .stream().map(this::toResponse).toList();
     }
 
@@ -87,6 +87,27 @@ public class ProductService {
     public List<ProductResponse> findOnSale() {
         return productRepository.findByActiveTrueAndDiscountPriceIsNotNull()
                 .stream().map(this::toResponse).toList();
+    }
+
+    /** Customer-facing offers feed. Returns active products with any active
+     *  discount (discountPrice not null OR discountValue > 0), sorted by the
+     *  largest savings percentage first. */
+    public List<ProductResponse> findOffers() {
+        return productRepository.findActiveOffers().stream()
+                .map(this::toResponse)
+                .sorted(Comparator.comparingDouble(this::discountPercent).reversed())
+                .toList();
+    }
+
+    /** Discount percentage as a 0..1 fraction. Falls back to 0 when there is
+     *  no usable price/discount pair so the comparator stays well-defined. */
+    private double discountPercent(ProductResponse p) {
+        BigDecimal price = p.getPrice();
+        BigDecimal discounted = p.getDiscountPrice();
+        if (price == null || price.signum() <= 0 || discounted == null) return 0d;
+        BigDecimal saved = price.subtract(discounted);
+        if (saved.signum() <= 0) return 0d;
+        return saved.divide(price, 4, RoundingMode.HALF_UP).doubleValue();
     }
 
     @Transactional
@@ -261,8 +282,8 @@ public class ProductService {
         product.setSize(request.getSize());
         product.setColor(request.getColor());
         product.setMaterial(request.getMaterial());
-        product.setIsBestSeller(request.getIsBestSeller() != null ? request.getIsBestSeller() : false);
-        product.setIsNew(request.getIsNew() != null ? request.getIsNew() : false);
+        product.setIsBestSeller(request.getIsBestSeller() != null ? request.getIsBestSeller() : (product.getIsBestSeller() != null ? product.getIsBestSeller() : false));
+        product.setIsNew(request.getIsNew() != null ? request.getIsNew() : (product.getIsNew() != null ? product.getIsNew() : false));
         product.setSeason(request.getSeason());
 
         applyDiscount(product, request);
@@ -363,6 +384,7 @@ public class ProductService {
                 .material(p.getMaterial())
                 .active(p.getActive())
                 .isBestSeller(p.getIsBestSeller())
+                .confirmedOrderCount(p.getConfirmedOrderCount())
                 .isNew(p.getIsNew())
                 .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
                 .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)

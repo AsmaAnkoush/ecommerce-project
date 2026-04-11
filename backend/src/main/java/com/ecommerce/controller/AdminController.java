@@ -117,13 +117,6 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User found", userService.getUser(id)));
     }
 
-    @PatchMapping("/users/{id}/role")
-    public ResponseEntity<ApiResponse<UserResponse>> changeUserRole(
-            @PathVariable Long id,
-            @RequestParam User.Role role) {
-        return ResponseEntity.ok(ApiResponse.success("Role updated", userService.changeRole(id, role)));
-    }
-
     @DeleteMapping("/users/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);

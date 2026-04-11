@@ -70,6 +70,13 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("On sale products", productService.findOnSale()));
     }
 
+    /** Customer-facing offers — products with an active discount,
+     *  sorted by the largest savings percentage first. */
+    @GetMapping("/offers")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getOffers() {
+        return ResponseEntity.ok(ApiResponse.success("Offers retrieved", productService.findOffers()));
+    }
+
     @GetMapping("/season/{season}")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getBySeason(@PathVariable Season season) {
         return ResponseEntity.ok(ApiResponse.success(season + " products", productService.findBySeason(season)));

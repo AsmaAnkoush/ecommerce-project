@@ -23,9 +23,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByActiveTrueAndIsNewTrueOrderByCreatedAtDesc();
 
-    List<Product> findTop8ByActiveTrueAndIsBestSellerTrueOrderByViewCountDesc();
+    List<Product> findTop8ByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc();
 
     List<Product> findByActiveTrueAndDiscountPriceIsNotNull();
+
+    /** Active products that have any kind of discount applied —
+     *  either a stored discountPrice or a positive discountValue. */
+    @Query("SELECT p FROM Product p WHERE p.active = true AND " +
+           "(p.discountPrice IS NOT NULL " +
+           " OR (p.discountValue IS NOT NULL AND p.discountValue > 0))")
+    List<Product> findActiveOffers();
 
     @Query("SELECT p FROM Product p WHERE p.active = true AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +

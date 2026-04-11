@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Long> {
 
@@ -15,4 +16,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     void deleteByProductId(@Param("productId") Long productId);
 
     List<ProductVariant> findByProductId(Long productId);
+
+    Optional<ProductVariant> findByProductIdAndColorIgnoreCaseAndSizeIgnoreCase(
+            Long productId, String color, String size);
 }

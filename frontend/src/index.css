@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Raleway:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Raleway:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ── Keyframes ─────────────────────────────────────────────── */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(28px); }
+  from { opacity: 0; transform: translateY(30px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
@@ -11,7 +11,7 @@
   to   { opacity: 1; }
 }
 @keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
 @keyframes float {
@@ -27,11 +27,11 @@
   50%       { transform: rotate(3deg) translateY(-5px); }
 }
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
+  from { opacity: 0; transform: translateY(-14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes shimmerPulse {
@@ -47,27 +47,79 @@
   50%       { transform: scale(1.012); }
 }
 @keyframes ripple {
-  0%   { box-shadow: 0 0 0 0 rgba(107, 31, 42, 0.25); }
-  100% { box-shadow: 0 0 0 12px rgba(107, 31, 42, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(107, 31, 42, 0.22); }
+  100% { box-shadow: 0 0 0 16px rgba(107, 31, 42, 0); }
+}
+@keyframes shimmerSlide {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  25%       { transform: scale(1.2); }
+  50%       { transform: scale(1); }
+  75%       { transform: scale(1.14); }
+}
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes revealUp {
+  from { opacity: 0; clip-path: inset(100% 0 0 0); }
+  to   { opacity: 1; clip-path: inset(0% 0 0 0); }
+}
+@keyframes heroTextGlow {
+  0%, 100% { text-shadow: 0 6px 40px rgba(84,22,31,0.15), 0 0 0 transparent; }
+  50%      { text-shadow: 0 6px 40px rgba(84,22,31,0.15), 0 0 80px rgba(255,255,255,0.08); }
+}
+@keyframes heroLetterReveal {
+  from { opacity: 0; transform: translateY(30px) scale(0.9); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes langSwap {
+  0%   { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+@keyframes drawerInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes drawerInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+/* Soft fade applied to <body> while the language is switching.
+   The class is added/removed by LanguageContext for ~320ms. */
+.lang-changing body {
+  animation: langSwap 320ms ease-out;
 }
 
 /* ── Animation utilities ────────────────────────────────────── */
 @layer utilities {
-  .animate-fade-in-up   { animation: fadeInUp   0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .animate-fade-in      { animation: fadeIn     0.6s ease-out both; }
-  .animate-fade-in-scale{ animation: fadeInScale 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .animate-float        { animation: float      5s ease-in-out infinite; }
-  .animate-float-slow   { animation: floatSlow  7s ease-in-out infinite; }
-  .animate-sway         { animation: sway       8s ease-in-out infinite; }
-  .animate-slide-down   { animation: slideDown  0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .animate-slide-up     { animation: slideUp    0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .animate-shimmer-pulse{ animation: shimmerPulse 3s ease-in-out infinite; }
-  .animate-draw-line    { animation: drawLine   0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .animate-soft-pulse   { animation: softPulse  4s ease-in-out infinite; }
-  .animate-ripple       { animation: ripple     0.6s ease-out forwards; }
+  .animate-fade-in-up    { animation: fadeInUp    0.75s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-fade-in       { animation: fadeIn      0.6s ease-out both; }
+  .animate-fade-in-scale { animation: fadeInScale 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-hero-glow     { animation: heroTextGlow 4s ease-in-out infinite; }
+  .animate-hero-letter   { animation: heroLetterReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-float         { animation: float       5s ease-in-out infinite; }
+  .animate-float-slow    { animation: floatSlow   7s ease-in-out infinite; }
+  .animate-sway          { animation: sway        8s ease-in-out infinite; }
+  .animate-slide-down    { animation: slideDown   0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-slide-up      { animation: slideUp     0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-shimmer-pulse { animation: shimmerPulse 3s ease-in-out infinite; }
+  .animate-draw-line     { animation: drawLine    0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-soft-pulse    { animation: softPulse   4s ease-in-out infinite; }
+  .animate-ripple        { animation: ripple      0.7s ease-out forwards; }
+  .animate-heartbeat     { animation: heartbeat   0.65s ease-in-out; }
+  .animate-marquee       { animation: marquee     22s linear infinite; }
+  .animate-reveal-up     { animation: revealUp    0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-drawer-right  { animation: drawerInRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-drawer-left   { animation: drawerInLeft  0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
   /* Stagger delay helpers */
   .delay-75  { animation-delay: 75ms; }
+  .delay-100 { animation-delay: 100ms; }
   .delay-150 { animation-delay: 150ms; }
   .delay-200 { animation-delay: 200ms; }
   .delay-300 { animation-delay: 300ms; }
@@ -77,14 +129,14 @@
   .delay-700 { animation-delay: 700ms; }
   .delay-800 { animation-delay: 800ms; }
 
-  /* Smooth card lift */
+  /* Smooth card lift — luxury feel */
   .card-hover {
-    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.35s ease;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.4s ease;
   }
   .card-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 16px 40px rgba(107, 31, 42, 0.10);
+    transform: translateY(-7px);
+    box-shadow: 0 24px 56px rgba(107, 31, 42, 0.13);
   }
 
   /* Button press */
@@ -93,6 +145,56 @@
   }
   .btn-press:active {
     transform: scale(0.96);
+  }
+
+  /* Glass morphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .glass-rose {
+    background: rgba(253, 246, 247, 0.9);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  /* Shimmer text */
+  .text-shimmer {
+    background: linear-gradient(90deg, #6B1F2A 0%, #DFA3AD 45%, #6B1F2A 60%, #C4A0A6 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmerSlide 5s linear infinite;
+  }
+
+  /* Rose gradient text */
+  .text-gradient-rose {
+    background: linear-gradient(135deg, #6B1F2A 0%, #C4607A 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Luxury divider */
+  .divider-rose {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #EDD8DC 30%, #DFA3AD 50%, #EDD8DC 70%, transparent);
+  }
+
+  /* Input focus glow */
+  .input-focus-glow:focus {
+    box-shadow: 0 0 0 3px rgba(223, 163, 173, 0.25);
+  }
+
+  /* Numeric-safe — forces normal (upright) style and lining figures on any
+     element that carries prices, counts, or tabular data. Prevents italic
+     from leaking in via a parent heading's font-style: italic. */
+  .tabular-nums,
+  .nums-normal {
+    font-style: normal;
+    font-variant-numeric: lining-nums tabular-nums;
   }
 }
 
@@ -105,8 +207,13 @@
     font-family: 'Raleway', sans-serif;
     background-color: #FDF6F7;
     color: #3D1A1E;
-    /* Prevent horizontal overflow on mobile */
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Force upright lining numerals everywhere — prevents Cormorant
+       Garamond (and other serif fonts) from rendering oldstyle/italic
+       figures inside prices, counters, badges and totals. */
+    font-variant-numeric: lining-nums;
   }
   h1, h2, h3 {
     font-family: 'Cormorant Garamond', serif;
@@ -115,34 +222,37 @@
   :root[lang="ar"] {
     font-family: 'Cairo', sans-serif;
   }
-
-  /* Smooth scroll */
   html {
     scroll-behavior: smooth;
   }
-
-  /* Focus ring in brand color */
   *:focus-visible {
     outline: 2px solid #DFA3AD;
     outline-offset: 2px;
   }
-
-  /* Responsive images */
   img {
     max-width: 100%;
     height: auto;
+  }
+
+  /* Luxury scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #FDF6F7; }
+  ::-webkit-scrollbar-thumb { background: #EDD8DC; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #DFA3AD; }
+
+  /* Selection highlight */
+  ::selection {
+    background-color: rgba(223, 163, 173, 0.3);
+    color: #6B1F2A;
   }
 }
 
 /* ── Responsive utilities ───────────────────────────────────── */
 @layer utilities {
-  /* Touch-friendly minimum tap target */
   .touch-target {
     min-width: 44px;
     min-height: 44px;
   }
-
-  /* Hide scrollbar but allow scrolling */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -152,7 +262,27 @@
   }
 }
 
-/* ── Extra-small breakpoint (xs: 480px) ────────────────────── */
+/* ── Crop modal handle overrides ───────────────────────────── */
+.crop-container .ReactCrop__drag-handle {
+  width: 12px !important;
+  height: 12px !important;
+  background: #fff !important;
+  border: 2px solid #6B1F2A !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.crop-container .ReactCrop__drag-handle::after {
+  display: none !important;
+}
+.crop-container .ReactCrop__rule-of-thirds-hz::before,
+.crop-container .ReactCrop__rule-of-thirds-hz::after,
+.crop-container .ReactCrop__rule-of-thirds-vt::before,
+.crop-container .ReactCrop__rule-of-thirds-vt::after {
+  background: rgba(255,255,255,0.15) !important;
+}
+
+/* ── Extra-small breakpoint (xs: 480px) ─────────────────────── */
 @media (min-width: 480px) {
   .xs\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .xs\:flex-row    { flex-direction: row; }

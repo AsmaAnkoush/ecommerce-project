@@ -10,7 +10,27 @@
       "Bash(grep -r \"UserManagement\\\\|admin.*user\\\\|getUsers\\\\|deleteUser\" C:/Users/user/Desktop/ecommerce-project --include=*.java --include=*.jsx)",
       "Bash(grep -r \"bulk\\\\|import\\\\|csv\\\\|excel\" C:/Users/user/Desktop/ecommerce-project --include=*.java --include=*.jsx)",
       "Bash(python3:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(claude whoami:*)",
+      "Bash(claude auth:*)",
+      "Bash(wc -l \"C:/Users/user/Desktop/ecommerce-project/frontend/src/pages/admin\"/*.jsx)",
+      "Bash(grep -v \"import\\\\|from\\\\|className\\\\|style\\\\|svg\\\\|path\\\\|stroke\\\\|font\\\\|background\\\\|color\\\\|border\\\\|rgba\\\\|Raleway\\\\|key=\\\\|value=\\\\|href=\\\\|target=\\\\|rel=\\\\|onMouse\\\\|onClick\\\\|onChange\\\\|disabled\\\\|type=\\\\|ALL\\\\|PENDING\\\\|CONFIRMED\\\\|SHIPPED\\\\|DELIVERED\\\\|CANCELLED\\\\|REFUNDED\\\\|PROCESSING\\\\|whatsapp\\\\|wa\\\\\\\\.me\\\\|encodeURI\\\\|admin\\\\.\\\\|status\\\\.\\\\|orders\\\\.\\\\|profile\\\\.\\\\|N\\\\/A\")",
+      "Bash(grep -nP \">[A-Z][a-z]{2,}\" frontend/src/pages/admin/AdminOrders.jsx)",
+      "Bash(grep -nP \">[A-Z][a-z]{2,}\" frontend/src/pages/admin/AdminOrderDetail.jsx)",
+      "Bash(npm run:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/settings)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/api/settings)",
+      "Bash(cp \"c:/Users/user/Downloads/WhatsApp Image 2026-04-06 at 11.52.32 PM \\(1\\).jpeg\" C:/Users/user/Desktop/ecommerce-project/frontend/public/images/hero-dress-burgundy.png)",
+      "Bash(cp \"c:/Users/user/Downloads/WhatsApp Image 2026-04-06 at 11.51.08 PM.jpeg\" C:/Users/user/Desktop/ecommerce-project/frontend/public/images/hero-dress-dark.png)",
+      "Bash(cp \"c:/Users/user/Downloads/WhatsApp Image 2026-04-06 at 11.51.07 PM.jpeg\" C:/Users/user/Desktop/ecommerce-project/frontend/public/images/floral-branch.png)",
+      "Bash(cp \"c:/Users/user/Downloads/WhatsApp Image 2026-04-06 at 11.51.08 PM \\(1\\).jpeg\" C:/Users/user/Desktop/ecommerce-project/frontend/public/images/floral-border.png)",
+      "Bash(cp \"c:/Users/user/Downloads/WhatsApp Image 2026-04-06 at 11.51.07 PM \\(1\\).jpeg\" C:/Users/user/Desktop/ecommerce-project/frontend/public/images/floral-branch-2.png)",
+      "Bash(mvn compile:*)",
+      "Bash(npm install:*)",
+      "Bash(npm cache:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(powershell -c \"Get-PSDrive C | Select-Object Used,Free\")",
+      "Bash(powershell:*)"
     ]
   }
 }

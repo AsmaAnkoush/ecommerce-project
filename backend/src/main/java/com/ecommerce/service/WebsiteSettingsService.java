@@ -17,8 +17,11 @@ public class WebsiteSettingsService {
         return repository.findAll().stream().findFirst()
                 .orElseGet(() -> repository.save(
                         WebsiteSettings.builder()
-                                .siteName("DripStore")
-                                .contactWhatsApp("+1234567890")
+                                .siteName("IWEAR")
+                                .description("بوتيك أزياء راقية — كوليكشنات حصرية لكل موسم")
+                                .contactWhatsApp("+972594828117")
+                                .contactPhone("+972594828117")
+                                .address("فلسطين")
                                 .build()
                 ));
     }

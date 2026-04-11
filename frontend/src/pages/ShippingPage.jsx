@@ -1,17 +1,21 @@
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../context/LanguageContext'
+import { useFormatPrice } from '../utils/formatPrice'
 
 const WHATSAPP_NUMBER = '972594828117'
 const FACEBOOK_URL    = 'https://www.facebook.com/iwear.boutique'
 const INSTAGRAM_URL   = 'https://www.instagram.com/iwear1_boutique/'
 const WHATSAPP_URL    = `https://wa.me/${WHATSAPP_NUMBER}`
 
-const SHIPPING_ZONES = [
-  { region: 'الضفة الغربية',   price: 20, icon: '📦' },
-  { region: 'القدس',           price: 30, icon: '🏛️' },
-  { region: 'داخل الـ 48',     price: 70, icon: '🚚' },
-]
-
 export default function ShippingPage() {
+  const { t } = useLanguage()
+  const formatPrice = useFormatPrice()
+
+  const SHIPPING_ZONES = [
+    { region: t('shipping.westBank'),   price: 20, icon: '📦' },
+    { region: t('shipping.jerusalem'),  price: 30, icon: '🏛️' },
+    { region: t('shipping.inside48'),   price: 70, icon: '🚚' },
+  ]
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 space-y-10">
 
@@ -21,29 +25,29 @@ export default function ShippingPage() {
           className="text-3xl sm:text-4xl font-light text-[#3D1A1E] mb-2"
           style={{ fontFamily: 'Cormorant Garamond, serif' }}
         >
-          التوصيل والدفع
+          {t('shipping.title')}
         </h1>
-        <p className="text-sm text-[#9B7B80]">كل ما تحتاجين معرفته قبل الطلب</p>
+        <p className="text-sm text-[#9B7B80]">{t('shipping.subtitle')}</p>
       </div>
 
       {/* Delivery time banner */}
       <div className="flex items-center gap-4 bg-[#FDF0F2] border border-[#EDD8DC] rounded-2xl px-5 py-4">
         <span className="text-3xl shrink-0">⚡</span>
         <div>
-          <p className="font-semibold text-[#3D1A1E]">توصيل سريع خلال 1–2 يوم عمل</p>
-          <p className="text-sm text-[#9B7B80] mt-0.5">بعد تأكيد الطلب عبر WhatsApp</p>
+          <p className="font-semibold text-[#3D1A1E]">{t('shipping.fastDelivery')}</p>
+          <p className="text-sm text-[#9B7B80] mt-0.5">{t('shipping.afterWhatsApp')}</p>
         </div>
       </div>
 
       {/* Shipping prices */}
       <div>
-        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">أسعار الشحن</h2>
+        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">{t('shipping.shippingPrices')}</h2>
         <div className="bg-white border border-[#EDD8DC] rounded-2xl overflow-hidden shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#FDF6F7] border-b border-[#EDD8DC]">
-                <th className="text-start px-5 py-3 font-semibold text-[#6B1F2A]">المنطقة</th>
-                <th className="text-end px-5 py-3 font-semibold text-[#6B1F2A]">سعر الشحن</th>
+                <th className="text-start px-5 py-3 font-semibold text-[#6B1F2A]">{t('shipping.region')}</th>
+                <th className="text-end px-5 py-3 font-semibold text-[#6B1F2A]">{t('shipping.shippingPrice')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F9E8EB]">
@@ -56,7 +60,7 @@ export default function ShippingPage() {
                     </div>
                   </td>
                   <td className="px-5 py-4 text-end">
-                    <span className="font-bold text-[#6B1F2A] text-base">₪{z.price}</span>
+                    <span className="font-bold text-[#6B1F2A] text-base">{formatPrice(z.price)}</span>
                   </td>
                 </tr>
               ))}
@@ -64,17 +68,17 @@ export default function ShippingPage() {
           </table>
         </div>
         <p className="text-xs text-[#9B7B80] mt-3 text-center">
-          الشحن مجاني عند الطلبات التي تتجاوز ₪300 داخل الضفة الغربية
+          {t('shipping.freeShippingNote')}
         </p>
       </div>
 
       {/* Payment info */}
       <div>
-        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">طريقة الدفع</h2>
+        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">{t('shipping.paymentMethod')}</h2>
         <div className="space-y-3">
           {[
-            { icon: '💵', title: 'الدفع عند الاستلام', desc: 'ادفعي نقداً عند وصول طلبك' },
-            { icon: '📲', title: 'التحويل البنكي', desc: 'يتم إرسال تفاصيل الحساب عبر WhatsApp' },
+            { icon: '💵', title: t('shipping.codTitle'), desc: t('shipping.codDesc') },
+            { icon: '📲', title: t('shipping.bankTitle'), desc: t('shipping.bankDesc') },
           ].map(item => (
             <div key={item.title} className="flex items-start gap-4 bg-white border border-[#EDD8DC] rounded-2xl px-5 py-4">
               <span className="text-2xl shrink-0">{item.icon}</span>
@@ -89,13 +93,13 @@ export default function ShippingPage() {
 
       {/* How it works */}
       <div>
-        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">كيف يعمل؟</h2>
+        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">{t('shipping.howItWorks')}</h2>
         <ol className="space-y-3">
           {[
-            { step: '١', text: 'اختاري المنتجات وأضيفيها للـ Cart' },
-            { step: '٢', text: 'أكملي بيانات Checkout' },
-            { step: '٣', text: 'سنتواصل معكِ عبر WhatsApp لتأكيد الطلب' },
-            { step: '٤', text: 'يصلكِ الطلب خلال 1–2 يوم عمل' },
+            { step: '١', text: t('shipping.step1') },
+            { step: '٢', text: t('shipping.step2') },
+            { step: '٣', text: t('shipping.step3') },
+            { step: '٤', text: t('shipping.step4') },
           ].map(item => (
             <li key={item.step} className="flex items-center gap-4">
               <span className="w-8 h-8 rounded-full bg-[#6B1F2A] text-white flex items-center justify-center text-sm font-bold shrink-0">
@@ -109,7 +113,7 @@ export default function ShippingPage() {
 
       {/* Contact section */}
       <div>
-        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">تواصلي معنا</h2>
+        <h2 className="text-lg font-semibold text-[#3D1A1E] mb-4">{t('shipping.contactUs')}</h2>
         <div className="space-y-3">
           {/* WhatsApp */}
           <a
@@ -182,7 +186,7 @@ export default function ShippingPage() {
           to="/products"
           className="inline-block bg-[#6B1F2A] text-white px-8 py-3 rounded-full text-sm font-medium hover:bg-[#8B2535] transition-colors"
         >
-          تسوّقي الآن
+          {t('shipping.shopNow')}
         </Link>
       </div>
     </div>

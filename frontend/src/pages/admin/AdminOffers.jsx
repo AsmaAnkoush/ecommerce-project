@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useFormatPrice } from '../../utils/formatPrice'
 import { updateProduct } from '../../api/productApi'
 import { getAdminProducts } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
 import Button from '../../components/ui/Button'
+import { useLanguage } from '../../context/LanguageContext'
 
 function DiscountBadge({ original, discounted }) {
   if (!discounted || discounted >= original) return null
@@ -16,6 +18,8 @@ function DiscountBadge({ original, discounted }) {
 }
 
 export default function AdminOffers() {
+  const { t } = useLanguage()
+  const formatPrice = useFormatPrice()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('active') // 'active' | 'all'
@@ -50,11 +54,11 @@ export default function AdminOffers() {
   const handleSave = async (product) => {
     const val = parseFloat(discountInput)
     if (isNaN(val) || val <= 0) {
-      setError('Enter a valid discount price')
+      setError(t('admin.enterValidPrice'))
       return
     }
     if (val >= product.price) {
-      setError('Discount price must be less than the original price')
+      setError(t('admin.discountMustBeLess'))
       return
     }
     setSaving(product.id)
@@ -76,14 +80,14 @@ export default function AdminOffers() {
       cancelEdit()
       await load()
     } catch {
-      setError('Failed to save. Please try again.')
+      setError(t('admin.failedSave'))
     } finally {
       setSaving(null)
     }
   }
 
   const handleRemove = async (product) => {
-    if (!confirm('Remove the discount from this product?')) return
+    if (!confirm(t('admin.removeDiscount'))) return
     setSaving(product.id)
     try {
       await updateProduct(product.id, {
@@ -110,9 +114,9 @@ export default function AdminOffers() {
     <div className="p-6 lg:p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Offers & Discounts</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('admin.offersDiscounts')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {onSale.length} active offer{onSale.length !== 1 ? 's' : ''}
+            {onSale.length} {onSale.length !== 1 ? t('admin.activeOfferPlural') : t('admin.activeOffer')}
           </p>
         </div>
       </div>
@@ -120,17 +124,17 @@ export default function AdminOffers() {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 p-1 bg-gray-100 rounded-xl w-fit">
         {[
-          { key: 'active', label: `Active Offers (${onSale.length})` },
-          { key: 'all', label: `All Products (${products.length})` },
-        ].map(t => (
+          { key: 'active', label: `${t('admin.activeOffers')} (${onSale.length})` },
+          { key: 'all', label: `${t('admin.allProductsTab')} (${products.length})` },
+        ].map(tb => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tb.key}
+            onClick={() => setTab(tb.key)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === t.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+              tab === tb.key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>
@@ -144,11 +148,11 @@ export default function AdminOffers() {
           </svg>
           {tab === 'active' ? (
             <>
-              <p className="font-medium">No active offers</p>
-              <p className="text-sm mt-1">Switch to "All Products" to add discounts.</p>
+              <p className="font-medium">{t('admin.noActiveOffers')}</p>
+              <p className="text-sm mt-1">{t('admin.switchToAll')}</p>
             </>
           ) : (
-            <p className="font-medium">No products found</p>
+            <p className="font-medium">{t('admin.noProductsFound')}</p>
           )}
         </div>
       ) : (
@@ -156,11 +160,11 @@ export default function AdminOffers() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
-                <th className="px-5 py-3 text-left">Product</th>
-                <th className="px-5 py-3 text-left hidden sm:table-cell">Original Price</th>
-                <th className="px-5 py-3 text-left">Discount Price</th>
-                <th className="px-5 py-3 text-left hidden md:table-cell">Saving</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3 text-left">{t('admin.products')}</th>
+                <th className="px-5 py-3 text-left hidden sm:table-cell">{t('admin.originalPrice')}</th>
+                <th className="px-5 py-3 text-left">{t('admin.discountPrice')}</th>
+                <th className="px-5 py-3 text-left hidden md:table-cell">{t('admin.savingAmount')}</th>
+                <th className="px-5 py-3 text-right">{t('admin.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -182,13 +186,12 @@ export default function AdminOffers() {
                     </div>
                   </td>
                   <td className="px-5 py-3 hidden sm:table-cell text-gray-600">
-                    ₪{Number(product.price).toFixed(0)}
+                    {formatPrice(product.price)}
                   </td>
                   <td className="px-5 py-3">
                     {editingId === product.id ? (
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-400">₪</span>
                           <input
                             type="number"
                             value={discountInput}
@@ -205,17 +208,17 @@ export default function AdminOffers() {
                       </div>
                     ) : product.discountPrice && product.discountPrice < product.price ? (
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-red-600">₪{Number(product.discountPrice).toFixed(0)}</span>
+                        <span className="font-semibold text-red-600">{formatPrice(product.discountPrice)}</span>
                         <DiscountBadge original={product.price} discounted={product.discountPrice} />
                       </div>
                     ) : (
-                      <span className="text-gray-400 text-xs">No discount</span>
+                      <span className="text-gray-400 text-xs">{t('admin.noDiscount')}</span>
                     )}
                   </td>
                   <td className="px-5 py-3 hidden md:table-cell">
                     {product.discountPrice && product.discountPrice < product.price ? (
                       <span className="text-green-600 font-medium text-xs">
-                        Save ₪{(Number(product.price) - Number(product.discountPrice)).toFixed(0)}
+                        Save {formatPrice(Number(product.price) - Number(product.discountPrice))}
                       </span>
                     ) : '—'}
                   </td>
@@ -228,10 +231,10 @@ export default function AdminOffers() {
                             onClick={() => handleSave(product)}
                             loading={saving === product.id}
                           >
-                            Save
+                            {t('admin.save')}
                           </Button>
                           <Button size="sm" variant="secondary" onClick={cancelEdit}>
-                            Cancel
+                            {t('admin.cancel')}
                           </Button>
                         </>
                       ) : (
@@ -241,7 +244,7 @@ export default function AdminOffers() {
                             disabled={saving === product.id}
                             className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
                           >
-                            {product.discountPrice && product.discountPrice < product.price ? 'Edit' : 'Add Offer'}
+                            {product.discountPrice && product.discountPrice < product.price ? t('admin.edit') : t('admin.addOffer')}
                           </button>
                           {product.discountPrice && product.discountPrice < product.price && (
                             <button
@@ -249,14 +252,14 @@ export default function AdminOffers() {
                               disabled={saving === product.id}
                               className="text-xs font-medium text-red-500 hover:text-red-600 disabled:opacity-50"
                             >
-                              {saving === product.id ? '...' : 'Remove'}
+                              {saving === product.id ? '...' : t('admin.remove')}
                             </button>
                           )}
                           <Link
                             to={`/admin/products/${product.id}/edit`}
                             className="text-xs font-medium text-gray-400 hover:text-gray-600"
                           >
-                            Full Edit
+                            {t('admin.fullEdit')}
                           </Link>
                         </>
                       )}

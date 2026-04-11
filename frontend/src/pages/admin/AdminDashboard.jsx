@@ -2,174 +2,379 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getDashboard } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
+import { useLanguage } from '../../context/LanguageContext'
+import { useFormatPrice } from '../../utils/formatPrice'
 
-function StatCard({ label, value, icon, colorClass, to, sub }) {
+/* ─── Stat card ────────────────────────────────────────────────────────── */
+function StatCard({ label, value, sub, icon, tint, to }) {
   return (
-    <Link to={to} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${colorClass}`}>
-        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-        </svg>
+    <Link
+      to={to}
+      className="group bg-white rounded-2xl p-5 flex flex-col items-center text-center gap-3 transition-all duration-300"
+      style={{
+        boxShadow: '0 2px 8px rgba(107,31,42,0.06), 0 0 0 1px #F5EDEF',
+        textDecoration: 'none',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(107,31,42,0.12), 0 0 0 1px #EDD8DC'
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(107,31,42,0.06), 0 0 0 1px #F5EDEF'
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
+    >
+      {/* Icon */}
+      <div className="flex items-center justify-center">
+        <div
+          className="w-11 h-11 rounded-xl flex items-center justify-center"
+          style={{ background: tint.bg, border: `1px solid ${tint.border}` }}
+        >
+          <svg className="w-5 h-5" style={{ color: tint.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+          </svg>
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="text-2xl font-extrabold text-gray-900 leading-tight">{value}</p>
-        <p className="text-sm text-gray-500 mt-0.5">{label}</p>
-        {sub != null && (
-          <p className="text-xs text-gray-400 mt-1">{sub}</p>
+
+      {/* Value */}
+      <div>
+        <p
+          className="text-2xl font-bold leading-none tabular-nums"
+          style={{ color: '#3D1A1E', fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, fontSize: '26px' }}
+        >
+          {value}
+        </p>
+        <p className="text-sm font-medium mt-1.5" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif' }}>
+          {label}
+        </p>
+        {sub && (
+          <p className="text-xs mt-0.5" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>{sub}</p>
         )}
       </div>
+
+      {/* Gradient bottom accent */}
+      <div
+        className="h-0.5 rounded-full -mx-5 -mb-5 mt-auto w-[calc(100%+40px)]"
+        style={{ background: `linear-gradient(90deg, ${tint.icon}40, ${tint.icon}, ${tint.icon}40)` }}
+      />
     </Link>
   )
 }
 
+/* ─── Section header ───────────────────────────────────────────────────── */
+function SectionHeader({ title, linkTo, linkLabel }) {
+  return (
+    <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #FAF0F2' }}>
+      <div className="flex items-center gap-2.5">
+        <div className="w-1 h-4 rounded-full" style={{ background: 'linear-gradient(180deg,#6B1F2A,#DFA3AD)' }} />
+        <h2 style={{
+          fontFamily: 'Cormorant Garamond, serif',
+          fontWeight: 500,
+          fontSize: '16px',
+          color: '#3D1A1E',
+          letterSpacing: '0.02em',
+        }}>
+          {title}
+        </h2>
+      </div>
+      {linkTo && (
+        <Link
+          to={linkTo}
+          className="text-xs font-medium transition-colors"
+          style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif', textDecoration: 'none' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#6B1F2A'}
+          onMouseLeave={e => e.currentTarget.style.color = '#C4A0A6'}
+        >
+          {linkLabel} →
+        </Link>
+      )}
+    </div>
+  )
+}
+
+/* ─── Card wrapper ─────────────────────────────────────────────────────── */
+function Card({ children, className = '' }) {
+  return (
+    <div
+      className={`bg-white rounded-2xl overflow-hidden ${className}`}
+      style={{ boxShadow: '0 2px 8px rgba(107,31,42,0.06), 0 0 0 1px #F5EDEF' }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/* ─── Best seller row ──────────────────────────────────────────────────── */
+function BestSellerRow({ item, rank }) {
+  const { t } = useLanguage()
+  const medalColors = [
+    { bg: '#FFFBEB', text: '#92400E', border: '#FCD34D' },
+    { bg: '#F9FAFB', text: '#374151', border: '#E5E7EB' },
+    { bg: '#FFF7ED', text: '#9A3412', border: '#FDBA74' },
+  ]
+  const m = medalColors[rank] || { bg: '#FDF6F7', text: '#9B7B80', border: '#EDD8DC' }
+
+  return (
+    <div
+      className="flex items-center gap-4 px-5 py-3 transition-colors"
+      style={{ borderBottom: '1px solid #FAF0F2' }}
+      onMouseEnter={e => e.currentTarget.style.background = '#FDF6F7'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      {/* Rank badge */}
+      <span
+        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+        style={{ background: m.bg, color: m.text, border: `1px solid ${m.border}` }}
+      >
+        {rank + 1}
+      </span>
+
+      {/* Product image */}
+      <div
+        className="w-9 h-9 rounded-xl overflow-hidden shrink-0"
+        style={{ background: '#FDF0F2', border: '1px solid #F0DDE0' }}
+      >
+        {item.productImage
+          ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center text-[#DFA3AD] text-xs font-bold">
+              {(item.productName || '?').charAt(0)}
+            </div>
+        }
+      </div>
+
+      {/* Name */}
+      <p
+        className="flex-1 text-sm truncate"
+        style={{ color: '#3D1A1E', fontFamily: 'Raleway, sans-serif', fontWeight: 500 }}
+      >
+        {item.productName}
+      </p>
+
+      {/* Units */}
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-sm font-bold" style={{ color: '#6B1F2A', fontFamily: 'Raleway, sans-serif' }}>
+          {item.totalSold}
+        </span>
+        <span className="text-xs" style={{ color: '#C4A0A6' }}>{t('admin.sold')}</span>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Quick action ─────────────────────────────────────────────────────── */
+function QuickAction({ to, icon, label }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium"
+      style={{
+        color: '#9B7B80',
+        border: '1px dashed #EDD8DC',
+        textDecoration: 'none',
+        fontFamily: 'Raleway, sans-serif',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = '#FDF0F2'
+        e.currentTarget.style.borderColor = '#DFA3AD'
+        e.currentTarget.style.color = '#6B1F2A'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'transparent'
+        e.currentTarget.style.borderColor = '#EDD8DC'
+        e.currentTarget.style.color = '#9B7B80'
+      }}
+    >
+      <span className="text-base">{icon}</span>
+      {label}
+    </Link>
+  )
+}
+
+/* ─── Overview row ─────────────────────────────────────────────────────── */
+function OverviewRow({ label, value, alert }) {
+  return (
+    <div className="flex items-center justify-between py-2.5" style={{ borderBottom: '1px solid #FAF0F2' }}>
+      <span className="text-sm" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif' }}>{label}</span>
+      <span
+        className="text-sm font-semibold tabular-nums"
+        style={{ color: alert ? '#991B1B' : '#3D1A1E', fontFamily: 'Raleway, sans-serif' }}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+/* ─── Main ─────────────────────────────────────────────────────────────── */
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null)
+  const { t } = useLanguage()
+  const formatPrice = useFormatPrice()
+  const [stats, setStats]   = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getDashboard().then(res => setStats(res.data.data)).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="flex justify-center py-40"><Spinner size="lg" /></div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">لوحة التحكم</h1>
-        <p className="text-sm text-gray-400 mt-1">نظرة عامة على المتجر</p>
+    <div className="p-5 lg:p-7 space-y-6 max-w-[1280px]">
+
+      {/* ── Welcome strip ── */}
+      <div
+        className="rounded-2xl px-6 py-5 flex items-center justify-between overflow-hidden relative"
+        style={{
+          background: 'linear-gradient(135deg, #6B1F2A 0%, #8B2535 60%, #A33040 100%)',
+          boxShadow: '0 4px 20px rgba(107,31,42,0.25)',
+        }}
+      >
+        {/* Decorative circles */}
+        <div className="absolute right-0 top-0 w-48 h-48 rounded-full opacity-10" style={{ background: '#DFA3AD', transform: 'translate(30%,-30%)' }} />
+        <div className="absolute right-16 bottom-0 w-32 h-32 rounded-full opacity-10" style={{ background: '#EDD8DC', transform: 'translateY(40%)' }} />
+
+        <div className="relative z-10">
+          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', fontWeight: 400, color: '#fff', letterSpacing: '0.03em', lineHeight: 1 }}>
+            {t('admin.welcomeBack')}
+          </p>
+          <p style={{ fontFamily: 'Raleway, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', letterSpacing: '0.05em' }}>
+            {t('admin.storeToday')}
+          </p>
+        </div>
+
+        <div className="relative z-10 hidden sm:flex items-center gap-2 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Raleway, sans-serif' }}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })}
+        </div>
       </div>
 
-      {/* ── Low stock alert banner ──────────────────────────────────────── */}
+      {/* ── Low stock alert ── */}
       {stats.lowStockCount > 0 && (
-        <Link to="/admin/products" className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 mb-6 hover:bg-amber-100 transition-colors">
-          <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        <Link
+          to="/admin/products"
+          className="flex items-center gap-3 rounded-2xl px-5 py-3.5 transition-colors"
+          style={{
+            background: '#FFFBEB',
+            border: '1px solid #FCD34D',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#FFF8D6'}
+          onMouseLeave={e => e.currentTarget.style.background = '#FFFBEB'}
+        >
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FEF3C7', border: '1px solid #FCD34D' }}>
+            <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: '#92400E', fontFamily: 'Raleway, sans-serif' }}>
+              {t('admin.lowStockAlert').replace('{count}', stats.lowStockCount)}
+            </p>
+            <p className="text-xs" style={{ color: '#B45309', marginTop: '2px', fontFamily: 'Raleway, sans-serif' }}>
+              {t('admin.tapToRestock')}
+            </p>
+          </div>
+          <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          <p className="text-sm font-medium text-amber-800">
-            ⚠️ تنبيه: <span className="font-bold">{stats.lowStockCount}</span> منتج مخزونه منخفض (أقل من 5 قطع) — اضغط للمراجعة
-          </p>
         </Link>
       )}
 
-      {/* ── Top stat cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* ── Stat cards ── */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
-          label="طلبات اليوم"
+          label={t('admin.ordersToday')}
           value={stats.ordersToday}
-          colorClass="bg-[#6B1F2A]"
+          sub={t('admin.receivedToday')}
+          to="/admin/orders"
           icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-          to="/admin/orders"
-          sub="الطلبات المستلمة اليوم"
+          tint={{ bg: '#FDF0F2', border: '#EDD8DC', icon: '#6B1F2A' }}
         />
         <StatCard
-          label="طلبات معلّقة"
+          label={t('admin.pendingOrders')}
           value={stats.pendingOrders}
-          colorClass="bg-amber-500"
+          sub={t('admin.needAttention')}
+          to="/admin/orders"
           icon="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          to="/admin/orders"
-          sub="تحتاج إلى معالجة"
+          tint={{ bg: '#FFFBEB', border: '#FCD34D', icon: '#D97706' }}
         />
         <StatCard
-          label="إجمالي الإيرادات"
-          value={`₪${Number(stats.totalRevenue).toFixed(0)}`}
-          colorClass="bg-emerald-600"
+          label={t('admin.totalRevenue')}
+          value={formatPrice(stats.totalRevenue)}
+          sub={t('admin.fromOrders').replace('{count}', stats.totalOrders)}
+          to="/admin/orders"
           icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          to="/admin/orders"
-          sub={`من ${stats.totalOrders} طلب`}
+          tint={{ bg: '#ECFDF5', border: '#A7F3D0', icon: '#059669' }}
         />
         <StatCard
-          label="إجمالي المنتجات"
+          label={t('admin.totalProducts')}
           value={stats.totalProducts}
-          colorClass="bg-[#8B2535]"
-          icon="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+          sub={stats.totalUsers + ' ' + t('admin.customers')}
           to="/admin/products"
-          sub={`${stats.totalUsers} عميل مسجّل`}
+          icon="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+          tint={{ bg: '#F5F3FF', border: '#DDD6FE', icon: '#7C3AED' }}
         />
       </div>
 
-      {/* ── Secondary row ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ── Bottom section ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {/* Best sellers */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-bold text-gray-900">الأكثر مبيعاً</h2>
-            <Link to="/admin/products" className="text-xs text-[#6B1F2A] hover:underline">عرض الكل</Link>
-          </div>
-
-          {stats.bestSellers && stats.bestSellers.length > 0 ? (
-            <div className="divide-y divide-gray-50">
-              {stats.bestSellers.map((item, idx) => (
-                <div key={item.productId} className="flex items-center gap-4 px-6 py-3">
-                  {/* Rank */}
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                    idx === 0 ? 'bg-amber-100 text-amber-700' :
-                    idx === 1 ? 'bg-gray-100 text-gray-600' :
-                    idx === 2 ? 'bg-orange-100 text-orange-700' :
-                    'bg-gray-50 text-gray-400'
-                  }`}>{idx + 1}</span>
-
-                  {/* Image */}
-                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#FDF0F2] shrink-0">
-                    {item.productImage
-                      ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center text-[#DFA3AD] text-xs">?</div>
-                    }
+        <Card className="lg:col-span-2">
+          <SectionHeader title={t('admin.bestSellers')} linkTo="/admin/products" linkLabel={t('admin.viewAll')} />
+          <div>
+            {stats.bestSellers?.length > 0
+              ? stats.bestSellers.map((item, idx) => (
+                  <BestSellerRow key={item.productId} item={item} rank={idx} />
+                ))
+              : (
+                <div className="flex flex-col items-center justify-center py-14 gap-3">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#FDF0F2', border: '1px solid #EDD8DC' }}>
+                    <svg className="w-7 h-7" style={{ color: '#DFA3AD' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
                   </div>
-
-                  {/* Name */}
-                  <p className="flex-1 text-sm font-medium text-gray-900 truncate">{item.productName}</p>
-
-                  {/* Units sold */}
-                  <span className="text-sm font-bold text-[#6B1F2A] shrink-0">{item.totalSold} قطعة</span>
+                  <p className="text-sm" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>{t('admin.noSalesData')}</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="px-6 py-10 text-center text-gray-400 text-sm">لا توجد مبيعات بعد</div>
-          )}
-        </div>
+              )
+            }
+          </div>
+        </Card>
 
-        {/* Quick actions + overview */}
+        {/* Side panel */}
         <div className="space-y-4">
-          {/* Quick actions */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h2 className="font-bold text-gray-900 mb-3">إجراءات سريعة</h2>
-            <div className="space-y-2">
-              <Link to="/admin/products/new" className="flex items-center gap-3 p-2.5 border border-dashed border-[#DFA3AD] rounded-xl hover:border-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors text-sm font-medium text-[#6B3840]">
-                <span className="text-lg">+</span> إضافة منتج جديد
-              </Link>
-              <Link to="/admin/categories" className="flex items-center gap-3 p-2.5 border border-dashed border-[#DFA3AD] rounded-xl hover:border-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors text-sm font-medium text-[#6B3840]">
-                <span className="text-lg">🏷️</span> إدارة الفئات
-              </Link>
-              <Link to="/admin/orders" className="flex items-center gap-3 p-2.5 border border-dashed border-[#DFA3AD] rounded-xl hover:border-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors text-sm font-medium text-[#6B3840]">
-                <span className="text-lg">📦</span> جميع الطلبات
-              </Link>
-              <Link to="/admin/offers" className="flex items-center gap-3 p-2.5 border border-dashed border-[#DFA3AD] rounded-xl hover:border-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors text-sm font-medium text-[#6B3840]">
-                <span className="text-lg">🏷</span> إضافة عرض
-              </Link>
-            </div>
-          </div>
 
-          {/* Overview */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h2 className="font-bold text-gray-900 mb-3">نظرة عامة</h2>
-            <div className="space-y-2.5">
-              {[
-                { label: 'إجمالي الطلبات',   value: stats.totalOrders },
-                { label: 'طلبات اليوم',       value: stats.ordersToday },
-                { label: 'طلبات معلّقة',      value: stats.pendingOrders },
-                { label: 'إجمالي العملاء',    value: stats.totalUsers },
-                { label: 'منتجات نشطة',       value: stats.totalProducts },
-                { label: '⚠️ مخزون منخفض',    value: stats.lowStockCount },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0">
-                  <span className="text-sm text-gray-500">{label}</span>
-                  <span className="font-semibold text-gray-900 text-sm">{value}</span>
-                </div>
-              ))}
+          {/* Quick actions */}
+          <Card>
+            <SectionHeader title={t('admin.quickActions')} />
+            <div className="px-5 py-4 space-y-2">
+              <QuickAction to="/admin/products/new" icon="📦" label={t('admin.addProduct')} />
+              <QuickAction to="/admin/categories"   icon="🏷️" label={t('admin.manageCategories')} />
+              <QuickAction to="/admin/orders"       icon="🚚" label={t('admin.viewAllOrders')} />
+              <QuickAction to="/admin/offers"       icon="✂️" label={t('admin.createOffer')} />
             </div>
-          </div>
+          </Card>
+
+          {/* Store overview */}
+          <Card>
+            <SectionHeader title={t('admin.storeOverview')} />
+            <div className="px-5 py-3">
+              <OverviewRow label={t('admin.totalOrders')}  value={stats.totalOrders} />
+              <OverviewRow label={t('admin.ordersToday')}  value={stats.ordersToday} />
+              <OverviewRow label={t('admin.pending')}      value={stats.pendingOrders} />
+              <OverviewRow label={t('admin.customers')}    value={stats.totalUsers} />
+              <OverviewRow label={t('admin.products')}     value={stats.totalProducts} />
+              <OverviewRow label={t('admin.lowStock')}     value={stats.lowStockCount} alert={stats.lowStockCount > 0} />
+            </div>
+          </Card>
         </div>
       </div>
     </div>

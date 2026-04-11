@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { deleteProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProducts } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
+import { useFormatPrice } from '../../utils/formatPrice'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
+import { useLanguage } from '../../context/LanguageContext'
 
 /* ─── Stock threshold ──────────────────────────────────────────────────── */
 const LOW_STOCK_THRESHOLD = 5
@@ -17,9 +19,9 @@ function stockStatus(qty) {
 }
 
 const STATUS_STYLES = {
-  out: { chip: 'bg-red-50 border-red-200 text-red-700',   dot: 'bg-red-500',   label: 'نفذ',     icon: '⛔' },
-  low: { chip: 'bg-amber-50 border-amber-200 text-amber-700', dot: 'bg-amber-400', label: 'منخفض',  icon: '⚠️' },
-  ok:  { chip: 'bg-emerald-50 border-emerald-200 text-emerald-700', dot: 'bg-emerald-500', label: 'متوفر', icon: '✅' },
+  out: { dot: 'bg-red-500',     text: 'text-red-700',    label: 'نفذ' },
+  low: { dot: 'bg-amber-400',   text: 'text-amber-700',  label: 'منخفض' },
+  ok:  { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'متوفر' },
 }
 
 /** Returns { outCount, lowCount, okCount } across a product's variants (or its flat stock). */
@@ -52,82 +54,76 @@ function groupByColor(variants) {
   }, {})
 }
 
-/* ─── Sub-components ───────────────────────────────────────────────────── */
-
-/** Small colored pill showing stock for one variant size. */
-function VariantChip({ variant }) {
-  const s = stockStatus(variant.stockQuantity)
-  const st = STATUS_STYLES[s]
-  return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs ${st.chip}`}>
-      <span className="font-semibold">{variant.size || '—'}</span>
-      <span className="font-bold">{variant.stockQuantity}</span>
-      <span className="text-[11px]">{st.icon}</span>
-    </div>
-  )
+/* ─── Color lookup ────────────────────────────────────────────────────── */
+const COLOR_HEX = {
+  black: '#000000', white: '#FFFFFF', 'navy blue': '#001F5B', beige: '#F5F0E8',
+  brown: '#8B4513', red: '#CC0000', green: '#2D6A4F', gray: '#6B6B6B',
+  camel: '#C19A6B', burgundy: '#800020', olive: '#6B7C44', coral: '#FF6B6B',
+  pink: '#FFB6C1', cream: '#FFFDD0', navy: '#001F5B', blue: '#1A56C4',
+  yellow: '#F0C040', orange: '#D4600A', purple: '#6B2FA0',
+}
+function getColorHex(name) {
+  if (!name) return null
+  const hex = COLOR_HEX[name.toLowerCase()]
+  if (hex) return hex
+  if (/^#[0-9a-f]{3,8}$/i.test(name)) return name
+  return null
 }
 
-/** Expanded variant breakdown rendered as a full-width sub-row. */
+/* ─── Sub-components ───────────────────────────────────────────────────── */
+
+const SIZE_ORDER = ['XS','S','M','L','XL','XXL','XXXL']
+const sortVariants = arr => arr.slice().sort((a, b) => {
+  const ai = SIZE_ORDER.indexOf(a.size ?? '')
+  const bi = SIZE_ORDER.indexOf(b.size ?? '')
+  return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+})
+
+/** Compact variant breakdown — table layout, minimal colors. */
 function VariantBreakdown({ product }) {
   if (!product.variants?.length) return null
-
   const byColor = groupByColor(product.variants)
 
   return (
-    <div className="px-6 pt-2 pb-5 bg-gray-50/70 border-t border-gray-100">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
-          تفاصيل المخزون — {product.variants.length} متغيّر
-        </p>
-        {/* Legend */}
-        <div className="flex items-center gap-4">
-          {(['out', 'low', 'ok']).map(s => (
-            <span key={s} className="flex items-center gap-1 text-[11px] text-gray-500">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_STYLES[s].dot}`} />
-              {STATUS_STYLES[s].label}
-            </span>
-          ))}
+    <div className="px-5 pb-4 pt-1" style={{ background: '#FDF9FA' }}>
+      {Object.entries(byColor).map(([color, variants]) => {
+        const hex = getColorHex(color)
+        return (
+        <div key={color} className="mt-3 first:mt-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            {hex && (
+              <span className="w-4 h-4 rounded-full shrink-0 border border-gray-200"
+                    style={{ backgroundColor: hex }} />
+            )}
+            <span className="text-[11px] font-medium" style={{ color: '#6B4E53' }}>{color}</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {sortVariants(variants).map(v => {
+              const s = stockStatus(v.stockQuantity)
+              return (
+                <span key={`${v.color}-${v.size}`}
+                  className="inline-flex items-center gap-1 text-[11px] tabular-nums px-2 py-1 rounded-md bg-white"
+                  style={{ border: '1px solid #F0DDE0' }}
+                  title={`${v.size}: ${v.stockQuantity}`}>
+                  <span className="font-medium" style={{ color: '#6B4E53' }}>{v.size || '—'}</span>
+                  <span className={`font-bold ${s === 'out' ? 'text-red-600' : s === 'low' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {v.stockQuantity}
+                  </span>
+                </span>
+              )
+            })}
+          </div>
         </div>
-      </div>
-
-      {/* Color groups */}
-      <div className="space-y-3">
-        {Object.entries(byColor).map(([color, variants]) => {
-          const worst = variants.some(v => v.stockQuantity === 0)
-            ? 'out'
-            : variants.some(v => v.stockQuantity <= LOW_STOCK_THRESHOLD)
-            ? 'low'
-            : 'ok'
-          return (
-            <div key={color} className="flex items-start gap-3">
-              {/* Color label */}
-              <div className="flex items-center gap-1.5 min-w-[80px] pt-1.5">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_STYLES[worst].dot}`} />
-                <span className="text-xs font-medium text-gray-700 truncate">{color}</span>
-              </div>
-              {/* Size chips */}
-              <div className="flex flex-wrap gap-1.5">
-                {variants
-                  .slice()
-                  .sort((a, b) => {
-                    const order = ['XS','S','M','L','XL','XXL','XXXL']
-                    return (order.indexOf(a.size) ?? 99) - (order.indexOf(b.size) ?? 99)
-                  })
-                  .map(v => (
-                    <VariantChip key={`${v.color}-${v.size}`} variant={v} />
-                  ))}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+        )
+      })}
     </div>
   )
 }
 
 /* ─── Main page ────────────────────────────────────────────────────────── */
 export default function AdminProducts() {
+  const { t } = useLanguage()
+  const formatPrice = useFormatPrice()
   const [products, setProducts]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [page, setPage]           = useState(0)
@@ -135,27 +131,34 @@ export default function AdminProducts() {
   const [deleting, setDeleting]   = useState(null)
   const [toggling, setToggling]   = useState(null)
   const [expandedId, setExpandedId] = useState(null)
+  const [search, setSearch] = useState('')
 
   const fetchProducts = async (p = 0) => {
     setLoading(true)
     try {
       const res = await getAdminProducts({ page: p, size: 15 })
-      setProducts(res.data.data?.content ?? [])
+      const content = res.data.data?.content ?? []
+      setProducts(content)
       setTotalPages(res.data.data?.totalPages ?? 0)
       setPage(p)
+      // Auto-expand products with at least one out-of-stock variant
+      const autoExpand = content.find(
+        prod => prod.variants?.some(v => v.stockQuantity === 0)
+      )
+      if (autoExpand) setExpandedId(autoExpand.id)
     } finally { setLoading(false) }
   }
 
   useEffect(() => { fetchProducts() }, [])
 
   const handleDelete = async (id) => {
-    if (!confirm('هل تريد حذف هذا المنتج؟')) return
+    if (!confirm(t('admin.delete') + '?')) return
     setDeleting(id)
     try {
       await deleteProduct(id)
       setProducts(prev => prev.filter(p => p.id !== id))
     } catch (err) {
-      alert('فشل حذف المنتج. حاول مرة أخرى.')
+      alert(t('admin.failedDelete'))
       console.error('Delete failed:', err)
     } finally { setDeleting(null) }
   }
@@ -197,248 +200,231 @@ export default function AdminProducts() {
     return sum + (s === 'low' ? 1 : 0)
   }, 0)
 
+  /* ── Client-side search filter ── */
+  const filtered = products.filter(p =>
+    !search.trim() ||
+    p.name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.brand?.toLowerCase().includes(search.toLowerCase()) ||
+    p.categoryName?.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
-    <div className="p-8">
-      {/* ── Page header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">المنتجات</h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            حد المخزون المنخفض: <span className="font-semibold text-gray-600">{LOW_STOCK_THRESHOLD} قطع أو أقل</span>
-          </p>
+    <div className="p-5 lg:p-7">
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        {/* Search */}
+        <div className="relative flex-1 max-w-xs">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: '#C4A0A6' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={`${t('admin.search')}…`}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border outline-none transition-colors"
+            style={{ borderColor: '#E8D8DB', background: '#fff', color: '#3D1A1E' }}
+            onFocus={e => e.target.style.borderColor = '#6B1F2A'}
+            onBlur={e => e.target.style.borderColor = '#E8D8DB'}
+          />
         </div>
-        <Link to="/admin/products/new">
-          <Button>+ إضافة منتج</Button>
-        </Link>
+
+        {/* Count label */}
+        <p className="text-xs hidden sm:block" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>
+          Low stock threshold: <span className="font-semibold" style={{ color: '#9B7B80' }}>{LOW_STOCK_THRESHOLD} or fewer</span>
+        </p>
+
+        <div className="sm:ml-auto">
+          <Link
+            to="/admin/products/new"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+            style={{ background: 'linear-gradient(135deg,#6B1F2A,#8B2535)', boxShadow: '0 2px 8px rgba(107,31,42,0.35)' }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(107,31,42,0.45)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(107,31,42,0.35)'}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            {t('admin.addProduct')}
+          </Link>
+        </div>
       </div>
 
-      {/* ── Alert banners (variant-aware) ── */}
-      {!loading && (productsWithOutOfStock.length > 0 || productsWithLowStock.length > 0) && (
-        <div className="flex flex-wrap gap-3 mb-6">
-          {productsWithOutOfStock.length > 0 && (
-            <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-5 py-3.5 flex-1 min-w-[260px]">
-              <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-              <div>
-                <p className="text-sm font-bold text-red-800">
-                  {totalOutVariants} متغيّر نفذ من المخزون
-                </p>
-                <p className="text-xs text-red-600 mt-0.5">
-                  في {productsWithOutOfStock.length} منتج — اضغط على ↓ لرؤية التفاصيل
-                </p>
-              </div>
-            </div>
+      {/* ── Stock alerts (compact) ── */}
+      {!loading && (totalOutVariants > 0 || totalLowVariants > 0) && (
+        <div className="flex items-center gap-4 mb-4 px-1 text-xs text-gray-500">
+          {totalOutVariants > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
+              <span className="text-red-600 font-medium">{totalOutVariants} out of stock</span>
+            </span>
           )}
-          {productsWithLowStock.length > 0 && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3.5 flex-1 min-w-[260px]">
-              <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-              <div>
-                <p className="text-sm font-bold text-amber-800">
-                  {totalLowVariants} متغيّر مخزونه منخفض
-                </p>
-                <p className="text-xs text-amber-600 mt-0.5">
-                  في {productsWithLowStock.length} منتج — أقل من {LOW_STOCK_THRESHOLD} قطع
-                </p>
-              </div>
-            </div>
+          {totalLowVariants > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-amber-600 font-medium">{totalLowVariants} low stock</span>
+            </span>
           )}
         </div>
       )}
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <div className="flex items-center justify-center py-24"><Spinner size="lg" /></div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-[#FDF6F7] border-b border-[#F0D5D8]">
-              <tr>
-                <th className="text-start px-5 py-3 font-semibold text-gray-600 w-8" />
-                <th className="text-start px-5 py-3 font-semibold text-gray-600">المنتج</th>
-                <th className="text-start px-5 py-3 font-semibold text-gray-600">الفئة</th>
-                <th className="text-start px-5 py-3 font-semibold text-gray-600">السعر</th>
-                <th className="text-start px-5 py-3 font-semibold text-gray-600">المخزون</th>
-                <th className="text-start px-5 py-3 font-semibold text-gray-600">الحالة</th>
-                <th className="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {products.map(p => {
-                const { outCount, lowCount } = productVariantCounts(p)
-                const hasVariants = p.variants?.length > 0
-                const isExpanded  = expandedId === p.id
-                const rowAlert    = outCount > 0 ? 'out' : lowCount > 0 ? 'low' : null
+        <div className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid #F5EDEF', boxShadow: '0 1px 4px rgba(107,31,42,0.06)' }}>
+          <div className="divide-y" style={{ borderColor: '#F5EDEF' }}>
+            {filtered.map(p => {
+              const { outCount, lowCount } = productVariantCounts(p)
+              const hasVariants = p.variants?.length > 0
+              const isExpanded = expandedId === p.id
+              const stk = stockStatus(hasVariants ? (outCount > 0 ? 0 : lowCount > 0 ? 3 : 10) : p.stockQuantity)
 
-                // Row background
-                const rowBg = rowAlert === 'out'
-                  ? 'bg-red-50/40 hover:bg-red-50/70'
-                  : rowAlert === 'low'
-                  ? 'bg-amber-50/40 hover:bg-amber-50/70'
-                  : 'hover:bg-gray-50'
+              return (
+                <div key={p.id}>
+                  <div className="flex items-center gap-4 sm:gap-5 px-4 sm:px-5 py-3.5 hover:bg-[#FDFBFC] transition-colors">
 
-                return [
-                  /* ── Main data row ── */
-                  <tr key={p.id} className={`transition-colors border-b border-gray-100 ${rowBg}`}>
-
-                    {/* Expand toggle */}
-                    <td className="ps-3 pe-0 py-3 w-8">
-                      {hasVariants && (
-                        <button
-                          onClick={() => toggleExpand(p.id)}
-                          title={isExpanded ? 'إخفاء التفاصيل' : 'عرض تفاصيل المخزون'}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                            isExpanded
-                              ? 'bg-[#6B1F2A] text-white'
-                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                          }`}
-                        >
-                          <svg
-                            className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      )}
-                    </td>
-
-                    {/* Product info */}
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                          {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 line-clamp-1">{p.name}</p>
-                          {p.brand && <p className="text-xs text-gray-400">{p.brand}</p>}
-                        </div>
+                    {/* 1. Product info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg overflow-hidden shrink-0" style={{ background: '#FDF6F7', border: '1px solid #F0DDE0' }}>
+                        {p.imageUrl
+                          ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center font-bold text-sm" style={{ color: '#DFA3AD' }}>
+                              {(p.name || '?').charAt(0)}
+                            </div>
+                        }
                       </div>
-                    </td>
-
-                    {/* Category */}
-                    <td className="px-5 py-3 text-gray-600">{p.categoryName || '—'}</td>
-
-                    {/* Price */}
-                    <td className="px-5 py-3">
-                      {p.discountPrice ? (
-                        <div>
-                          <span className="font-semibold text-red-600">₪{Number(p.discountPrice).toFixed(0)}</span>
-                          <span className="text-xs text-gray-400 line-through ml-1">₪{Number(p.price).toFixed(0)}</span>
-                        </div>
-                      ) : (
-                        <span className="font-medium">₪{Number(p.price).toFixed(0)}</span>
-                      )}
-                    </td>
-
-                    {/* Stock column — variant-aware */}
-                    <td className="px-5 py-3">
-                      {hasVariants ? (
-                        <div className="space-y-1">
-                          {/* Total */}
-                          <span className="text-xs text-gray-400">{p.stockQuantity} إجمالي</span>
-                          {/* Variant alerts */}
-                          <div className="flex flex-wrap gap-1">
-                            {outCount > 0 && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-md whitespace-nowrap">
-                                ⛔ {outCount} نفذ
-                              </span>
-                            )}
-                            {lowCount > 0 && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md whitespace-nowrap">
-                                ⚠️ {lowCount} منخفض
-                              </span>
-                            )}
-                            {outCount === 0 && lowCount === 0 && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md whitespace-nowrap">
-                                ✅ كل المتغيّرات متوفرة
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        /* No variants — flat stock */
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`font-bold ${
-                            stockStatus(p.stockQuantity) === 'out' ? 'text-red-600'
-                            : stockStatus(p.stockQuantity) === 'low' ? 'text-amber-600'
-                            : 'text-green-600'
-                          }`}>
-                            {p.stockQuantity}
-                          </span>
-                          {stockStatus(p.stockQuantity) === 'out' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-md">⛔ نفذ</span>
-                          )}
-                          {stockStatus(p.stockQuantity) === 'low' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md">⚠️ منخفض</span>
-                          )}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Visibility status */}
-                    <td className="px-5 py-3">
-                      <Badge variant={p.active ? 'success' : 'danger'}>{p.active ? 'ظاهر' : 'مخفي'}</Badge>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleToggleVisibility(p.id)}
-                          disabled={toggling === p.id}
-                          title={p.active ? 'إخفاء المنتج' : 'إظهار المنتج'}
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 ${
-                            p.active
-                              ? 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100 border border-yellow-200'
-                              : 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-200'
-                          }`}
-                        >
-                          {toggling === p.id ? (
-                            <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          ) : p.active ? (
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                            </svg>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate max-w-[180px] sm:max-w-[220px]" style={{ color: '#3D1A1E' }}>{p.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px]" style={{ color: '#9B7B80' }}>
+                          {p.categoryName && <span>{p.categoryName}</span>}
+                          <span style={{ color: '#DFA3AD' }}>·</span>
+                          {p.discountPrice ? (
+                            <>
+                              <span className="font-semibold" style={{ color: '#6B1F2A' }}>{formatPrice(p.discountPrice)}</span>
+                              <span className="line-through">{formatPrice(p.price)}</span>
+                            </>
                           ) : (
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
+                            <span className="font-semibold" style={{ color: '#3D1A1E' }}>{formatPrice(p.price)}</span>
                           )}
-                        </button>
-                        <Link to={`/admin/products/${p.id}/edit`}>
-                          <Button variant="secondary" size="sm">Edit</Button>
-                        </Link>
-                        <Button variant="danger" size="sm" loading={deleting === p.id} onClick={() => handleDelete(p.id)}>
-                          Delete
-                        </Button>
+                        </div>
                       </div>
-                    </td>
-                  </tr>,
+                    </div>
 
-                  /* ── Expanded variant breakdown row ── */
-                  isExpanded && hasVariants && (
-                    <tr key={`${p.id}-expanded`}>
-                      <td colSpan={7} className="p-0">
-                        <VariantBreakdown product={p} />
-                      </td>
-                    </tr>
-                  ),
-                ]
-              })}
-            </tbody>
-          </table>
+                    {/* 2. Status */}
+                    <div className="hidden sm:flex items-center gap-2.5 shrink-0">
+                      <span className="flex items-center gap-1 text-xs tabular-nums" style={{ color: '#6B4E53' }}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[stk].dot}`} />
+                        {p.stockQuantity}
+                      </span>
+                      {!p.active && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#9B7B80', background: '#F5EDEF' }}>hidden</span>
+                      )}
+                    </div>
 
+                    {/* 3. Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Details toggle */}
+                      {hasVariants && (
+                        <button onClick={() => toggleExpand(p.id)}
+                          className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all duration-200"
+                          style={isExpanded
+                            ? { background: '#6B1F2A', color: '#fff' }
+                            : { background: '#F5EDEF', color: '#9B6670' }
+                          }>
+                          {isExpanded ? 'إخفاء' : 'تفاصيل'}
+                        </button>
+                      )}
+                      {/* Visibility toggle */}
+                      <button onClick={() => handleToggleVisibility(p.id)} disabled={toggling === p.id}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-40"
+                        style={p.active
+                          ? { background: '#FDF6F7', color: '#C4768B' }
+                          : { background: '#ECFDF5', color: '#059669' }
+                        }
+                        onMouseEnter={e => e.currentTarget.style.background = p.active ? '#F5EDEF' : '#D1FAE5'}
+                        onMouseLeave={e => e.currentTarget.style.background = p.active ? '#FDF6F7' : '#ECFDF5'}>
+                        {toggling === p.id ? (
+                          <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : p.active ? (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        )}
+                      </button>
+                      {/* Edit */}
+                      <Link to={`/admin/products/${p.id}/edit`}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
+                        style={{ background: '#EFF6FF', color: '#3B82F6' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#DBEAFE'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#EFF6FF'}>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+                        </svg>
+                      </Link>
+                      {/* Delete */}
+                      <button onClick={() => handleDelete(p.id)} disabled={deleting === p.id}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-40"
+                        style={{ background: '#FEF2F2', color: '#EF4444' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}>
+                        {deleting === p.id ? (
+                          <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Variant details (collapsed by default) */}
+                  {isExpanded && hasVariants && (
+                    <VariantBreakdown product={p} />
+                  )}
+                </div>
+              )
+            })}
+
+            {filtered.length === 0 && (
+              <div className="flex flex-col items-center gap-3 py-16">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#FDF0F2', border: '1px solid #EDD8DC' }}>
+                  <svg className="w-7 h-7" style={{ color: '#DFA3AD' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium" style={{ color: '#9B7B80' }}>{t('admin.noProductsFound')}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 p-4 border-t border-gray-100">
+            <div className="flex justify-center items-center gap-1.5 p-4" style={{ borderTop: '1px solid #F5EDEF' }}>
               {Array.from({ length: totalPages }, (_, i) => (
-                <button key={i} onClick={() => fetchProducts(i)}
-                  className={`w-8 h-8 text-sm rounded-lg ${i === page ? 'bg-black text-white' : 'border hover:bg-gray-50'}`}>
+                <button
+                  key={i}
+                  onClick={() => fetchProducts(i)}
+                  className="w-8 h-8 text-sm rounded-xl font-medium transition-all"
+                  style={i === page
+                    ? { background: '#6B1F2A', color: '#fff', boxShadow: '0 2px 8px rgba(107,31,42,0.3)' }
+                    : { border: '1px solid #F0E8EA', color: '#9B6670' }
+                  }
+                  onMouseEnter={e => { if (i !== page) e.currentTarget.style.background = '#FDF0F2' }}
+                  onMouseLeave={e => { if (i !== page) e.currentTarget.style.background = 'transparent' }}
+                >
                   {i + 1}
                 </button>
               ))}

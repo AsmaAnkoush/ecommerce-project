@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAdminReviews, approveReview, rejectReview } from '../../api/reviewApi'
 import Spinner from '../../components/ui/Spinner'
+import { useLanguage } from '../../context/LanguageContext'
 
 const STARS = [1, 2, 3, 4, 5]
 
@@ -17,18 +18,20 @@ function StarRating({ rating }) {
 }
 
 function StatusBadge({ approved }) {
+  const { t } = useLanguage()
   return approved
     ? <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
         <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-        Approved
+        {t('admin.approved')}
       </span>
     : <span className="inline-flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
-        Pending
+        {t('status.PENDING')}
       </span>
 }
 
 export default function AdminReviews() {
+  const { t } = useLanguage()
   const [reviews, setReviews]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [page, setPage]         = useState(0)
@@ -78,16 +81,16 @@ export default function AdminReviews() {
     <div className="p-6 sm:p-8 max-w-5xl">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Review Moderation</h1>
-        <p className="text-sm text-gray-500 mt-1">Approve or hide customer reviews before they appear publicly.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('admin.reviewModeration')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('admin.reviewModerationDesc')}</p>
       </div>
 
       {/* Filter tabs */}
       <div className="flex gap-2 mb-5">
         {[
-          { key: 'all',      label: `All (${reviews.length})` },
-          { key: 'pending',  label: `Pending (${pendingCount})` },
-          { key: 'approved', label: `Approved (${approvedCount})` },
+          { key: 'all',      label: `${t('admin.allOrders')} (${reviews.length})` },
+          { key: 'pending',  label: `${t('status.PENDING')} (${pendingCount})` },
+          { key: 'approved', label: `${t('admin.approved')} (${approvedCount})` },
         ].map(({ key, label }) => (
           <button
             key={key}
@@ -111,7 +114,7 @@ export default function AdminReviews() {
           <svg className="w-10 h-10 mx-auto mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <p className="font-medium">No reviews found</p>
+          <p className="font-medium">{t('admin.noReviewsFound')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -149,7 +152,7 @@ export default function AdminReviews() {
                   {review.comment ? (
                     <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
                   ) : (
-                    <p className="text-sm text-gray-400 italic">No comment</p>
+                    <p className="text-sm text-gray-400 italic">{t('admin.noComment')}</p>
                   )}
                 </div>
 
@@ -166,7 +169,7 @@ export default function AdminReviews() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
-                      Approve
+                      {t('admin.approve')}
                     </button>
                   ) : (
                     <button
@@ -179,7 +182,7 @@ export default function AdminReviews() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                         </svg>
                       )}
-                      Hide
+                      {t('admin.hide')}
                     </button>
                   )}
                 </div>
@@ -197,15 +200,15 @@ export default function AdminReviews() {
             disabled={page === 0}
             className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            ← Prev
+            {t('admin.prev')}
           </button>
-          <span className="text-sm text-gray-500">Page {page + 1} of {totalPages}</span>
+          <span className="text-sm text-gray-500">{t('admin.page')} {page + 1} / {totalPages}</span>
           <button
             onClick={() => handlePage(page + 1)}
             disabled={page >= totalPages - 1}
             className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Next →
+            {t('admin.nextPage')}
           </button>
         </div>
       )}
