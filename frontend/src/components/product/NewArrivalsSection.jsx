@@ -5,8 +5,6 @@ import { useLanguage } from '../../context/LanguageContext'
 import ProductCard from './ProductCard'
 import Spinner from '../ui/Spinner'
 
-const FLOWER_SRC = '/images/flower-decoration.png'
-
 const LIMIT = 8
 
 /**
@@ -26,7 +24,7 @@ const LIMIT = 8
  * Drop-in usage: `<NewArrivalsSection />` — no required props.
  */
 export default function NewArrivalsSection({ className = '' }) {
-  const { t, isRTL } = useLanguage()
+  const { t } = useLanguage()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -57,49 +55,25 @@ export default function NewArrivalsSection({ className = '' }) {
   )
 
   return (
-    <section className={`relative px-4 sm:px-6 py-20 sm:py-24 lg:py-28 max-w-6xl mx-auto ${className}`}>
+    <section className={`relative px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl mx-auto ${className}`}>
 
-      {/* ── Header: [flower] [title + view-all] ─────────────────
-           LTR: flower LEFT,  title RIGHT
-           RTL: flower RIGHT, title LEFT (via row-reverse)       ──── */}
-      <div className="flex items-center gap-2 sm:gap-3 mb-12 sm:mb-14"
-           style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-
-        {/* Flower — one side only */}
-        <img
-          src={FLOWER_SRC}
-          alt=""
-          aria-hidden="true"
-          className={`shrink-0 w-24 h-24 sm:w-36 sm:h-36 lg:w-44 lg:h-44 object-contain pointer-events-none select-none ${
-            isRTL ? '-scale-x-100' : ''
-          }`}
-          style={{
-            filter: 'brightness(0.9) contrast(3) saturate(0) sepia(1) hue-rotate(-30deg) saturate(4) brightness(0.45) drop-shadow(0 4px 16px rgba(107,31,42,0.3))',
-          }}
-        />
-
-        {/* Title + View All */}
-        <div className="flex-1 min-w-0">
+      {/* ── Header: title ──────────────────────────────────── */}
+      <div className="text-center mb-8 sm:mb-10">
+        <div className="inline-block bg-[#F3E4E7] px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl">
           <h2
-            className="text-3xl sm:text-5xl lg:text-6xl font-bold text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em]"
+            className="text-xl sm:text-2xl lg:text-3xl font-medium text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
             style={{ fontFamily: 'Playfair Display, serif' }}
           >
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#DFA3AD] opacity-70" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#DFA3AD] opacity-45" />
+            </span>
             {t('home.newArrivalsTitle')}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#DFA3AD] opacity-45" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#DFA3AD] opacity-70" />
+            </span>
           </h2>
-          <div
-            className={`h-[1.5px] w-16 sm:w-24 mt-4 sm:mt-5 ${isRTL ? 'ml-auto' : ''}`}
-            style={{ background: 'linear-gradient(90deg, #6B1F2B, transparent)' }}
-          />
-
-          {!loading && products.length > 0 && (
-            <Link
-              to="/new-arrivals"
-              className="hidden sm:inline-flex items-center gap-2 mt-6 border border-[#6B1F2A]/30 text-[#6B1F2A] text-[11px] tracking-[0.2em] uppercase px-7 py-3 rounded-full font-medium hover:bg-[#6B1F2A] hover:text-white hover:border-[#6B1F2A] transition-all duration-300"
-            >
-              {t('home.viewAll')}
-              <ViewAllArrow />
-            </Link>
-          )}
         </div>
       </div>
 
@@ -115,7 +89,7 @@ export default function NewArrivalsSection({ className = '' }) {
       ) : (
         <>
           {/* Grid: 2 cols mobile · 3 cols tablet · 4 cols desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
             {products.map((p, i) => (
               <div
                 key={p.id}
@@ -127,8 +101,8 @@ export default function NewArrivalsSection({ className = '' }) {
             ))}
           </div>
 
-          {/* Mobile-only "View All" button below the grid */}
-          <div className="text-center mt-8 sm:hidden">
+          {/* "View All" button below the grid */}
+          <div className="text-center mt-8">
             <Link
               to="/new-arrivals"
               className="inline-flex items-center gap-2 border border-[#DFA3AD] text-[#6B1F2A] text-[11px] tracking-[0.15em] uppercase px-7 py-3 rounded-full font-medium hover:bg-[#6B1F2A] hover:text-white hover:border-[#6B1F2A] transition-all duration-300"

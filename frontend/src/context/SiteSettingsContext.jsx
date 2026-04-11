@@ -3,7 +3,7 @@ import { getSettings } from '../api/adminApi'
 
 const DEFAULT_SETTINGS = {
   siteName: 'IWEAR',
-  logoUrl: '',
+  logoUrl: '/images/iwear-logo.jpg',
   description: 'بوتيك أزياء راقية — كوليكشنات حصرية لكل موسم',
   contactWhatsApp: '+972594828117',
   contactPhone: '',

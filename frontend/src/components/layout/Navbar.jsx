@@ -127,37 +127,11 @@ export default function Navbar() {
             onClick={closeAll}
             className="flex flex-col items-center hover:opacity-75 transition-opacity select-none shrink-0 mx-auto md:mx-0"
           >
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt="Store logo"
-                className="h-14 md:h-[72px] max-w-[200px] object-contain"
-              />
-            ) : (
-              <>
-                <span style={{
-                  fontFamily: 'Cormorant Garamond, serif',
-                  fontWeight: 400,
-                  letterSpacing: '0.5em',
-                  fontSize: '18px',
-                  color: '#6B1F2A',
-                  lineHeight: 1,
-                }}>
-                  {siteName.split('').join(' ')}
-                </span>
-                <span style={{
-                  fontFamily: 'Cormorant Garamond, serif',
-                  fontSize: '10px',
-                  letterSpacing: '0.28em',
-                  color: '#C4A0A6',
-                  fontStyle: 'italic',
-                  lineHeight: 1.7,
-                }}>
-                  boutique
-                </span>
-                <FloralDot />
-              </>
-            )}
+            <img
+              src="/images/iwear-logo.jpg"
+              alt="I Wear Logo"
+              className="h-14 md:h-[72px] max-w-[200px] object-contain"
+            />
           </Link>
 
           {/* ── CENTER: Desktop nav links ───────────────────────── */}
@@ -213,7 +187,7 @@ export default function Navbar() {
             </a>
 
             {/* Account — desktop only */}
-            <Link to="/profile" onClick={closeAll} aria-label="Account" className={`${iconBtn} hidden md:flex`}>
+            <Link to={isAdmin ? '/admin' : '/profile'} onClick={closeAll} aria-label="Account" className={`${iconBtn} hidden md:flex`}>
               <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>

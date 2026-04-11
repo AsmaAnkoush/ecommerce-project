@@ -97,11 +97,13 @@ export default function HomePage() {
   const [heroRef, heroInView] = useInView()
 
   return (
-    <div className="bg-[#FDF6F7] pb-8 overflow-x-hidden">
+    <div className="bg-[#FDF6F7] pb-12 overflow-x-hidden">
       <Hero innerRef={heroRef} inView={heroInView} t={t} />
-      <CategorySection />
-      <NewArrivalsSection />
-      <BestSellersSection />
+      <div className="space-y-2 sm:space-y-3">
+        <CategorySection />
+        <NewArrivalsSection />
+        <BestSellersSection />
+      </div>
     </div>
   )
 }

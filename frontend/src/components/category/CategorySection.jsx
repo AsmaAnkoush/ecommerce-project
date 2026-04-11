@@ -19,7 +19,7 @@ import Spinner from '../ui/Spinner'
  *    spacing in a specific page.
  */
 export default function CategorySection({ className = '' }) {
-  const { t } = useLanguage()
+  const { t, isRTL } = useLanguage()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -34,20 +34,24 @@ export default function CategorySection({ className = '' }) {
   }, [])
 
   return (
-    <section className={`relative px-4 sm:px-6 py-14 sm:py-16 max-w-6xl mx-auto ${className}`}>
+    <section className={`relative px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl mx-auto ${className}`}>
 
       {/* ── Title ──────────────────────────────────────────── */}
-      <div className="text-center mb-10">
-        <p className="text-[10px] tracking-[0.3em] uppercase text-[#DFA3AD] mb-3"
-           style={{ fontFamily: 'Raleway, sans-serif' }}>
-          ✦ {t('home.shopByCategoryEyebrow')}
-        </p>
-        <h2 className="text-3xl sm:text-4xl font-light text-[#3D1A1E]"
-            style={{ fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic' }}>
-          {t('home.shopByCategory')}
-        </h2>
-        <div className="h-0.5 w-16 mx-auto mt-3"
-             style={{ background: 'linear-gradient(90deg, transparent, #DFA3AD, transparent)' }} />
+      <div className="text-center mb-8 sm:mb-10">
+        <div className="inline-block bg-[#F3E4E7] px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-medium text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
+              style={{ fontFamily: 'Playfair Display, serif' }}>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#DFA3AD] opacity-70" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#DFA3AD] opacity-45" />
+            </span>
+            {t('home.shopByCategory')}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#DFA3AD] opacity-45" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#DFA3AD] opacity-70" />
+            </span>
+          </h2>
+        </div>
       </div>
 
       {/* ── Body ───────────────────────────────────────────── */}
@@ -60,19 +64,19 @@ export default function CategorySection({ className = '' }) {
           {t('home.noCategories')}
         </p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-8 sm:gap-x-8 sm:gap-y-10 lg:gap-x-10 lg:gap-y-12 justify-items-center max-w-4xl mx-auto">
           {categories.map((cat, i) => (
             <Link
               key={cat.id}
               to={`/products?category=${cat.id}`}
-              className="group flex flex-col items-center text-center animate-fade-in-up"
+              className="group flex flex-col items-center text-center animate-fade-in-up w-full max-w-[160px] sm:max-w-[180px]"
               style={{ animationDelay: `${Math.min(i * 60, 360)}ms` }}
             >
-              {/* Image / placeholder card */}
+              {/* Image / placeholder circle */}
               <div
-                className="relative w-full aspect-square rounded-3xl overflow-hidden border border-[#F0D5D8]
-                           transition-all duration-300
-                           group-hover:scale-[1.04] group-hover:shadow-[0_12px_32px_rgba(107,31,42,0.15)]
+                className="relative w-full aspect-square rounded-full overflow-hidden border-2 border-[#F0D5D8]
+                           transition-all duration-300 ease-out
+                           group-hover:scale-[1.06] group-hover:shadow-[0_10px_30px_rgba(107,31,42,0.15)]
                            group-hover:border-[#DFA3AD]"
                 style={{ background: 'linear-gradient(135deg, #FDF0F2 0%, #F5DCE0 100%)' }}
               >
@@ -92,15 +96,18 @@ export default function CategorySection({ className = '' }) {
                 )}
 
                 {/* Subtle dark overlay on hover for legibility */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0A0D]/15 via-transparent to-transparent
+                <div className="absolute inset-0 rounded-full bg-gradient-to-t from-[#1A0A0D]/15 via-transparent to-transparent
                                 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               </div>
 
               {/* Name */}
               <span
-                className="mt-3 text-[12px] sm:text-sm font-medium tracking-wider text-[#6B3840]
-                           group-hover:text-[#6B1F2A] transition-colors duration-200"
-                style={{ fontFamily: 'Raleway, sans-serif' }}
+                className="mt-4 text-[13px] sm:text-[15px] font-semibold tracking-[0.10em] text-[#3D1218]
+                           group-hover:text-[#6B1F2A] transition-all duration-200"
+                style={{
+                  fontFamily: 'Playfair Display, serif',
+                  textShadow: '0 1px 3px rgba(107,31,42,0.15), 0 0 8px rgba(255,255,255,0.5)',
+                }}
               >
                 {cat.name}
               </span>

@@ -30,7 +30,9 @@
       "Bash(npm cache:*)",
       "Bash(npm uninstall:*)",
       "Bash(powershell -c \"Get-PSDrive C | Select-Object Used,Free\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(npm list:*)",
+      "Bash(python:*)"
     ]
   }
 }

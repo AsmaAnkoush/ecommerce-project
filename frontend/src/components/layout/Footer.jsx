@@ -39,7 +39,7 @@ export default function Footer() {
             className="text-[26px] font-light tracking-[0.4em] text-[#6B1F2A] leading-none mb-1"
             style={{ fontFamily: 'Cormorant Garamond, serif' }}
           >
-            {siteName}
+            I Wear
           </p>
           <p className="text-[9px] tracking-[0.3em] text-[#DFA3AD] uppercase font-light mt-1">
             {t('footer.boutiqueCollection')}
@@ -169,7 +169,7 @@ export default function Footer() {
         </div>
 
         <p className="text-center text-[9px] tracking-[0.22em] text-[#C4A0A6] uppercase font-light">
-          &copy; {new Date().getFullYear()} {siteName} {t('footer.copyright')}
+          &copy; {new Date().getFullYear()} I Wear {t('footer.copyright')}
         </p>
       </div>
     </footer>
