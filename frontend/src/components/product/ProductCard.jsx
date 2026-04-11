@@ -218,8 +218,8 @@ export default function ProductCard({ product }) {
 
   return (
     <div
-      className="group bg-white rounded-2xl overflow-hidden flex flex-col card-hover"
-      style={{ boxShadow: '0 2px 16px rgba(107,31,42,0.06)' }}
+      className="group bg-white rounded-3xl overflow-hidden flex flex-col transition-all duration-350 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.03] hover:shadow-[0_12px_36px_rgba(107,31,42,0.15)] hover:border-[#DFA3AD]/50 card-hover border border-[#F0D5D8]/60"
+      style={{ boxShadow: '0 4px 18px rgba(107,31,42,0.06)' }}
     >
       <Link to={`/products/${product.id}`} className="block">
 
@@ -227,21 +227,13 @@ export default function ProductCard({ product }) {
         <div className="relative overflow-hidden aspect-[3/4]"
              style={{ background: 'linear-gradient(145deg, #FDF8F9 0%, #F5ECED 50%, #F0E4E6 100%)' }}>
 
-          {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full h-full object-contain p-3 sm:p-4 transition-transform duration-700 ease-out group-hover:scale-[1.07]"
-              style={{ mixBlendMode: 'multiply' }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
-              <svg className="w-14 h-14 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" />
-              </svg>
-            </div>
-          )}
+          <img
+            src={product.imageUrl || '/images/placeholder-product.jpg'}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07]"
+            style={{ mixBlendMode: 'multiply' }}
+            onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg'; }}
+          />
 
           {/* Out of stock overlay */}
           {isOutOfStock && (
@@ -284,19 +276,19 @@ export default function ProductCard({ product }) {
           </button>
 
           {/* ── Badges — top-end corner ───────────────────────── */}
-          <div className="absolute top-3 end-3 z-20 flex flex-col items-end gap-1.5">
+          <div className="absolute top-2.5 end-2.5 z-20 flex flex-col items-end gap-1">
             {hasDiscount && (
-              <span className="bg-[#6B1F2A] text-white text-[9px] font-semibold px-2.5 py-0.5 rounded-full tracking-wider shadow-sm">
+              <span className="bg-[#6B1F2A]/85 text-white text-[8px] font-medium px-2 py-[3px] rounded-full tracking-wider backdrop-blur-sm">
                 {t('product.sale')}
               </span>
             )}
             {product.isNew && !hasDiscount && (
-              <span className="bg-white/90 text-[#6B1F2A] text-[9px] font-semibold px-2.5 py-0.5 rounded-full border border-[#DFA3AD]/50 shadow-sm backdrop-blur-sm">
+              <span className="bg-white/80 text-[#6B1F2A] text-[8px] font-medium px-2 py-[3px] rounded-full border border-[#DFA3AD]/40 backdrop-blur-sm">
                 {t('product.newArrival')}
               </span>
             )}
             {product.isBestSeller && !hasDiscount && !product.isNew && (
-              <span className="bg-amber-500 text-white text-[9px] font-semibold px-2.5 py-0.5 rounded-full shadow-sm">
+              <span className="bg-amber-500/85 text-white text-[8px] font-medium px-2 py-[3px] rounded-full backdrop-blur-sm">
                 {t('product.bestSeller')}
               </span>
             )}
@@ -354,7 +346,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* ── Info area ──────────────────────────────────────── */}
-        <div className="px-4 pt-4 pb-3">
+        <div className="px-4 sm:px-5 pt-4 pb-4">
 
           {/* Color picker — MOBILE ONLY (below image, since no hover) */}
           {colorAvailability.length > 0 && (
@@ -372,23 +364,26 @@ export default function ProductCard({ product }) {
           </h3>
 
           {/* ── Price row ─────────────────────────────────── */}
-          <div className="flex items-baseline gap-2 flex-wrap">
+          <div className="flex items-baseline gap-2.5 flex-wrap mt-1">
             {hasDiscount ? (
               <>
                 <span
-                  className="font-semibold text-[#6B1F2A] nums-normal"
-                  style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '17px' }}
+                  className="font-bold text-[#6B1F2A] nums-normal"
+                  style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '19px' }}
                 >
                   {formatPrice(product.discountPrice)}
                 </span>
-                <span className="text-[12px] text-[#B08A90] line-through">
+                <span
+                  className="text-[12px] text-[#C4A0A6] line-through decoration-[#C4A0A6]/50 nums-normal"
+                  style={{ fontFamily: 'Cormorant Garamond, serif' }}
+                >
                   {formatPrice(product.price)}
                 </span>
               </>
             ) : (
               <span
-                className="font-medium text-[#3D1A1E] nums-normal"
-                style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '17px' }}
+                className="font-semibold text-[#3D1A1E] nums-normal"
+                style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '19px' }}
               >
                 {formatPrice(product.price)}
               </span>
@@ -399,7 +394,7 @@ export default function ProductCard({ product }) {
 
       {/* ── Mobile-only "Add to Cart" — sibling of Link, below the card ── */}
       {!isOutOfStock && (
-        <div className="md:hidden px-4 pb-4">
+        <div className="md:hidden px-4 sm:px-5 pb-5">
           <button
             type="button"
             onClick={handleAddToCart}

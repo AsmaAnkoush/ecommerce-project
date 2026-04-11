@@ -4,6 +4,7 @@ import { getCategories } from '../../api/categoryApi'
 import { useLanguage } from '../../context/LanguageContext'
 import Spinner from '../ui/Spinner'
 
+
 /**
  * Reusable "Shop by Category" section.
  *
@@ -18,6 +19,58 @@ import Spinner from '../ui/Spinner'
  *    `className` is forwarded to the outer <section> if you want to tweak
  *    spacing in a specific page.
  */
+function CategoryCard({ cat, index }) {
+
+  return (
+    <Link
+      to={`/products?category=${cat.id}`}
+      className="group flex flex-col items-center text-center animate-fade-in-up w-full max-w-[180px] sm:max-w-[200px] overflow-visible opacity-0"
+      style={{ animationDelay: `${Math.min(index * 100, 600)}ms` }}
+    >
+      <div
+        className="relative w-full aspect-square rounded-full overflow-hidden
+                   border border-[#C8808C]/25
+                   shadow-[0_4px_14px_rgba(107,31,42,0.09)]
+                   transition-all duration-350 ease-out
+                   group-hover:scale-[1.05] group-hover:shadow-[0_10px_28px_rgba(107,31,42,0.16)]
+                   group-hover:border-[#C8808C]/45"
+        style={{ backgroundColor: '#F2D5DA' }}
+      >
+        {cat.imageUrl ? (
+          <div className="absolute inset-0 flex items-center justify-center p-4 overflow-hidden rounded-full">
+            <img
+              src={cat.imageUrl}
+              alt={cat.name}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
+            <svg className="w-10 h-10 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16v12H4z" />
+            </svg>
+          </div>
+        )}
+
+        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-[#1A0A0D]/15 via-transparent to-transparent
+                        opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      </div>
+
+      <span
+        className="mt-4 text-[13px] sm:text-[15px] font-semibold tracking-[0.10em] text-[#3D1218]
+                   group-hover:text-[#6B1F2A] transition-all duration-200"
+        style={{
+          fontFamily: 'Playfair Display, serif',
+          textShadow: '0 1px 3px rgba(107,31,42,0.15), 0 0 8px rgba(255,255,255,0.5)',
+        }}
+      >
+        {cat.name}
+      </span>
+    </Link>
+  )
+}
+
 export default function CategorySection({ className = '' }) {
   const { t, isRTL } = useLanguage()
   const [categories, setCategories] = useState([])
@@ -66,52 +119,7 @@ export default function CategorySection({ className = '' }) {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-8 sm:gap-x-8 sm:gap-y-10 lg:gap-x-10 lg:gap-y-12 justify-items-center max-w-4xl mx-auto">
           {categories.map((cat, i) => (
-            <Link
-              key={cat.id}
-              to={`/products?category=${cat.id}`}
-              className="group flex flex-col items-center text-center animate-fade-in-up w-full max-w-[160px] sm:max-w-[180px]"
-              style={{ animationDelay: `${Math.min(i * 60, 360)}ms` }}
-            >
-              {/* Image / placeholder circle */}
-              <div
-                className="relative w-full aspect-square rounded-full overflow-hidden border-2 border-[#F0D5D8]
-                           transition-all duration-300 ease-out
-                           group-hover:scale-[1.06] group-hover:shadow-[0_10px_30px_rgba(107,31,42,0.15)]
-                           group-hover:border-[#DFA3AD]"
-                style={{ background: 'linear-gradient(135deg, #FDF0F2 0%, #F5DCE0 100%)' }}
-              >
-                {cat.imageUrl ? (
-                  <img
-                    src={cat.imageUrl}
-                    alt={cat.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
-                    <svg className="w-10 h-10 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
-                      <path strokeLinecap="round" strokeLinejoin="round"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16v12H4z" />
-                    </svg>
-                  </div>
-                )}
-
-                {/* Subtle dark overlay on hover for legibility */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-t from-[#1A0A0D]/15 via-transparent to-transparent
-                                opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              </div>
-
-              {/* Name */}
-              <span
-                className="mt-4 text-[13px] sm:text-[15px] font-semibold tracking-[0.10em] text-[#3D1218]
-                           group-hover:text-[#6B1F2A] transition-all duration-200"
-                style={{
-                  fontFamily: 'Playfair Display, serif',
-                  textShadow: '0 1px 3px rgba(107,31,42,0.15), 0 0 8px rgba(255,255,255,0.5)',
-                }}
-              >
-                {cat.name}
-              </span>
-            </Link>
+            <CategoryCard key={cat.id} cat={cat} index={i} />
           ))}
         </div>
       )}

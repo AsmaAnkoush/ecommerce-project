@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import CategorySection from '../components/category/CategorySection'
 import NewArrivalsSection from '../components/product/NewArrivalsSection'
 import BestSellersSection from '../components/product/BestSellersSection'
+import SeasonalSection from '../components/product/SeasonalSection'
 import useInView from '../hooks/useInView'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -103,6 +104,7 @@ export default function HomePage() {
         <CategorySection />
         <NewArrivalsSection />
         <BestSellersSection />
+        <SeasonalSection />
       </div>
     </div>
   )
