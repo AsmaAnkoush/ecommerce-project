@@ -104,18 +104,12 @@ export default function CartDrawer() {
                       <div className="flex items-center gap-1.5 mt-1">
                         {item.size && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#FDF0F2] text-[#9B7B80] border border-[#F0D5D8]">{item.size}</span>}
                         {item.color && (
-                          /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(item.color) ? (
-                            <span
-                              className="inline-block w-3.5 h-3.5 rounded-full border border-[#E5DDE0] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6)]"
-                              style={{ backgroundColor: item.color }}
-                              aria-label={item.color}
-                              title={item.color}
-                            />
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-[#FDF0F2] text-[#9B7B80] border border-[#F0D5D8]">
-                              {item.color}
-                            </span>
-                          )
+                          <span
+                            className="inline-block w-4 h-4 rounded-full border border-[#D9CDD0] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
+                            style={{ backgroundColor: item.color }}
+                            aria-label={item.color}
+                            title={item.color}
+                          />
                         )}
                       </div>
                     )}

@@ -31,14 +31,18 @@ export default function QuickView() {
   const { toast } = useToast()
 
   const [selectedColor, setSelectedColor] = useState(null)
-  const [adding, setAdding] = useState(false)
+  const [selectedSize, setSelectedSize]   = useState(null)
+  const [adding, setAdding]               = useState(false)
+  const [validationError, setValidationError] = useState('')
 
   const product = quickViewProduct
 
   useEffect(() => {
     if (!product) return
     setSelectedColor(null)
+    setSelectedSize(null)
     setAdding(false)
+    setValidationError('')
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e) => { if (e.key === 'Escape') closeQuickView() }
@@ -49,12 +53,16 @@ export default function QuickView() {
     }
   }, [product, closeQuickView])
 
+  const hasVariants = !!product?.variants?.length
+
+  // All unique colors with aggregated stock, filtered by selected size when present.
   const colorAvailability = useMemo(() => {
     if (!product) return []
-    if (product.variants?.length) {
+    if (hasVariants) {
       const map = new Map()
       for (const v of product.variants) {
         if (!v.color) continue
+        if (selectedSize && v.size !== selectedSize) continue
         map.set(v.color, (map.get(v.color) || 0) + (v.stockQuantity || 0))
       }
       return [...map.entries()].map(([color, stock]) => ({ color, stock, available: stock > 0 }))
@@ -64,23 +72,46 @@ export default function QuickView() {
       return [{ color: product.color, stock, available: stock > 0 }]
     }
     return []
-  }, [product])
+  }, [product, hasVariants, selectedSize])
+
+  // All unique sizes, filtered by selected color when present.
+  const sizeAvailability = useMemo(() => {
+    if (!product || !hasVariants) return []
+    const map = new Map()
+    for (const v of product.variants) {
+      if (!v.size) continue
+      if (selectedColor && v.color !== selectedColor) continue
+      map.set(v.size, (map.get(v.size) || 0) + (v.stockQuantity || 0))
+    }
+    return [...map.entries()].map(([size, stock]) => ({ size, stock, available: stock > 0 }))
+  }, [product, hasVariants, selectedColor])
 
   if (!product) return null
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price
-  const isOutOfStock = product.stockQuantity === 0
+  const sizeRequired  = sizeAvailability.length > 0
+  const colorRequired = colorAvailability.length > 0
+  const selectedVariant = hasVariants && selectedColor && selectedSize
+    ? product.variants.find(v => v.color === selectedColor && v.size === selectedSize)
+    : null
+  const variantStock = selectedVariant?.stockQuantity ?? (hasVariants ? null : product.stockQuantity)
+  const isOutOfStock = variantStock === 0 || (!hasVariants && product.stockQuantity === 0)
+
+  const canAdd =
+    !adding &&
+    !isOutOfStock &&
+    (!sizeRequired  || selectedSize)  &&
+    (!colorRequired || selectedColor)
 
   const handleAdd = async () => {
     if (adding || isOutOfStock) return
-    let colorToUse = selectedColor
-    if (!colorToUse && colorAvailability.length > 0) {
-      const first = colorAvailability.find(c => c.available)
-      if (first) { colorToUse = first.color; setSelectedColor(colorToUse) }
+    if ((sizeRequired && !selectedSize) || (colorRequired && !selectedColor)) {
+      setValidationError(t('product.selectSizeAndColor'))
+      return
     }
     try {
       setAdding(true)
-      await addToCart(product.id, 1, product, null, colorToUse || null)
+      await addToCart(product.id, 1, product, selectedSize || null, selectedColor || null)
       toast(t('cart.addedToast'))
       closeQuickView()
     } catch {
@@ -145,38 +176,99 @@ export default function QuickView() {
                 )}
               </div>
 
+              {/* Sizes */}
+              {sizeAvailability.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-[10px] font-semibold text-[#6B1F2A] uppercase tracking-[0.18em] mb-2.5">{t('product.selectYourSize')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {sizeAvailability.map(({ size, stock, available }) => {
+                      const selected = selectedSize === size
+                      const low = available && stock <= 5
+                      return (
+                        <button key={size} type="button"
+                          onClick={() => { if (available) { setSelectedSize(size); setValidationError('') } }}
+                          disabled={!available}
+                          aria-disabled={!available}
+                          title={!available ? t('admin.variantOutOfStock') : low ? t('admin.variantLowStock') : size}
+                          className={[
+                            'relative min-w-[44px] h-10 px-3 rounded-full border text-[11px] font-semibold tracking-[0.1em] transition-all duration-200',
+                            selected
+                              ? 'border-[#6B1F2A] bg-[#6B1F2A] text-white shadow-sm'
+                              : !available
+                              ? 'border-[#F0D5D8] text-[#C4A0A6] bg-white opacity-50 line-through cursor-not-allowed'
+                              : low
+                              ? 'border-amber-300 text-amber-700 bg-amber-50 hover:border-amber-500'
+                              : 'border-[#E2CDD0] text-[#3D1A1E] bg-white hover:border-[#6B1F2A] hover:text-[#6B1F2A]',
+                          ].join(' ')}
+                        >
+                          {size}
+                          {!available && (
+                            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <svg className="w-full h-full" viewBox="0 0 48 48" fill="none" preserveAspectRatio="none">
+                                <line x1="6" y1="42" x2="42" y2="6" stroke="#C4A0A6" strokeWidth="1.5" strokeLinecap="round" />
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Colors */}
               {colorAvailability.length > 0 && (
-                <div className="mb-5">
+                <div className="mb-4">
                   <p className="text-[10px] font-semibold text-[#6B1F2A] uppercase tracking-[0.18em] mb-2.5">{t('product.color')}</p>
                   <div className="flex items-center gap-2.5 flex-wrap">
                     {colorAvailability.map(entry => {
                       const hex = getColorHex(getBaseColor(entry.color))
                       const selected = selectedColor === entry.color
+                      const low = entry.available && entry.stock <= 5
                       return (
                         <button key={entry.color} type="button"
-                          onClick={() => entry.available && setSelectedColor(entry.color)}
+                          onClick={() => { if (entry.available) { setSelectedColor(entry.color); setValidationError('') } }}
                           disabled={!entry.available}
-                          title={entry.color}
+                          aria-disabled={!entry.available}
+                          title={!entry.available ? t('admin.variantOutOfStock') : low ? `${entry.color} — ${t('admin.variantLowStock')}` : entry.color}
                           className={[
-                            'w-7 h-7 rounded-full ring-1 ring-black/15 ring-offset-1 ring-offset-white transition-all duration-200',
+                            'relative w-7 h-7 rounded-full ring-1 ring-black/15 ring-offset-1 ring-offset-white transition-all duration-200',
                             entry.available ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-40',
                             selected && entry.available ? 'scale-110 ring-2 ring-[#6B1F2A] shadow-md' : '',
                           ].join(' ')}
                           style={{ backgroundColor: hex }}
-                        />
+                        >
+                          {!entry.available && (
+                            <svg aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 24 24" fill="none">
+                              <line x1="3" y1="21" x2="21" y2="3" stroke="#8B3A44" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                          )}
+                        </button>
                       )
                     })}
                   </div>
                 </div>
+              )}
+
+              {/* Stock hint for selected variant */}
+              {selectedVariant && (
+                <p className={`text-[11px] mb-3 ${isOutOfStock ? 'text-red-600 font-semibold' : variantStock <= 5 ? 'text-amber-600 font-semibold' : 'text-[#9B7B80]'}`}>
+                  {isOutOfStock ? `❌ ${t('admin.variantOutOfStock')}` : variantStock <= 5 ? `⚠️ ${t('admin.variantLowStock')}` : null}
+                </p>
+              )}
+
+              {validationError && (
+                <p className="text-[11px] text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                  {validationError}
+                </p>
               )}
             </div>
 
             {/* Actions */}
             <div className="space-y-3">
               {!isOutOfStock && (
-                <button type="button" onClick={handleAdd} disabled={adding}
-                  className="w-full flex items-center justify-center gap-2 bg-[#6B1F2A] text-white py-3.5 rounded-xl text-xs font-semibold tracking-[0.15em] uppercase hover:bg-[#7D2432] transition-colors disabled:opacity-50 shadow-sm shadow-[#6B1F2A]/20">
+                <button type="button" onClick={handleAdd} disabled={!canAdd}
+                  className="w-full flex items-center justify-center gap-2 bg-[#6B1F2A] text-white py-3.5 rounded-xl text-xs font-semibold tracking-[0.15em] uppercase hover:bg-[#7D2432] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-[#6B1F2A]/20">
                   {adding ? (
                     <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                   ) : (

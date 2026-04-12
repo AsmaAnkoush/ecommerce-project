@@ -125,15 +125,12 @@ export default function CartPage() {
                     {(item.color || item.size) && (
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-[#9B7B80] tracking-wide">
                         {item.color && (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span
-                              className="inline-block w-3.5 h-3.5 rounded-full border border-[#E5DDE0] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.6)]"
-                              style={{ backgroundColor: item.color }}
-                              aria-label={item.color}
-                              title={item.color}
-                            />
-                            {!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(item.color) && <span>{item.color}</span>}
-                          </span>
+                          <span
+                            className="inline-block w-4 h-4 rounded-full border border-[#D9CDD0] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
+                            style={{ backgroundColor: item.color }}
+                            aria-label={item.color}
+                            title={item.color}
+                          />
                         )}
                         {item.color && item.size && <span className="text-[#DEB8BE]">·</span>}
                         {item.size && <span>{item.size}</span>}

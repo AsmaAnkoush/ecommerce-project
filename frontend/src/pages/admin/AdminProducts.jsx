@@ -83,6 +83,7 @@ const sortVariants = arr => arr.slice().sort((a, b) => {
 
 /** Compact variant breakdown — table layout, minimal colors. */
 function VariantBreakdown({ product }) {
+  const { t } = useLanguage()
   if (!product.variants?.length) return null
   const byColor = groupByColor(product.variants)
 
@@ -99,18 +100,36 @@ function VariantBreakdown({ product }) {
             )}
             <span className="text-[11px] font-medium" style={{ color: '#6B4E53' }}>{color}</span>
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {sortVariants(variants).map(v => {
               const s = stockStatus(v.stockQuantity)
+              const isOut = s === 'out'
+              const isLow = s === 'low'
+              const baseClass = 'inline-flex items-center gap-1.5 text-[11px] tabular-nums px-2 py-1 rounded-md transition-all'
+              const variantClass =
+                isOut ? 'bg-red-50 border-red-200 text-red-700 animate-low-stock-pulse' :
+                isLow ? 'bg-amber-50 border-amber-200 text-amber-700 animate-low-stock-pulse' :
+                        'bg-white border-[#F0DDE0] text-[#6B4E53]'
               return (
                 <span key={`${v.color}-${v.size}`}
-                  className="inline-flex items-center gap-1 text-[11px] tabular-nums px-2 py-1 rounded-md bg-white"
-                  style={{ border: '1px solid #F0DDE0' }}
+                  className={`${baseClass} ${variantClass}`}
+                  style={{ borderWidth: 1, borderStyle: 'solid' }}
                   title={`${v.size}: ${v.stockQuantity}`}>
-                  <span className="font-medium" style={{ color: '#6B4E53' }}>{v.size || '—'}</span>
-                  <span className={`font-bold ${s === 'out' ? 'text-red-600' : s === 'low' ? 'text-amber-600' : 'text-emerald-600'}`}>
-                    {v.stockQuantity}
-                  </span>
+                  <span className="font-semibold">{v.size || '—'}</span>
+                  <span className="opacity-60">·</span>
+                  <span className="font-bold">{v.stockQuantity}</span>
+                  {isOut && (
+                    <span className="inline-flex items-center gap-1 ps-1.5 ms-0.5 border-s border-red-200 text-[10px] font-semibold">
+                      <span aria-hidden="true">❌</span>
+                      {t('admin.variantOutOfStock')}
+                    </span>
+                  )}
+                  {isLow && (
+                    <span className="inline-flex items-center gap-1 ps-1.5 ms-0.5 border-s border-amber-200 text-[10px] font-semibold">
+                      <span aria-hidden="true">⚠️</span>
+                      {t('admin.variantLowStock')}
+                    </span>
+                  )}
                 </span>
               )
             })}

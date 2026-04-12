@@ -206,6 +206,10 @@ export default function ProductDetailPage() {
   const sizesForColor = selectedColorHasVariants
     ? [...new Set(product.variants.filter(v => v.color === selectedColor).map(v => v.size).filter(Boolean))]
     : []
+  // Colors available for the selected size (reciprocal filter).
+  const colorsForSelectedSize = hasVariants && selectedSize
+    ? new Set(product.variants.filter(v => v.size === selectedSize && (v.stockQuantity ?? 0) > 0).map(v => v.color))
+    : null
   const selectedVariant = selectedColorHasVariants && selectedSize
     ? product.variants.find(v => v.color === selectedColor && v.size === selectedSize)
     : null
@@ -396,13 +400,16 @@ export default function ProductDetailPage() {
                 <div className="flex flex-wrap gap-2.5 mt-4">
                   {allSelectableColors.map(color => {
                     const isSelected = selectedColor === color
+                    const unavailableForSize = colorsForSelectedSize && !colorsForSelectedSize.has(color)
                     return (
                       <button
                         key={color}
                         type="button"
-                        title={color}
-                        onClick={() => { setSelectedColor(color); setSelectedSize(null); setSelectedImg(0) }}
-                        className="relative group transition-transform duration-150 hover:scale-110 active:scale-95"
+                        title={unavailableForSize ? t('admin.variantOutOfStock') : color}
+                        onClick={() => { if (!unavailableForSize) { setSelectedColor(color); setSelectedImg(0) } }}
+                        disabled={!!unavailableForSize}
+                        aria-disabled={!!unavailableForSize}
+                        className={`relative group transition-transform duration-150 ${unavailableForSize ? 'opacity-40 cursor-not-allowed' : 'hover:scale-110 active:scale-95'}`}
                       >
                         <span className={`absolute inset-[-4px] rounded-full border-2 transition-all duration-200 ${
                           isSelected
@@ -413,6 +420,11 @@ export default function ProductDetailPage() {
                           className="block w-6 h-6 rounded-full shadow-sm ring-1 ring-black/10"
                           style={{ backgroundColor: color.toLowerCase() }}
                         />
+                        {unavailableForSize && (
+                          <svg aria-hidden="true" className="absolute inset-0 w-6 h-6 pointer-events-none" viewBox="0 0 24 24" fill="none">
+                            <line x1="3" y1="21" x2="21" y2="3" stroke="#8B3A44" strokeWidth="1.5" strokeLinecap="round" />
+                          </svg>
+                        )}
                       </button>
                     )
                   })}
@@ -531,20 +543,23 @@ export default function ProductDetailPage() {
                             key={`sz-${size}`}
                             type="button"
                             onClick={() => !isOutOfStock && setSelectedSize(size)}
+                            disabled={isOutOfStock}
+                            aria-disabled={isOutOfStock}
+                            title={isOutOfStock ? t('admin.variantOutOfStock') : size}
                             className={`relative min-w-[52px] h-12 px-3 rounded-full border-2 transition-all duration-300 ease-out text-xs font-semibold tracking-[0.1em] ${
                               isSelected
                                 ? 'border-[#6B1F2A] bg-[#6B1F2A] text-white shadow-md shadow-[#6B1F2A]/25 scale-105'
                                 : isOutOfStock
-                                ? 'border-[#F0D5D8] text-[#C4A0A6] bg-white'
+                                ? 'border-[#F0D5D8] text-[#C4A0A6] bg-white opacity-50 line-through cursor-not-allowed'
                                 : 'border-[#E2CDD0] text-[#3D1A1E] bg-white hover:border-[#6B1F2A] hover:text-[#6B1F2A] hover:scale-105 hover:shadow-sm'
                             }`}
                           >
                             {size}
-                            {/* X overlay for out-of-stock */}
+                            {/* Diagonal line overlay for out-of-stock */}
                             {isOutOfStock && (
                               <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <svg className="w-full h-full absolute inset-0 rounded-lg" viewBox="0 0 48 48" fill="none">
-                                  <line x1="10" y1="10" x2="38" y2="38" stroke="#DEB8BE" strokeWidth="1.2" strokeLinecap="round" />
+                                <svg className="w-full h-full absolute inset-0 rounded-lg" viewBox="0 0 48 48" fill="none" preserveAspectRatio="none">
+                                  <line x1="6" y1="42" x2="42" y2="6" stroke="#C4A0A6" strokeWidth="1.5" strokeLinecap="round" />
                                 </svg>
                               </span>
                             )}

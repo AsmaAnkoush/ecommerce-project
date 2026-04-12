@@ -137,8 +137,14 @@ export default function ProductCard({ product }) {
     e.stopPropagation()
     if (adding || justAdded || isOutOfStock) return
 
-    /* Pick a color: respect the user's selection, otherwise grab the first
-       available variant so single-click "add" still works. */
+    /* If the product has multiple variants (size + color combos), we can't
+       silently pick one — open QuickView so the user makes a choice. */
+    const hasMultipleVariants = (product.variants?.length ?? 0) > 1
+    if (hasMultipleVariants) {
+      openQuickView(product)
+      return
+    }
+
     let colorToUse = selectedColor
     if (!colorToUse && colorAvailability.length > 0) {
       const firstAvailable = colorAvailability.find(c => c.available)

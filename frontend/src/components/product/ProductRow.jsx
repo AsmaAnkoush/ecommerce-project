@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useCart } from '../../context/CartContext'
 import { useWishlist } from '../../context/WishlistContext'
+import { useUI } from '../../context/UIContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { useFormatPrice } from '../../utils/formatPrice'
 
@@ -23,6 +24,7 @@ const CartGlyph = ({ className = 'w-4 h-4' }) => (
 export default function ProductRow({ product }) {
   const { addToCart } = useCart()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
+  const { openQuickView } = useUI()
   const { t } = useLanguage()
   const formatPrice = useFormatPrice()
   const [adding, setAdding] = useState(false)
@@ -38,6 +40,10 @@ export default function ProductRow({ product }) {
     e.preventDefault()
     e.stopPropagation()
     if (adding || justAdded || isOutOfStock) return
+    if ((product.variants?.length ?? 0) > 1) {
+      openQuickView(product)
+      return
+    }
     try {
       setAdding(true)
       await addToCart(product.id, 1, product)
