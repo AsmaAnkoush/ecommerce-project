@@ -81,7 +81,10 @@ public class CartService {
         }
 
         if (quantity <= 0) {
+            // Remove from parent's collection so orphanRemoval=true triggers
+            cart.getItems().removeIf(i -> i.getId().equals(itemId));
             cartItemRepository.delete(item);
+            cartItemRepository.flush();
         } else {
             item.setQuantity(quantity);
             cartItemRepository.save(item);
@@ -101,7 +104,13 @@ public class CartService {
             throw new BadRequestException("Cart item does not belong to this user");
         }
 
+        // Critical: remove from parent's collection FIRST, then delete.
+        // The Cart entity has @OneToMany(cascade = ALL, orphanRemoval = true) on items.
+        // Without removing from the collection, JPA may re-persist the item on commit.
+        cart.getItems().removeIf(i -> i.getId().equals(itemId));
         cartItemRepository.delete(item);
+        cartItemRepository.flush();
+
         return toResponse(cartRepository.findByUserId(userId).orElseThrow());
     }
 

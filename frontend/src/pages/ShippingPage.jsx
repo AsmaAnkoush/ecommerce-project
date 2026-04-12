@@ -67,9 +67,6 @@ export default function ShippingPage() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-[#9B7B80] mt-3 text-center">
-          {t('shipping.freeShippingNote')}
-        </p>
       </div>
 
       {/* Payment info */}

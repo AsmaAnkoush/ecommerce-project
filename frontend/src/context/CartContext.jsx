@@ -80,37 +80,77 @@ export function CartProvider({ children }) {
     setCart(data.data)
   }, [isLoggedIn])
 
+  // Helper: check if a cart item matches the given id (against either id or cartItemId, loose equality)
+  const matchesId = (item, id) =>
+    // eslint-disable-next-line eqeqeq
+    (item.cartItemId != null && item.cartItemId == id) || item.id == id
+
+  const removeItem = useCallback(async (itemId) => {
+    console.log('[CartContext] removeItem called with itemId:', itemId, 'type:', typeof itemId)
+
+    if (!isLoggedIn) {
+      console.log('[CartContext] Guest mode — removing from localStorage')
+      const existing = loadGuestCart()
+      const idx = existing.items.findIndex(i => matchesId(i, itemId))
+      if (idx >= 0) existing.items.splice(idx, 1)
+      saveGuestCart(existing.items)
+      setCart(loadGuestCart())
+      return
+    }
+
+    // Optimistic update — remove from UI immediately
+    setCart(prev => {
+      const items = prev.items.filter(i => !matchesId(i, itemId))
+      console.log('[CartContext] Optimistic update — items remaining:', items.length)
+      return {
+        items,
+        totalPrice: items.reduce((s, i) => s + (Number(i.subtotal) || 0), 0),
+        totalItems: items.reduce((s, i) => s + (Number(i.quantity) || 0), 0),
+      }
+    })
+
+    // Fire DELETE API, then sync state with server response (defensively filtered)
+    try {
+      console.log('[CartContext] Calling DELETE /cart/items/' + itemId)
+      const { data } = await cartApi.removeCartItem(itemId)
+      console.log('[CartContext] DELETE successful — server cart:', data.data)
+      // Defensive filter in case the backend response still contains the item
+      const serverCart = data.data || { items: [], totalPrice: 0, totalItems: 0 }
+      const cleanItems = (serverCart.items || []).filter(i => !matchesId(i, itemId))
+      setCart({
+        ...serverCart,
+        items: cleanItems,
+        totalPrice: cleanItems.reduce((s, i) => s + (Number(i.subtotal) || 0), 0),
+        totalItems: cleanItems.reduce((s, i) => s + (Number(i.quantity) || 0), 0),
+      })
+    } catch (err) {
+      console.error('[CartContext] removeItem API error:', err)
+      // Keep optimistic state — do NOT call fetchCart to avoid re-adding stale items
+    }
+  }, [isLoggedIn])
+
   const updateItem = useCallback(async (itemId, quantity) => {
+    if (quantity <= 0) {
+      return removeItem(itemId)
+    }
     if (!isLoggedIn) {
       const existing = loadGuestCart()
-      if (quantity <= 0) {
-        existing.items = existing.items.filter(i => i.id !== itemId)
-      } else {
-        const idx = existing.items.findIndex(i => i.id === itemId)
-        if (idx >= 0) {
-          existing.items[idx].quantity = quantity
-          existing.items[idx].subtotal = existing.items[idx].unitPrice * quantity
-        }
+      const idx = existing.items.findIndex(i => matchesId(i, itemId))
+      if (idx >= 0) {
+        existing.items[idx].quantity = quantity
+        existing.items[idx].subtotal = existing.items[idx].unitPrice * quantity
       }
       saveGuestCart(existing.items)
       setCart(loadGuestCart())
       return
     }
-    const { data } = await cartApi.updateCartItem(itemId, quantity)
-    setCart(data.data)
-  }, [isLoggedIn])
-
-  const removeItem = useCallback(async (itemId) => {
-    if (!isLoggedIn) {
-      const existing = loadGuestCart()
-      existing.items = existing.items.filter(i => i.id !== itemId)
-      saveGuestCart(existing.items)
-      setCart(loadGuestCart())
-      return
+    try {
+      const { data } = await cartApi.updateCartItem(itemId, quantity)
+      setCart(data.data)
+    } catch {
+      await fetchCart()
     }
-    const { data } = await cartApi.removeCartItem(itemId)
-    setCart(data.data)
-  }, [isLoggedIn])
+  }, [isLoggedIn, removeItem, fetchCart])
 
   const clearCart = useCallback(async () => {
     if (!isLoggedIn) {

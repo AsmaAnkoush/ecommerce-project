@@ -69,7 +69,7 @@ export default function MobileBottomNav() {
   const { isLoggedIn } = useAuth()
   const { contactWhatsApp } = useSiteSettings()
   const { t } = useLanguage()
-  const { openLogin } = useUI()
+  const { openLogin, openSearch } = useUI()
 
   const phone = (contactWhatsApp || WHATSAPP_FALLBACK).replace(/\D/g, '')
   const whatsAppUrl = `https://wa.me/${phone}`
@@ -100,18 +100,13 @@ export default function MobileBottomNav() {
           )}
         </NavLink>
 
-        {/* Search → Products page */}
-        <NavLink to="/products" className={linkClass} aria-label={t('common.search')}>
-          {({ isActive }) => (
-            <>
-              <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
-                <SearchIcon />
-              </span>
-              <span className={labelClass}>{t('common.search')}</span>
-              {isActive && <ActiveBar />}
-            </>
-          )}
-        </NavLink>
+        {/* Search → opens search overlay */}
+        <button onClick={() => openSearch()} className={linkClass({ isActive: false })} aria-label={t('common.search')}>
+          <span className="transition-transform duration-200">
+            <SearchIcon />
+          </span>
+          <span className={labelClass}>{t('common.search')}</span>
+        </button>
 
         {/* Profile — /profile when authenticated, opens auth drawer for guests */}
         {isLoggedIn ? (

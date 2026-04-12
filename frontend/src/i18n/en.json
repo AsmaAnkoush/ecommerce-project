@@ -16,6 +16,7 @@
     "register": "Create Account",
     "logout": "Sign Out",
     "signOut": "Sign Out",
+    "signedInAs": "Signed in as",
     "wishlist": "Wishlist",
     "myOrders": "My Orders",
     "adminPanel": "Admin Panel",
@@ -24,7 +25,10 @@
   },
 
   "search": {
-    "placeholder": "Search for a dress, abaya, skirts…"
+    "placeholder": "Search for abaya, skirt, dress…",
+    "results": "Search Results",
+    "noResults": "No products found. Try a different keyword.",
+    "hint": "Start typing to search for products…"
   },
 
   "lang": {
@@ -59,7 +63,7 @@
     "welcomeBackDesc": "Your personal style journey awaits. Sign in to explore exclusive collections.",
     "joinUsDesc": "Become part of an exclusive community that loves fashion, elegance, and quality.",
     "joinUsToday": "Join IWEAR boutique today",
-    "signInSub": "Welcome back — please sign in",
+    "signInSub": "Sign in to continue to your account",
     "elegance": "Elegance",
     "style": "Style",
     "quality": "Quality",
@@ -122,6 +126,12 @@
   "product": {
     "addToCart": "Add to Cart",
     "buyNow": "Buy Now",
+    "share": "Share this product",
+    "whyYoullLove": "Why You'll Love It",
+    "premiumQuality": "Premium Quality",
+    "fastShip": "Fast Shipping",
+    "handPicked": "Hand Picked",
+    "askOnWhatsApp": "Ask us on WhatsApp",
     "outOfStock": "Out of Stock",
     "inStock": "In Stock",
     "size": "Size",
@@ -209,6 +219,7 @@
   "orders": {
     "title": "My Orders",
     "orderNumber": "Order",
+    "orderDetails": "Order Details",
     "date": "Date",
     "total": "Total",
     "status": "Status",

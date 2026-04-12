@@ -17,6 +17,11 @@ export function UIProvider({ children }) {
   const openCart  = useCallback(() => setCartDrawerOpen(true),  [])
   const closeCart = useCallback(() => setCartDrawerOpen(false), [])
 
+  /* Search overlay */
+  const [searchOpen, setSearchOpen] = useState(false)
+  const openSearch  = useCallback(() => setSearchOpen(true),  [])
+  const closeSearch = useCallback(() => setSearchOpen(false), [])
+
   /* Quick View modal */
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const openQuickView  = useCallback((product) => setQuickViewProduct(product), [])
@@ -28,6 +33,7 @@ export function UIProvider({ children }) {
         sidebarOpen, setSidebarOpen,
         authDrawer, openLogin, openRegister, closeAuth,
         cartDrawerOpen, openCart, closeCart,
+        searchOpen, openSearch, closeSearch,
         quickViewProduct, openQuickView, closeQuickView,
       }}
     >

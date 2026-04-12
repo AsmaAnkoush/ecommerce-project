@@ -113,7 +113,7 @@ export default function CartDrawer() {
                       <span className="text-xs font-semibold text-[#3D1A1E] w-5 text-center tabular-nums">{item.quantity}</span>
                       <button onClick={() => updateItem(item.id, item.quantity + 1)}
                         className="w-6 h-6 rounded-lg border border-[#EDD8DC] flex items-center justify-center text-[#9B7B80] hover:text-[#6B1F2A] hover:border-[#DFA3AD] transition-colors text-xs">+</button>
-                      <button onClick={() => removeItem(item.id)}
+                      <button onClick={() => removeItem(item.cartItemId ?? item.id)}
                         className="ms-auto text-[#C4A0A6] hover:text-red-500 transition-colors">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

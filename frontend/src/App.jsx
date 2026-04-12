@@ -14,6 +14,7 @@ import AuthDrawer from './components/auth/AuthDrawer'
 import AuthBusBridge from './components/auth/AuthBusBridge'
 import CartDrawer from './components/cart/CartDrawer'
 import QuickView from './components/product/QuickView'
+import SearchOverlay from './components/search/SearchOverlay'
 import FloatingWhatsApp from './components/ui/FloatingWhatsApp'
 import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -69,6 +70,7 @@ function StoreLayout({ children }) {
       <AuthBusBridge />
       <CartDrawer />
       <QuickView />
+      <SearchOverlay />
       <FloatingWhatsApp />
     </div>
   )

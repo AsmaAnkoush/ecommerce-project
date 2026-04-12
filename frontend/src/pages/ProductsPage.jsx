@@ -321,7 +321,7 @@ export default function ProductsPage() {
     <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10">
 
       {/* ──────────────────────────────────────────────────────────────
-          § 1  DESKTOP — single row: Sort + View | Categories | Search
+          § 1  DESKTOP — single row: Sort + View | Categories
          ────────────────────────────────────────────────────────────── */}
       <div className="hidden md:flex items-center gap-4 mb-6">
         {/* Start — Sort + View toggle */}
@@ -331,15 +331,12 @@ export default function ProductsPage() {
         </div>
 
         {/* Center — Category pills (scrolls if many) */}
-        <div className="flex-1 min-w-0 flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide py-1">
+        <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
           <CategoryPill label={t('products.all')} active={!categoryId} onClick={() => setFilter('category', '')} />
           {categories.map(cat => (
             <CategoryPill key={cat.id} label={cat.name} active={String(cat.id) === categoryId} onClick={() => setFilter('category', cat.id)} />
           ))}
         </div>
-
-        {/* End — Search */}
-        {searchField}
       </div>
 
       {/* § 2  DESKTOP — Price filter row below */}
@@ -368,7 +365,6 @@ export default function ProductsPage() {
           § 3  MOBILE — stacked layout (unchanged)
          ────────────────────────────────────────────────────────────── */}
       <div className="md:hidden space-y-4 mb-6">
-        {searchField}
         <div className="flex items-center gap-2.5">
           {sortDropdown}
           <button type="button" onClick={() => setPriceOpen(v => !v)}

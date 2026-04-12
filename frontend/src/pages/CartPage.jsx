@@ -134,7 +134,7 @@ export default function CartPage() {
                       {formatPrice(item.subtotal)}
                     </p>
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(item.cartItemId ?? item.id)}
                       className="w-8 h-8 flex items-center justify-center text-[#C4A0A6] hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
                       title={t('cart.delete')}
                     >

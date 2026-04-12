@@ -129,9 +129,6 @@ export default function OrdersPage() {
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
-                    <span className="text-sm font-medium text-[#3D1A1E] tracking-wide">
-                      {t('orders.orderNumber')} #{order.id}
-                    </span>
                     <StatusBadge status={order.status} t={t} />
                   </div>
                   <p className="text-[11px] text-[#9B7B80] tracking-wide">

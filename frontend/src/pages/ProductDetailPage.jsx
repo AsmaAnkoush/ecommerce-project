@@ -14,6 +14,73 @@ import Spinner from '../components/ui/Spinner'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 
+function ShareSection({ productName }) {
+  const { t } = useLanguage()
+  const url = typeof window !== 'undefined' ? window.location.href : ''
+  const text = encodeURIComponent(productName || '')
+  const encodedUrl = encodeURIComponent(url)
+
+  const platforms = [
+    {
+      name: 'WhatsApp',
+      href: `https://wa.me/?text=${text}%20${encodedUrl}`,
+      color: 'hover:text-green-600',
+      path: 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z',
+    },
+    {
+      name: 'Telegram',
+      href: `https://t.me/share/url?url=${encodedUrl}&text=${text}`,
+      color: 'hover:text-sky-500',
+      path: 'M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z',
+    },
+    {
+      name: 'Facebook',
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      color: 'hover:text-blue-600',
+      path: 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z',
+    },
+    {
+      name: 'Messenger',
+      href: `https://www.facebook.com/dialog/send?link=${encodedUrl}&app_id=291494419107518&redirect_uri=${encodedUrl}`,
+      color: 'hover:text-blue-500',
+      path: 'M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.3 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.2l3.131 3.259L19.752 8.2l-6.561 6.763z',
+    },
+    {
+      name: 'Instagram',
+      href: `https://www.instagram.com/`,
+      color: 'hover:text-pink-600',
+      path: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z',
+    },
+  ]
+
+  return (
+    <div className="pt-6 mt-6 border-t border-[#F0D5D8]">
+      <p
+        className="text-xs tracking-[0.15em] uppercase text-[#9B7B80] mb-3"
+        style={{ fontFamily: 'Raleway, sans-serif' }}
+      >
+        {t('product.share')}
+      </p>
+      <div className="flex items-center gap-2.5">
+        {platforms.map(({ name, href, color, path }) => (
+          <a
+            key={name}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={name}
+            className={`w-9 h-9 rounded-full flex items-center justify-center bg-[#FDF0F2] border border-[#EDD8DC] text-[#9B7B80] ${color} hover:scale-110 hover:shadow-md transition-all duration-200`}
+          >
+            <svg viewBox="0 0 24 24" className="w-[15px] h-[15px] fill-current">
+              <path d={path} />
+            </svg>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -193,27 +260,27 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ── Main Grid ──────────────────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_520px] gap-10 xl:gap-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-8 lg:py-14 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-10 xl:gap-20">
 
           {/* ══ LEFT: Image Gallery ══════════════════════════════ */}
-          <div className="flex gap-3 sm:gap-4">
+          <div className="flex gap-3 sm:gap-5 animate-fade-in-up">
 
             {/* Vertical thumbnail rail */}
             {allImages.length > 1 && (
-              <div className="hidden sm:flex flex-col gap-2 w-[72px] shrink-0">
+              <div className="hidden sm:flex flex-col gap-3 w-[80px] shrink-0">
                 {allImages.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImg(i)}
-                    className={`w-full aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                    className={`w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 transition-all duration-300 ease-out ${
                       selectedImg === i
-                        ? 'border-[#6B1F2A] shadow-md shadow-[#6B1F2A]/10'
-                        : 'border-transparent hover:border-[#DEB8BE]'
+                        ? 'border-[#6B1F2A] shadow-[0_6px_20px_rgba(107,31,42,0.18)] scale-[1.02]'
+                        : 'border-[#F5E0E3] hover:border-[#DEB8BE] hover:scale-[1.02] opacity-70 hover:opacity-100'
                     }`}
                     style={{ background: 'linear-gradient(145deg, #FDF8F9, #F0E4E6)' }}
                   >
-                    <img src={img} alt={`${i + 1}`} className="w-full h-full object-contain p-1" style={{ mixBlendMode: 'multiply' }} />
+                    <img src={img} alt={`${i + 1}`} className="w-full h-full object-contain p-1.5" style={{ mixBlendMode: 'multiply' }} />
                   </button>
                 ))}
               </div>
@@ -222,10 +289,10 @@ export default function ProductDetailPage() {
             {/* Main image */}
             <div className="flex-1 relative">
               <div
-                className="relative rounded-2xl overflow-hidden aspect-[3/4] cursor-zoom-in group"
+                className="relative rounded-3xl overflow-hidden aspect-[3/4] cursor-zoom-in group"
                 style={{
                   background: 'linear-gradient(145deg, #FDF8F9 0%, #F5ECED 50%, #F0E4E6 100%)',
-                  boxShadow: '0 8px 40px rgba(107,31,42,0.08), 0 2px 12px rgba(107,31,42,0.04)',
+                  boxShadow: '0 16px 60px rgba(107,31,42,0.12), 0 4px 16px rgba(107,31,42,0.06)',
                 }}
                 onClick={() => allImages.length > 0 && setZoomOpen(true)}
               >
@@ -233,7 +300,7 @@ export default function ProductDetailPage() {
                   <img
                     src={currentImage}
                     alt={product.name}
-                    className="w-full h-full object-contain p-4 sm:p-6 transition-transform duration-700 group-hover:scale-[1.04]"
+                    className="w-full h-full object-contain p-5 sm:p-8 transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]"
                     style={{ mixBlendMode: 'multiply' }}
                   />
                 ) : (
@@ -245,14 +312,14 @@ export default function ProductDetailPage() {
                 )}
 
                 {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                <div className="absolute top-5 left-5 flex flex-col gap-2">
                   {hasDiscount && (
-                    <span className="bg-[#6B1F2A] text-white text-[11px] font-medium px-3 py-1 rounded-full tracking-wider">
+                    <span className="bg-[#6B1F2A] text-white text-[11px] font-semibold px-3.5 py-1.5 rounded-full tracking-[0.12em] shadow-md shadow-[#6B1F2A]/25 animate-fade-in-scale">
                       -{discountPct}%
                     </span>
                   )}
                   {product.isNew && (
-                    <span className="bg-white text-[#6B1F2A] text-[11px] font-medium px-3 py-1 rounded-full border border-[#DEB8BE] tracking-wider">
+                    <span className="bg-white/95 backdrop-blur-sm text-[#6B1F2A] text-[10px] font-semibold px-3 py-1.5 rounded-full border border-[#DEB8BE] tracking-[0.18em] uppercase">
                       {t('product.newArrival')}
                     </span>
                   )}
@@ -354,21 +421,22 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ══ RIGHT: Product Info ══════════════════════════════ */}
-          <div className="lg:sticky lg:top-24 lg:self-start space-y-6">
+          <div className="lg:sticky lg:top-24 lg:self-start space-y-7 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
 
             {/* Category + Name */}
             <div>
               {product.categoryName && (
                 <Link
                   to={`/products?category=${product.categoryId}`}
-                  className="text-[11px] tracking-[0.2em] text-[#B08A90] uppercase hover:text-[#6B1F2A] transition-colors mb-2 block"
+                  className="inline-flex items-center gap-2 text-[10px] tracking-[0.28em] text-[#B08A90] uppercase hover:text-[#6B1F2A] transition-colors mb-3"
                 >
+                  <span className="w-6 h-px bg-[#DEB8BE]" />
                   {product.categoryName}
                 </Link>
               )}
               <h1
-                className="text-[28px] sm:text-[34px] font-light text-[#1A0A0D] leading-tight"
-                style={{ fontFamily: 'Cormorant Garamond, serif' }}
+                className="text-[32px] sm:text-[42px] lg:text-[46px] font-bold text-[#1A0A0D] leading-[1.1] tracking-[0.01em]"
+                style={{ fontFamily: 'Playfair Display, serif' }}
               >
                 {product.name}
               </h1>
@@ -383,31 +451,33 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Price */}
-            <div className="flex items-end gap-3">
-              {hasDiscount ? (
-                <>
+            {/* Price — premium card */}
+            <div className="bg-gradient-to-br from-[#FDF6F7] to-[#F9EEF0] rounded-2xl p-5 border border-[#F5E0E3]">
+              <div className="flex items-end gap-3 flex-wrap">
+                {hasDiscount ? (
+                  <>
+                    <span
+                      className="text-[42px] font-bold text-[#6B1F2A] leading-none nums-normal"
+                      style={{ fontFamily: 'Cormorant Garamond, serif' }}
+                    >
+                      {formatPrice(product.discountPrice)}
+                    </span>
+                    <span className="text-lg text-[#C4A0A6] line-through leading-none mb-1.5 nums-normal">
+                      {formatPrice(product.price)}
+                    </span>
+                    <span className="ms-auto text-[10px] font-bold tracking-[0.15em] uppercase bg-[#6B1F2A] text-white px-3 py-1.5 rounded-full mb-1 shadow-md shadow-[#6B1F2A]/20">
+                      {t('product.off')} {discountPct}%
+                    </span>
+                  </>
+                ) : (
                   <span
-                    className="text-[36px] font-light text-[#6B1F2A] leading-none nums-normal"
+                    className="text-[42px] font-bold text-[#1A0A0D] leading-none nums-normal"
                     style={{ fontFamily: 'Cormorant Garamond, serif' }}
                   >
-                    {formatPrice(product.discountPrice)}
-                  </span>
-                  <span className="text-lg text-[#C4A0A6] line-through leading-none mb-1 nums-normal">
                     {formatPrice(product.price)}
                   </span>
-                  <span className="text-xs font-semibold bg-[#FDF0F2] text-[#6B1F2A] border border-[#EDD8DC] px-2.5 py-1 rounded-full mb-1">
-                    {t('product.off')} {discountPct}%
-                  </span>
-                </>
-              ) : (
-                <span
-                  className="text-[36px] font-light text-[#1A0A0D] leading-none nums-normal"
-                  style={{ fontFamily: 'Cormorant Garamond, serif' }}
-                >
-                  {formatPrice(product.price)}
-                </span>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Status */}
@@ -463,12 +533,12 @@ export default function ProductDetailPage() {
                             key={`sz-${size}`}
                             type="button"
                             onClick={() => !isOutOfStock && setSelectedSize(size)}
-                            className={`relative w-12 h-12 rounded-lg border transition-all duration-200 text-xs font-medium tracking-wide ${
+                            className={`relative min-w-[52px] h-12 px-3 rounded-full border-2 transition-all duration-300 ease-out text-xs font-semibold tracking-[0.1em] ${
                               isSelected
-                                ? 'border-[#6B1F2A] bg-[#6B1F2A] text-white shadow-sm'
+                                ? 'border-[#6B1F2A] bg-[#6B1F2A] text-white shadow-md shadow-[#6B1F2A]/25 scale-105'
                                 : isOutOfStock
-                                ? 'border-[#E8D5D8] text-[#C4A0A6] cursor-pointer hover:border-[#C4A0A6]'
-                                : 'border-[#E2CDD0] text-[#3D1A1E] hover:border-[#6B1F2A] hover:text-[#6B1F2A]'
+                                ? 'border-[#F0D5D8] text-[#C4A0A6] bg-white'
+                                : 'border-[#E2CDD0] text-[#3D1A1E] bg-white hover:border-[#6B1F2A] hover:text-[#6B1F2A] hover:scale-105 hover:shadow-sm'
                             }`}
                           >
                             {size}
@@ -583,26 +653,67 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Delivery strip */}
-            <div className="bg-[#FDF6F7] border border-[#F0D5D8] rounded-2xl px-4 py-3.5 space-y-2.5">
-              <div className="flex items-center gap-2 text-xs text-[#6B3840]">
-                <span className="text-base">⚡</span>
-                <span className="font-medium">{t('shipping.fastDelivery')}</span>
+            {/* Why You'll Love It — premium highlights */}
+            <div>
+              <p className="text-[10px] font-semibold text-[#6B1F2A] uppercase tracking-[0.2em] mb-3">
+                {t('product.whyYoullLove')}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { icon: 'M5 13l4 4L19 7', label: t('product.premiumQuality') },
+                  { icon: 'M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2zm5 10h4', label: t('product.fastShip') },
+                  { icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', label: t('product.handPicked') },
+                ].map(({ icon, label }, i) => (
+                  <div
+                    key={i}
+                    className="bg-white border border-[#F5E0E3] rounded-2xl p-3 text-center hover:border-[#DEB8BE] hover:shadow-[0_4px_14px_rgba(107,31,42,0.08)] transition-all duration-300"
+                  >
+                    <svg className="w-5 h-5 text-[#6B1F2A] mx-auto mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+                    </svg>
+                    <p className="text-[10px] font-medium text-[#3D1A1E] tracking-wide leading-tight">{label}</p>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-2 text-xs text-[#9B7B80]">
-                <span className="text-base">📦</span>
-                <span>{t('checkout.westBank')} {formatPrice(20)} · {t('checkout.jerusalem')} {formatPrice(30)} · {t('checkout.inside48')} {formatPrice(70)}</span>
+            </div>
+
+            {/* Delivery card — refined */}
+            <div className="bg-gradient-to-br from-[#FDF6F7] to-white border border-[#F0D5D8] rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#F5E0E3] flex items-center gap-2.5">
+                <span className="w-9 h-9 rounded-full bg-[#6B1F2A]/10 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-[#6B1F2A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1" />
+                  </svg>
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-[#3D1A1E] tracking-wide">{t('shipping.fastDelivery')}</p>
+                  <p className="text-[10px] text-[#9B7B80] mt-0.5">{t('checkout.westBank')} · {t('checkout.jerusalem')} · {t('checkout.inside48')}</p>
+                </div>
+              </div>
+              <div className="px-5 py-3 grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-[9px] text-[#9B7B80] uppercase tracking-wider mb-0.5">{t('checkout.westBank')}</p>
+                  <p className="text-xs font-bold text-[#6B1F2A] nums-normal" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px' }}>{formatPrice(20)}</p>
+                </div>
+                <div className="border-x border-[#F5E0E3]">
+                  <p className="text-[9px] text-[#9B7B80] uppercase tracking-wider mb-0.5">{t('checkout.jerusalem')}</p>
+                  <p className="text-xs font-bold text-[#6B1F2A] nums-normal" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px' }}>{formatPrice(30)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-[#9B7B80] uppercase tracking-wider mb-0.5">{t('checkout.inside48')}</p>
+                  <p className="text-xs font-bold text-[#6B1F2A] nums-normal" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px' }}>{formatPrice(70)}</p>
+                </div>
               </div>
               <a
                 href="https://wa.me/972594828117"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-green-700 hover:text-green-800 font-medium transition-colors"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-50 hover:bg-green-100 border-t border-[#F5E0E3] text-xs text-green-700 hover:text-green-800 font-semibold tracking-wide transition-colors"
               >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-green-600 shrink-0" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-green-600" xmlns="http://www.w3.org/2000/svg">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                WhatsApp
+                {t('product.askOnWhatsApp')}
               </a>
             </div>
 
@@ -643,11 +754,11 @@ export default function ProductDetailPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={!canAddToCart}
-                className={`w-full h-14 rounded-2xl text-sm font-semibold tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2.5 ${
+                className={`w-full h-16 rounded-2xl text-sm font-bold tracking-[0.18em] uppercase transition-all duration-300 ease-out flex items-center justify-center gap-3 relative overflow-hidden group ${
                   added
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30'
                     : canAddToCart
-                    ? 'bg-[#6B1F2A] text-white hover:bg-[#8B2535] active:scale-[0.98] shadow-lg shadow-[#6B1F2A]/20 hover:shadow-xl hover:shadow-[#6B1F2A]/30'
+                    ? 'bg-gradient-to-r from-[#6B1F2A] to-[#8B2535] text-white shadow-xl shadow-[#6B1F2A]/30 hover:shadow-2xl hover:shadow-[#6B1F2A]/40 hover:scale-[1.02] active:scale-[0.98]'
                     : 'bg-[#EDD8DC] text-[#B08A90] cursor-not-allowed'
                 }`}
               >
@@ -680,7 +791,40 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
+            {/* ── Share ─────────────────────────────────────── */}
+            <ShareSection productName={product.name} />
+
           </div>
+        </div>
+      </div>
+
+      {/* ── Sticky Mobile CTA Bar ─────────────────────────────── */}
+      <div className="lg:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#F0D5D8] shadow-[0_-4px_20px_rgba(107,31,42,0.08)] px-4 py-3 animate-fade-in-up">
+        <div className="max-w-md mx-auto flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-[#9B7B80] uppercase tracking-wider truncate">{product.name}</p>
+            <p className="text-base font-bold text-[#6B1F2A] nums-normal" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px' }}>
+              {hasDiscount ? formatPrice(product.discountPrice) : formatPrice(product.price)}
+            </p>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={!canAddToCart}
+            className={`shrink-0 px-6 h-12 rounded-full text-xs font-bold tracking-[0.15em] uppercase flex items-center gap-2 transition-all duration-300 ${
+              added
+                ? 'bg-green-600 text-white'
+                : canAddToCart
+                ? 'bg-gradient-to-r from-[#6B1F2A] to-[#8B2535] text-white shadow-lg shadow-[#6B1F2A]/30 active:scale-95'
+                : 'bg-[#EDD8DC] text-[#B08A90]'
+            }`}
+          >
+            {added ? '✓' : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            )}
+            {added ? '' : t('product.addToCart')}
+          </button>
         </div>
       </div>
 

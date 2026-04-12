@@ -75,7 +75,7 @@ export default function CheckoutPage() {
         <p className="text-sm text-[#9B7B80] mb-1">
           {t('checkout.thankYou')}، <span className="font-semibold text-[#3D1A1E]">{guestSuccess.customerName}</span>
         </p>
-        <p className="text-xs text-[#9B7B80] mb-7 tracking-wide">{t('checkout.orderNo')} <span className="font-semibold">#{guestSuccess.id}</span></p>
+        <div className="mb-7" />
 
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-5 text-xs text-emerald-800 text-start flex gap-3">
           <svg viewBox="0 0 24 24" className="w-5 h-5 fill-emerald-600 shrink-0 mt-0.5 flex-shrink-0"><path d={WHATSAPP_PATH}/></svg>

@@ -28,12 +28,26 @@ export default function Navbar() {
   const { cart }     = useCart()
   const navigate     = useNavigate()
   const { t } = useLanguage()
-  const { openLogin, openRegister, openCart } = useUI()
+  const { openLogin, openRegister, openCart, openSearch } = useUI()
 
   const { siteName, logoUrl } = useSiteSettings()
 
   const [menuOpen,     setMenuOpen]     = useState(false)
   const [scrolled,     setScrolled]     = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userMenuRef = useRef(null)
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    if (!userMenuOpen) return
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [userMenuOpen])
 
   /* Cart bump animation: triggers a one-shot heartbeat whenever totalItems
      increases. Uses a key to force-remount the icon so the animation can
@@ -165,15 +179,15 @@ export default function Navbar() {
           <div className="flex items-center gap-0.5 shrink-0">
 
             {/* Search — desktop only (mobile uses the bottom nav) */}
-            <Link to="/products" onClick={closeAll} aria-label="Search" className={`${iconBtn} hidden md:flex`}>
+            <button onClick={() => { closeAll(); openSearch() }} aria-label="Search" className={`${iconBtn} hidden md:flex`}>
               <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-            </Link>
+            </button>
 
             {/* Instagram — all devices */}
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/iwear1_boutique/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
@@ -187,11 +201,87 @@ export default function Navbar() {
             </a>
 
             {/* Account — desktop only */}
-            <Link to={isAdmin ? '/admin' : '/profile'} onClick={closeAll} aria-label="Account" className={`${iconBtn} hidden md:flex`}>
-              <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </Link>
+            {isLoggedIn ? (
+              <div ref={userMenuRef} className="relative hidden md:block">
+                <button
+                  onClick={() => setUserMenuOpen(o => !o)}
+                  aria-label="Account"
+                  aria-expanded={userMenuOpen}
+                  className={iconBtn}
+                >
+                  <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute end-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-[0_8px_28px_rgba(107,31,42,0.12)] border border-[#F0D5D8] py-2 z-50 animate-fade-in-scale origin-top-end">
+                    {user?.name && (
+                      <div className="px-4 py-2 border-b border-[#F9E8EB]">
+                        <p className="text-[11px] uppercase tracking-[0.15em] text-[#9B7B80]">{t('nav.signedInAs')}</p>
+                        <p className="text-sm font-medium text-[#3D1A1E] truncate" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '15px' }}>
+                          {user.name}
+                        </p>
+                      </div>
+                    )}
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs tracking-[0.12em] uppercase text-[#9B7B80] hover:text-[#6B1F2A] hover:bg-[#F9EEF0] transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      {t('nav.profile')}
+                    </Link>
+
+                    <Link
+                      to="/orders"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs tracking-[0.12em] uppercase text-[#9B7B80] hover:text-[#6B1F2A] hover:bg-[#F9EEF0] transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      {t('nav.myOrders')}
+                    </Link>
+
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-xs tracking-[0.12em] uppercase text-[#9B7B80] hover:text-[#6B1F2A] hover:bg-[#F9EEF0] transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {t('nav.adminPanel')}
+                      </Link>
+                    )}
+
+                    <div className="my-1 border-t border-[#F9E8EB]" />
+
+                    <button
+                      onClick={() => { setUserMenuOpen(false); handleLogout() }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs tracking-[0.12em] uppercase text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      {t('nav.signOut')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button onClick={() => { closeAll(); openLogin() }} aria-label="Account" className={`${iconBtn} hidden md:flex`}>
+                <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </button>
+            )}
 
             {/* Wishlist — desktop only (mobile uses the bottom nav).
                 Icon-only by design: the count is shown on the wishlist page itself. */}
@@ -267,6 +357,14 @@ export default function Navbar() {
       {menuOpen && (
         <div className="md:hidden border-t border-[#F0D5D8] bg-white animate-slide-down">
           <nav className="px-6 py-3 max-w-2xl mx-auto">
+            {/* Language toggle — top of mobile menu */}
+            <div className="flex items-center justify-between py-3.5 border-b border-[#F9E8EB]">
+              <span className="text-xs tracking-[0.15em] uppercase text-[#9B7B80]">
+                {t('common.language')}
+              </span>
+              <LanguageToggle />
+            </div>
+
             {mobileLinks.map((item) => {
               const baseRowClass = 'w-full text-start flex items-center py-3.5 text-xs tracking-[0.15em] uppercase border-b border-[#F9E8EB] transition-colors duration-200'
               if (item.action) {
@@ -309,13 +407,6 @@ export default function Navbar() {
               </button>
             )}
 
-            {/* Language toggle — mobile */}
-            <div className="flex items-center justify-between py-4">
-              <span className="text-xs tracking-[0.15em] uppercase text-[#9B7B80]">
-                {t('common.language')}
-              </span>
-              <LanguageToggle />
-            </div>
           </nav>
         </div>
       )}
