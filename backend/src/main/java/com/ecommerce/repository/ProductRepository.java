@@ -34,6 +34,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            " OR (p.discountValue IS NOT NULL AND p.discountValue > 0))")
     List<Product> findActiveOffers();
 
+    /** Admin variant — ignores active flag so hidden discounted items still appear. */
+    @Query("SELECT p FROM Product p WHERE " +
+           "p.discountPrice IS NOT NULL " +
+           "OR (p.discountValue IS NOT NULL AND p.discountValue > 0)")
+    List<Product> findAllWithDiscount();
+
     @Query("SELECT p FROM Product p WHERE p.active = true AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +

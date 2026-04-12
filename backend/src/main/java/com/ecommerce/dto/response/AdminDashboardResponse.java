@@ -21,5 +21,8 @@ public class AdminDashboardResponse {
     private long pendingOrders;
     private long lowStockCount;
     private BigDecimal totalRevenue;
+    private BigDecimal revenueDaily;
+    private BigDecimal revenueWeekly;
+    private BigDecimal revenueMonthly;
     private List<BestSellerItem> bestSellers;
 }

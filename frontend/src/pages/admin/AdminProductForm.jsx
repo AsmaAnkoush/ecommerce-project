@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { createProduct, updateProduct } from '../../api/productApi'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { createProduct, updateProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProductById } from '../../api/adminApi'
 import { getCategories } from '../../api/categoryApi'
 import { uploadImages } from '../../api/uploadApi'
@@ -9,6 +9,7 @@ import Spinner from '../../components/ui/Spinner'
 import ImageCropModal from '../../components/ui/ImageCropModal'
 import ImagePreviewModal from '../../components/ui/ImagePreviewModal'
 import { useLanguage } from '../../context/LanguageContext'
+import { useToast } from '../../context/ToastContext'
 
 const SEASONS = [
   { value: 'SUMMER',     label: 'Summer' },
@@ -48,6 +49,7 @@ const loadCustomColors = () => {
 
 export default function AdminProductForm() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
@@ -56,6 +58,8 @@ export default function AdminProductForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [categories, setCategories] = useState([])
+  const [active, setActive] = useState(true)
+  const [togglingVisibility, setTogglingVisibility] = useState(false)
 
   const [form, setForm] = useState({
     name: '', description: '', price: '', stockQuantity: 0,
@@ -118,6 +122,7 @@ export default function AdminProductForm() {
           discountType: p.discountType ?? '',
           discountValue: p.discountValue ?? '',
         })
+        setActive(p.active ?? true)
         if (p.imageUrl) setMainImagePreview(p.imageUrl)
         setGeneralImages([...new Set(p.imageUrls ?? [])])
         if (p.colorImages || p.variants?.length) {
@@ -407,10 +412,11 @@ export default function AdminProductForm() {
       }
       if (isEdit) {
         await updateProduct(id, payload)
+        toast(t('admin.updatedSuccess'))
       } else {
         await createProduct(payload)
+        navigate('/admin/products')
       }
-      navigate('/admin/products')
     } catch (err) {
       setError(err.response?.data?.message || t('admin.failedSave'))
     } finally {
@@ -418,13 +424,63 @@ export default function AdminProductForm() {
     }
   }
 
+  const handleToggleVisibility = async () => {
+    if (!isEdit || togglingVisibility) return
+    setTogglingVisibility(true)
+    try {
+      const res = await toggleProductVisibility(id)
+      const next = res?.data?.data?.active ?? !active
+      setActive(next)
+      toast(next ? t('admin.visibleToUsers') : t('admin.hiddenFromUsers'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
+    } finally {
+      setTogglingVisibility(false)
+    }
+  }
+
   if (loading) return <div className="flex justify-center py-40"><Spinner size="lg" /></div>
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-8 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-900">{isEdit ? t('admin.edit') : t('admin.addProduct')}</h1>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {isEdit && (
+            <>
+              <span
+                className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border ${
+                  active
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-gray-50 border-gray-200 text-gray-600'
+                }`}
+                title={active ? t('admin.visibleToUsers') : t('admin.hiddenFromUsers')}
+              >
+                <span aria-hidden="true">{active ? '👁️' : '🚫'}</span>
+                {active ? t('admin.visibleToUsers') : t('admin.hiddenFromUsers')}
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleVisibility}
+                disabled={togglingVisibility}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {togglingVisibility ? '…' : (active ? t('admin.hide') : t('admin.show'))}
+              </button>
+              <Link
+                to={`/products/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[#EDD8DC] text-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {t('admin.preview')}
+              </Link>
+            </>
+          )}
           <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>{t('admin.cancel')}</Button>
           <Button type="submit" loading={saving}>{t('admin.save')}</Button>
         </div>

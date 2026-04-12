@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProducts } from '../../api/adminApi'
@@ -184,8 +184,9 @@ export default function AdminProducts() {
       setProducts(prev => prev.filter(p => p.id !== id))
       setConfirmTarget(null)
     } catch (err) {
-      alert(t('admin.failedDelete'))
       console.error('Delete failed:', err)
+      const msg = err?.response?.data?.message || t('admin.failedDelete')
+      toast(msg, 'error')
     } finally { setDeleting(null) }
   }
 
@@ -246,9 +247,8 @@ export default function AdminProducts() {
     <div className="p-5 lg:p-7">
 
       {/* ── Toolbar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
-        {/* Search */}
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div className="relative w-full sm:max-w-xs">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: '#C4A0A6' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -264,203 +264,265 @@ export default function AdminProducts() {
           />
         </div>
 
-        {/* Count label */}
-        <p className="text-xs hidden sm:block" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>
-          Low stock threshold: <span className="font-semibold" style={{ color: '#9B7B80' }}>{LOW_STOCK_THRESHOLD} or fewer</span>
-        </p>
-
-        <div className="sm:ml-auto">
-          <Link
-            to="/admin/products/new"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#6B1F2A,#8B2535)', boxShadow: '0 2px 8px rgba(107,31,42,0.35)' }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(107,31,42,0.45)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(107,31,42,0.35)'}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            {t('admin.addProduct')}
-          </Link>
-        </div>
+        <Link
+          to="/admin/products/new"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all shrink-0"
+          style={{ background: 'linear-gradient(135deg,#6B1F2A,#8B2535)', boxShadow: '0 2px 8px rgba(107,31,42,0.35)' }}
+          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(107,31,42,0.45)'}
+          onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(107,31,42,0.35)'}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          {t('admin.addProduct')}
+        </Link>
       </div>
-
-      {/* ── Stock alerts (compact) ── */}
-      {!loading && (totalOutVariants > 0 || totalLowVariants > 0) && (
-        <div className="flex items-center gap-4 mb-4 px-1 text-xs text-gray-500">
-          {totalOutVariants > 0 && (
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-red-600 font-medium">{totalOutVariants} out of stock</span>
-            </span>
-          )}
-          {totalLowVariants > 0 && (
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              <span className="text-amber-600 font-medium">{totalLowVariants} low stock</span>
-            </span>
-          )}
-        </div>
-      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-24"><Spinner size="lg" /></div>
       ) : (
-        <div className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid #F5EDEF', boxShadow: '0 1px 4px rgba(107,31,42,0.06)' }}>
-          <div className="divide-y" style={{ borderColor: '#F5EDEF' }}>
-            {filtered.map(p => {
-              const { outCount, lowCount } = productVariantCounts(p)
-              const hasVariants = p.variants?.length > 0
-              const isExpanded = expandedId === p.id
-              const stk = stockStatus(hasVariants ? (outCount > 0 ? 0 : lowCount > 0 ? 3 : 10) : p.stockQuantity)
+        <div className="bg-white rounded-2xl overflow-hidden overflow-x-auto" style={{ border: '1px solid #F5EDEF', boxShadow: '0 1px 4px rgba(107,31,42,0.06)' }}>
+          <table className="w-full text-sm min-w-[960px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ background: '#FDF9FA', color: '#9B7B80' }}>
+                <th className="text-start px-4 py-3 w-12">#</th>
+                <th className="text-start px-4 py-3 min-w-[220px]">{t('admin.product') || 'Product'}</th>
+                <th className="text-start px-4 py-3 min-w-[140px]">{t('admin.price') || 'Price'}</th>
+                <th className="text-start px-4 py-3 min-w-[160px]">{t('admin.status') || 'Status'}</th>
+                <th className="text-start px-4 py-3 min-w-[220px]">{t('admin.variants') || 'Variants'}</th>
+                <th className="text-end px-4 py-3 min-w-[180px]">{t('admin.actions') || 'Actions'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: '#F5EDEF' }}>
+              {filtered.map((p, idx) => {
+                const { outCount, lowCount } = productVariantCounts(p)
+                const hasVariants = p.variants?.length > 0
+                const isExpanded = expandedId === p.id
+                const stk = stockStatus(hasVariants ? (outCount > 0 ? 0 : lowCount > 0 ? 3 : 10) : p.stockQuantity)
+                const isLowStock = stk === 'low'
+                const isOutOfStock = stk === 'out'
+                const uniqueColors = hasVariants ? [...new Set(p.variants.map(v => v.color).filter(Boolean))] : []
+                const uniqueSizes  = hasVariants ? [...new Set(p.variants.map(v => v.size).filter(Boolean))] : []
 
-              const isLowStock = stk === 'low'
-              const isOutOfStock = stk === 'out'
-              return (
-                <div key={p.id}>
-                  <div className="flex items-center gap-4 sm:gap-5 px-4 sm:px-5 py-3.5 hover:bg-[#FDFBFC] transition-colors">
+                return (
+                  <Fragment key={p.id}>
+                    <tr className="hover:bg-[#FDFBFC] transition-colors align-middle">
+                      {/* Index */}
+                      <td className="px-4 py-3">
+                        <span
+                          className="w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-semibold tabular-nums"
+                          style={{ background: '#FDF0F2', border: '1px solid #F0DDE0', color: '#9B6670' }}
+                          aria-label={`#${idx + 1}`}
+                        >
+                          {idx + 1}
+                        </span>
+                      </td>
 
-                    {/* 1. Product info */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg overflow-hidden shrink-0" style={{ background: '#FDF6F7', border: '1px solid #F0DDE0' }}>
-                        {p.imageUrl
-                          ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center font-bold text-sm" style={{ color: '#DFA3AD' }}>
-                              {(p.name || '?').charAt(0)}
-                            </div>
-                        }
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate max-w-[180px] sm:max-w-[220px]" style={{ color: '#3D1A1E' }}>{p.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5 text-[11px]" style={{ color: '#9B7B80' }}>
-                          {p.categoryName && <span>{p.categoryName}</span>}
-                          <span style={{ color: '#DFA3AD' }}>·</span>
-                          {p.discountPrice ? (
-                            <>
-                              <span className="font-semibold" style={{ color: '#6B1F2A' }}>{formatPrice(p.discountPrice)}</span>
-                              <span className="line-through">{formatPrice(p.price)}</span>
-                            </>
+                      {/* Product */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0" style={{ background: '#FDF6F7', border: '1px solid #F0DDE0' }}>
+                            {p.imageUrl
+                              ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                              : <div className="w-full h-full flex items-center justify-center font-bold text-sm" style={{ color: '#DFA3AD' }}>
+                                  {(p.name || '?').charAt(0)}
+                                </div>
+                            }
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate max-w-[220px]" style={{ color: '#3D1A1E' }}>{p.name}</p>
+                            {p.categoryName && (
+                              <p className="text-[11px] truncate" style={{ color: '#9B7B80' }}>{p.categoryName}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Price */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {p.discountPrice ? (
+                          <div className="flex items-center gap-2 text-[12px]">
+                            <span className="font-semibold" style={{ color: '#6B1F2A' }}>{formatPrice(p.discountPrice)}</span>
+                            <span className="line-through" style={{ color: '#B08A90' }}>{formatPrice(p.price)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[12px] font-semibold" style={{ color: '#3D1A1E' }}>{formatPrice(p.price)}</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isOutOfStock ? (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border border-red-200 bg-red-50 text-red-700 animate-low-stock-pulse">
+                              <span aria-hidden="true">❌</span>
+                              {t('admin.outOfStockBadge')}
+                            </span>
+                          ) : isLowStock ? (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-700 animate-low-stock-pulse">
+                              <span aria-hidden="true">⚠</span>
+                              {t('admin.lowStockBadge')}
+                            </span>
                           ) : (
-                            <span className="font-semibold" style={{ color: '#3D1A1E' }}>{formatPrice(p.price)}</span>
+                            <span className="inline-flex items-center gap-1.5 text-[11px] tabular-nums px-2.5 py-1 rounded-full border border-[#F0DDE0] text-[#6B4E53]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              {t('admin.inStockCount').replace('{count}', p.stockQuantity)}
+                            </span>
+                          )}
+                          {!p.active && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#9B7B80', background: '#F5EDEF' }}>
+                              {t('admin.hide')}
+                            </span>
                           )}
                         </div>
-                      </div>
-                    </div>
+                      </td>
 
-                    {/* 2. Status */}
-                    <div className="hidden sm:flex items-center gap-2.5 shrink-0">
-                      <span className={`flex items-center gap-1.5 text-xs tabular-nums ${isOutOfStock ? 'text-red-600 font-semibold' : isLowStock ? 'text-amber-600 font-semibold' : ''}`} style={!isOutOfStock && !isLowStock ? { color: '#6B4E53' } : undefined}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[stk].dot} ${isOutOfStock ? 'animate-stock-dot-red' : isLowStock ? 'animate-stock-dot-amber' : ''}`} />
-                        {p.stockQuantity}
-                      </span>
-                      {isOutOfStock && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 tracking-wide">
-                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2L1 21h22L12 2zm0 6l7.53 13H4.47L12 8zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z" />
-                          </svg>
-                          {t('admin.outOfStockBadge')}
-                        </span>
-                      )}
-                      {isLowStock && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 tracking-wide">
-                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2L1 21h22L12 2zm0 6l7.53 13H4.47L12 8zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z" />
-                          </svg>
-                          {t('admin.lowStockBadge')}
-                        </span>
-                      )}
-                      {!p.active && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#9B7B80', background: '#F5EDEF' }}>hidden</span>
-                      )}
-                    </div>
-
-                    {/* 3. Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Details toggle */}
-                      {hasVariants && (
-                        <button onClick={() => toggleExpand(p.id)}
-                          className="text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all duration-200"
-                          style={isExpanded
-                            ? { background: '#6B1F2A', color: '#fff' }
-                            : { background: '#F5EDEF', color: '#9B6670' }
-                          }>
-                          {isExpanded ? 'إخفاء' : 'تفاصيل'}
-                        </button>
-                      )}
-                      {/* Visibility toggle */}
-                      <button onClick={() => handleToggleVisibility(p.id)} disabled={toggling === p.id}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-40"
-                        style={p.active
-                          ? { background: '#FDF6F7', color: '#C4768B' }
-                          : { background: '#ECFDF5', color: '#059669' }
-                        }
-                        onMouseEnter={e => e.currentTarget.style.background = p.active ? '#F5EDEF' : '#D1FAE5'}
-                        onMouseLeave={e => e.currentTarget.style.background = p.active ? '#FDF6F7' : '#ECFDF5'}>
-                        {toggling === p.id ? (
-                          <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        ) : p.active ? (
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                          </svg>
+                      {/* Variants summary */}
+                      <td className="px-4 py-3">
+                        {hasVariants ? (
+                          <div className="flex items-center gap-3 flex-wrap">
+                            {uniqueColors.length > 0 && (
+                              <span className="inline-flex items-center gap-1">
+                                {uniqueColors.slice(0, 5).map(c => {
+                                  const hex = getColorHex(c)
+                                  return hex ? (
+                                    <span key={c} title={c} className="w-3.5 h-3.5 rounded-full border" style={{ backgroundColor: hex, borderColor: '#E5DDE0' }} />
+                                  ) : (
+                                    <span key={c} className="text-[10px]" style={{ color: '#9B7B80' }}>{c}</span>
+                                  )
+                                })}
+                                {uniqueColors.length > 5 && (
+                                  <span className="text-[10px]" style={{ color: '#9B7B80' }}>+{uniqueColors.length - 5}</span>
+                                )}
+                              </span>
+                            )}
+                            {uniqueSizes.length > 0 && (
+                              <span className="text-[11px] tabular-nums" style={{ color: '#6B4E53' }}>
+                                {uniqueSizes.slice(0, 5).join(' · ')}
+                                {uniqueSizes.length > 5 ? ` +${uniqueSizes.length - 5}` : ''}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(p.id)}
+                              className="text-[10px] font-medium px-2 py-1 rounded-lg transition-colors"
+                              style={isExpanded ? { background: '#6B1F2A', color: '#fff' } : { background: '#F5EDEF', color: '#9B6670' }}
+                            >
+                              {isExpanded ? t('admin.hide') : t('admin.view')}
+                            </button>
+                          </div>
                         ) : (
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
+                          <span className="text-[11px]" style={{ color: '#C4A0A6' }}>—</span>
                         )}
-                      </button>
-                      {/* Edit */}
-                      <Link to={`/admin/products/${p.id}/edit`}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
-                        style={{ background: '#EFF6FF', color: '#3B82F6' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#DBEAFE'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#EFF6FF'}>
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+                      </td>
+
+                      {/* Actions — icon-only with tooltips */}
+                      <td className="px-4 py-3 text-end">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Edit */}
+                          <Link to={`/admin/products/${p.id}/edit`} title={t('admin.edit')} aria-label={t('admin.edit')}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+                            style={{ background: '#EFF6FF', color: '#3B82F6' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#DBEAFE'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#EFF6FF'}>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+                            </svg>
+                          </Link>
+                          {/* View (public page in new tab) */}
+                          <Link to={`/products/${p.id}`} target="_blank" rel="noopener noreferrer" title={t('admin.view')} aria-label={t('admin.view')}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+                            style={{ background: '#F5F3FF', color: '#7C3AED' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#EDE9FE'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#F5F3FF'}>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </Link>
+                          {/* Hide / Show */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleVisibility(p.id)}
+                            disabled={toggling === p.id}
+                            title={p.active ? t('admin.hide') : t('admin.show')}
+                            aria-label={p.active ? t('admin.hide') : t('admin.show')}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-40 disabled:hover:scale-100"
+                            style={p.active
+                              ? { background: '#FDF6F7', color: '#C4768B' }
+                              : { background: '#ECFDF5', color: '#059669' }
+                            }
+                            onMouseEnter={e => e.currentTarget.style.background = p.active ? '#F5EDEF' : '#D1FAE5'}
+                            onMouseLeave={e => e.currentTarget.style.background = p.active ? '#FDF6F7' : '#ECFDF5'}>
+                            {toggling === p.id ? (
+                              <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : p.active ? (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            )}
+                          </button>
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => setConfirmTarget(p)}
+                            disabled={deleting === p.id}
+                            title={t('admin.delete')}
+                            aria-label={t('admin.delete')}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-40 disabled:hover:scale-100"
+                            style={{ background: '#FEF2F2', color: '#EF4444' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}>
+                            {deleting === p.id ? (
+                              <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {isExpanded && hasVariants && (
+                      <tr>
+                        <td colSpan={6} style={{ background: '#FDF9FA', borderTop: '1px solid #F5EDEF' }}>
+                          <VariantBreakdown product={p} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
+
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="flex flex-col items-center gap-3 py-16">
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#FDF0F2', border: '1px solid #EDD8DC' }}>
+                        <svg className="w-7 h-7" style={{ color: '#DFA3AD' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                      </Link>
-                      {/* Delete */}
-                      <button onClick={() => setConfirmTarget(p)} disabled={deleting === p.id}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-40"
-                        style={{ background: '#FEF2F2', color: '#EF4444' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}>
-                        {deleting === p.id ? (
-                          <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                          </svg>
-                        )}
-                      </button>
+                      </div>
+                      <p className="text-sm font-medium" style={{ color: '#9B7B80' }}>{t('admin.noProductsFound')}</p>
                     </div>
-                  </div>
-
-                  {/* Variant details (collapsed by default) */}
-                  {isExpanded && hasVariants && (
-                    <VariantBreakdown product={p} />
-                  )}
-                </div>
-              )
-            })}
-
-            {filtered.length === 0 && (
-              <div className="flex flex-col items-center gap-3 py-16">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#FDF0F2', border: '1px solid #EDD8DC' }}>
-                  <svg className="w-7 h-7" style={{ color: '#DFA3AD' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium" style={{ color: '#9B7B80' }}>{t('admin.noProductsFound')}</p>
-              </div>
-            )}
-          </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
           {/* Pagination */}
           {totalPages > 1 && (

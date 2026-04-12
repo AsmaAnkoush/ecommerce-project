@@ -34,9 +34,17 @@ public class AdminService {
         LocalDateTime endOfDay   = startOfDay.plusDays(1);
         long ordersToday = orderRepository.countByCreatedAtBetween(startOfDay, endOfDay);
 
-        BigDecimal totalRevenue = orderRepository.sumRevenueByStatus(Order.OrderStatus.CONFIRMED);
+        Order.OrderStatus confirmed = Order.OrderStatus.CONFIRMED;
+        BigDecimal totalRevenue = orderRepository.sumRevenueByStatus(confirmed);
 
-        List<BestSellerItem> bestSellers = orderRepository.findTopSellingProductsByStatus(Order.OrderStatus.CONFIRMED, PageRequest.of(0, 5));
+        LocalDateTime weekStart  = startOfDay.minusDays(6); // rolling 7-day window incl. today
+        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+
+        BigDecimal revenueDaily   = orderRepository.sumRevenueByStatusBetween(confirmed, startOfDay,  endOfDay);
+        BigDecimal revenueWeekly  = orderRepository.sumRevenueByStatusBetween(confirmed, weekStart,   endOfDay);
+        BigDecimal revenueMonthly = orderRepository.sumRevenueByStatusBetween(confirmed, monthStart,  endOfDay);
+
+        List<BestSellerItem> bestSellers = orderRepository.findTopSellingProductsByStatus(confirmed, PageRequest.of(0, 5));
 
         return AdminDashboardResponse.builder()
                 .totalProducts(totalProducts)
@@ -46,6 +54,9 @@ public class AdminService {
                 .totalUsers(totalUsers)
                 .pendingOrders(pendingOrders)
                 .totalRevenue(totalRevenue)
+                .revenueDaily(revenueDaily)
+                .revenueWeekly(revenueWeekly)
+                .revenueMonthly(revenueMonthly)
                 .bestSellers(bestSellers)
                 .build();
     }

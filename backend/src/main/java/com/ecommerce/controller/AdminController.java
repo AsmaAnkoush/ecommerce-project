@@ -66,6 +66,11 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("All products", products));
     }
 
+    @GetMapping("/offers")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllOffers() {
+        return ResponseEntity.ok(ApiResponse.success("Admin offers", productService.findAllOffersAdmin()));
+    }
+
     @GetMapping("/products/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Product found", productService.findByIdAdmin(id)));

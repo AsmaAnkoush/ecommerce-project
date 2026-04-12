@@ -2,6 +2,7 @@ import api from './axios'
 
 export const getAdminProducts = (params) => api.get('/admin/products', { params })
 export const getAdminProductById = (id) => api.get(`/admin/products/${id}`)
+export const getAdminOffers = () => api.get('/admin/offers')
 
 export const getDashboard = () => api.get('/admin/dashboard')
 export const getAdminOrders = (params) => api.get('/admin/orders', { params })

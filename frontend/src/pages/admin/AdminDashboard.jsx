@@ -324,6 +324,48 @@ export default function AdminDashboard() {
         />
       </div>
 
+      {/* ── Revenue analytics ── */}
+      <Card>
+        <SectionHeader title={t('admin.revenueAnalytics')} linkTo="/admin/orders" linkLabel={t('admin.viewAll')} />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-5 py-5">
+          {[
+            { key: 'daily',   label: t('admin.revenueDaily'),   value: stats.revenueDaily,   accent: { bg: '#FDF0F2', border: '#EDD8DC', icon: '#6B1F2A' }, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+            { key: 'weekly',  label: t('admin.revenueWeekly'),  value: stats.revenueWeekly,  accent: { bg: '#FFFBEB', border: '#FCD34D', icon: '#D97706' }, icon: 'M3 12h18M3 6h18M3 18h18' },
+            { key: 'monthly', label: t('admin.revenueMonthly'), value: stats.revenueMonthly, accent: { bg: '#ECFDF5', border: '#A7F3D0', icon: '#059669' }, icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+          ].map(c => (
+            <div
+              key={c.key}
+              className="rounded-2xl p-5 flex items-center gap-4 transition-all"
+              style={{ boxShadow: '0 1px 4px rgba(107,31,42,0.04)', border: '1px solid #F5EDEF', background: '#fff' }}
+            >
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: c.accent.bg, border: `1px solid ${c.accent.border}` }}
+              >
+                <svg className="w-5 h-5" style={{ color: c.accent.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={c.icon} />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs tracking-wide" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif' }}>
+                  {c.label}
+                </p>
+                <p
+                  className="tabular-nums mt-1 truncate"
+                  style={{ color: '#3D1A1E', fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, fontSize: '22px', lineHeight: 1 }}
+                  title={formatPrice(c.value ?? 0)}
+                >
+                  {formatPrice(c.value ?? 0)}
+                </p>
+                <p className="text-[10px] mt-1" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>
+                  {t('admin.fromConfirmed')}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* ── Bottom section ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 

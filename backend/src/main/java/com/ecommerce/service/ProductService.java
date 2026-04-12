@@ -138,6 +138,14 @@ public class ProductService {
         return productRepository.findAll(pageable).map(this::toResponse);
     }
 
+    /** Admin-side offers list — returns every product (active or hidden) that has a discount. */
+    public List<ProductResponse> findAllOffersAdmin() {
+        return productRepository.findAllWithDiscount().stream()
+                .map(this::toResponse)
+                .sorted(Comparator.comparingDouble(this::discountPercent).reversed())
+                .toList();
+    }
+
     @Transactional
     public ProductResponse toggleVisibility(Long id) {
         Product product = productRepository.findById(id)
@@ -215,22 +223,15 @@ public class ProductService {
 
     @Transactional
     public void delete(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
-
-        // Always safe to purge — these reference the product but carry no business history
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product", id);
+        }
+        // Purge every FK reference so the product row can actually be deleted.
+        // Order lines are wiped too — purchase history entries lose their product link.
         cartItemRepository.deleteByProductId(id);
         wishlistItemRepository.deleteByProductId(id);
         reviewRepository.deleteByProductId(id);
-
-        // Order history must be preserved — if the product is referenced by any order
-        // item, fall back to soft delete so receipts remain intact.
-        if (orderRepository.countOrderItemsByProductId(id) > 0) {
-            product.setActive(false);
-            productRepository.save(product);
-            return;
-        }
-
+        orderRepository.deleteOrderItemsByProductId(id);
         productImageRepository.deleteByProductId(id);
         productVariantRepository.deleteByProductId(id);
         productRepository.deleteById(id);

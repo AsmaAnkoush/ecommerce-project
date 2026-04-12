@@ -4,6 +4,7 @@ import com.ecommerce.dto.response.BestSellerItem;
 import com.ecommerce.entity.Order;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -24,6 +25,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = :status")
     BigDecimal sumRevenueByStatus(@Param("status") Order.OrderStatus status);
 
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+           "WHERE o.status = :status AND o.createdAt >= :start AND o.createdAt < :end")
+    BigDecimal sumRevenueByStatusBetween(@Param("status") Order.OrderStatus status,
+                                         @Param("start") LocalDateTime start,
+                                         @Param("end") LocalDateTime end);
+
     @Query("SELECT new com.ecommerce.dto.response.BestSellerItem(" +
            "oi.product.id, oi.productName, oi.productImage, SUM(oi.quantity)) " +
            "FROM OrderItem oi " +
@@ -34,4 +41,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COUNT(oi) FROM OrderItem oi WHERE oi.product.id = :productId")
     long countOrderItemsByProductId(@Param("productId") Long productId);
+
+    @Modifying
+    @Query("DELETE FROM OrderItem oi WHERE oi.product.id = :productId")
+    void deleteOrderItemsByProductId(@Param("productId") Long productId);
 }
