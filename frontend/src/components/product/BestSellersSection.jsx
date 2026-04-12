@@ -5,23 +5,6 @@ import { useLanguage } from '../../context/LanguageContext'
 import ProductCard from './ProductCard'
 import Spinner from '../ui/Spinner'
 
-const LIMIT = 8
-
-/**
- * "Best Sellers" homepage section.
- *
- *  - Fetches from the existing GET /api/products/best-sellers endpoint, which
- *    on the backend returns products with `isBestSeller = true`, ordered by
- *    `confirmedOrderCount DESC`. We re-sort defensively in case the API ever
- *    ships them in a different order.
- *  - Caps the visible grid at 8 cards.
- *  - Reuses the existing ProductCard so styling, hover overlay, color picker,
- *    and add-to-cart behaviour stay consistent with the rest of the store.
- *  - Empty state shows a localized "no products" message.
- *  - "View All" navigates to /best-sellers (a dedicated full-page list).
- *
- * Drop-in usage: `<BestSellersSection />` — no required props.
- */
 export default function BestSellersSection({ className = '' }) {
   const { t } = useLanguage()
   const [products, setProducts] = useState([])
@@ -34,13 +17,12 @@ export default function BestSellersSection({ className = '' }) {
       .then(res => {
         if (cancelled) return
         const list = res.data?.data ?? []
-        // Defensive highest-sales-first sort
         const sorted = [...list].sort((a, b) => {
           const aCount = Number(a.confirmedOrderCount || 0)
           const bCount = Number(b.confirmedOrderCount || 0)
           return bCount - aCount
         })
-        setProducts(sorted.slice(0, LIMIT))
+        setProducts(sorted)
       })
       .catch(() => { if (!cancelled) setProducts([]) })
       .finally(() => { if (!cancelled) setLoading(false) })

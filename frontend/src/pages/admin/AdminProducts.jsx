@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProducts } from '../../api/adminApi'
@@ -6,7 +6,9 @@ import Spinner from '../../components/ui/Spinner'
 import { useFormatPrice } from '../../utils/formatPrice'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { useLanguage } from '../../context/LanguageContext'
+import { useToast } from '../../context/ToastContext'
 
 /* ─── Stock threshold ──────────────────────────────────────────────────── */
 const LOW_STOCK_THRESHOLD = 5
@@ -123,6 +125,8 @@ function VariantBreakdown({ product }) {
 /* ─── Main page ────────────────────────────────────────────────────────── */
 export default function AdminProducts() {
   const { t } = useLanguage()
+  const { toast } = useToast()
+  const stockAlertShownRef = useRef(false)
   const formatPrice = useFormatPrice()
   const [products, setProducts]   = useState([])
   const [loading, setLoading]     = useState(true)
@@ -132,6 +136,7 @@ export default function AdminProducts() {
   const [toggling, setToggling]   = useState(null)
   const [expandedId, setExpandedId] = useState(null)
   const [search, setSearch] = useState('')
+  const [confirmTarget, setConfirmTarget] = useState(null)
 
   const fetchProducts = async (p = 0) => {
     setLoading(true)
@@ -151,12 +156,14 @@ export default function AdminProducts() {
 
   useEffect(() => { fetchProducts() }, [])
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('admin.delete') + '?')) return
+  const handleDelete = async () => {
+    if (!confirmTarget) return
+    const id = confirmTarget.id
     setDeleting(id)
     try {
       await deleteProduct(id)
       setProducts(prev => prev.filter(p => p.id !== id))
+      setConfirmTarget(null)
     } catch (err) {
       alert(t('admin.failedDelete'))
       console.error('Delete failed:', err)
@@ -199,6 +206,14 @@ export default function AdminProducts() {
     const s = stockStatus(p.stockQuantity)
     return sum + (s === 'low' ? 1 : 0)
   }, 0)
+
+  useEffect(() => {
+    if (loading || stockAlertShownRef.current) return
+    if (totalOutVariants > 0 || totalLowVariants > 0) {
+      toast(t('admin.stockAlertToast'), 'error')
+      stockAlertShownRef.current = true
+    }
+  }, [loading, totalOutVariants, totalLowVariants, toast, t])
 
   /* ── Client-side search filter ── */
   const filtered = products.filter(p =>
@@ -280,6 +295,8 @@ export default function AdminProducts() {
               const isExpanded = expandedId === p.id
               const stk = stockStatus(hasVariants ? (outCount > 0 ? 0 : lowCount > 0 ? 3 : 10) : p.stockQuantity)
 
+              const isLowStock = stk === 'low'
+              const isOutOfStock = stk === 'out'
               return (
                 <div key={p.id}>
                   <div className="flex items-center gap-4 sm:gap-5 px-4 sm:px-5 py-3.5 hover:bg-[#FDFBFC] transition-colors">
@@ -313,10 +330,26 @@ export default function AdminProducts() {
 
                     {/* 2. Status */}
                     <div className="hidden sm:flex items-center gap-2.5 shrink-0">
-                      <span className="flex items-center gap-1 text-xs tabular-nums" style={{ color: '#6B4E53' }}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[stk].dot}`} />
+                      <span className={`flex items-center gap-1.5 text-xs tabular-nums ${isOutOfStock ? 'text-red-600 font-semibold' : isLowStock ? 'text-amber-600 font-semibold' : ''}`} style={!isOutOfStock && !isLowStock ? { color: '#6B4E53' } : undefined}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[stk].dot} ${isOutOfStock ? 'animate-stock-dot-red' : isLowStock ? 'animate-stock-dot-amber' : ''}`} />
                         {p.stockQuantity}
                       </span>
+                      {isOutOfStock && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-red-200 bg-red-50 text-red-700 tracking-wide">
+                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L1 21h22L12 2zm0 6l7.53 13H4.47L12 8zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z" />
+                          </svg>
+                          {t('admin.outOfStockBadge')}
+                        </span>
+                      )}
+                      {isLowStock && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 tracking-wide">
+                          <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L1 21h22L12 2zm0 6l7.53 13H4.47L12 8zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z" />
+                          </svg>
+                          {t('admin.lowStockBadge')}
+                        </span>
+                      )}
                       {!p.active && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ color: '#9B7B80', background: '#F5EDEF' }}>hidden</span>
                       )}
@@ -371,7 +404,7 @@ export default function AdminProducts() {
                         </svg>
                       </Link>
                       {/* Delete */}
-                      <button onClick={() => handleDelete(p.id)} disabled={deleting === p.id}
+                      <button onClick={() => setConfirmTarget(p)} disabled={deleting === p.id}
                         className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-40"
                         style={{ background: '#FEF2F2', color: '#EF4444' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
@@ -432,6 +465,14 @@ export default function AdminProducts() {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        itemName={confirmTarget?.name}
+        loading={deleting === confirmTarget?.id}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   )
 }

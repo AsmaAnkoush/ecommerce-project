@@ -31,4 +31,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "GROUP BY oi.product.id, oi.productName, oi.productImage " +
            "ORDER BY SUM(oi.quantity) DESC")
     List<BestSellerItem> findTopSellingProductsByStatus(@Param("status") Order.OrderStatus status, Pageable pageable);
+
+    @Query("SELECT COUNT(oi) FROM OrderItem oi WHERE oi.product.id = :productId")
+    long countOrderItemsByProductId(@Param("productId") Long productId);
 }

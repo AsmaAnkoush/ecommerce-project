@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext'
 import { useUI } from '../context/UIContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useToast } from '../context/ToastContext'
-import useRecentlyViewed from '../hooks/useRecentlyViewed'
 import ProductCard from '../components/product/ProductCard'
 import Spinner from '../components/ui/Spinner'
 import Button from '../components/ui/Button'
@@ -90,7 +89,6 @@ export default function ProductDetailPage() {
   const { t } = useLanguage()
   const formatPrice = useFormatPrice()
   const { toast } = useToast()
-  const { recentlyViewed, addViewed } = useRecentlyViewed()
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -107,9 +105,6 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
 
-  // Specifications accordion
-  const [specsOpen, setSpecsOpen] = useState(false)
-
   // Reviews state
   const [reviews, setReviews] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(true)
@@ -125,7 +120,6 @@ export default function ProductDetailPage() {
       .then(res => {
         const p = res.data.data
         setProduct(p)
-        addViewed(p)
         const variantColors = p.variants?.length
           ? [...new Set(p.variants.map(v => v.color).filter(Boolean))]
           : []
@@ -177,6 +171,7 @@ export default function ProductDetailPage() {
       }
       setShowForm(false)
       fetchReviews()
+      toast(t('common.reviewSubmitted'))
     } catch (err) {
       setReviewError(err.response?.data?.message || 'Failed to submit review')
     } finally { setReviewSubmitting(false) }
@@ -250,12 +245,18 @@ export default function ProductDetailPage() {
 
       {/* ── Breadcrumb ─────────────────────────────────────────── */}
       <div className="border-b border-[#F5E8EA]">
-        <nav className="max-w-6xl mx-auto px-4 sm:px-8 py-3 flex items-center gap-2 text-xs text-[#B08A90] tracking-wider">
-          <Link to="/" className="hover:text-[#6B1F2A] transition-colors uppercase">{t('common.home')}</Link>
-          <span className="text-[#DEB8BE]">›</span>
-          <Link to="/products" className="hover:text-[#6B1F2A] transition-colors uppercase">{t('products.allProducts')}</Link>
-          <span className="text-[#DEB8BE]">›</span>
-          <span className="text-[#3D1A1E] font-medium truncate max-w-[160px]">{product.name}</span>
+        <nav aria-label="Breadcrumb" className="max-w-6xl mx-auto px-4 sm:px-8 py-3 flex items-center gap-2 text-[11px] text-[#9B7B80]">
+          <Link to="/" className="hover:text-[#6B1F2A] hover:underline underline-offset-4 decoration-[#DFA3AD]/60 transition-colors">
+            {t('common.home')}
+          </Link>
+          <span className="text-[#DEB8BE] select-none" aria-hidden="true">/</span>
+          <Link to="/products" className="hover:text-[#6B1F2A] hover:underline underline-offset-4 decoration-[#DFA3AD]/60 transition-colors">
+            {t('products.allProducts')}
+          </Link>
+          <span className="text-[#DEB8BE] select-none" aria-hidden="true">/</span>
+          <span aria-current="page" className="text-[#3D1A1E] font-medium truncate max-w-[200px]">
+            {product.name}
+          </span>
         </nav>
       </div>
 
@@ -421,21 +422,21 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ══ RIGHT: Product Info ══════════════════════════════ */}
-          <div className="lg:sticky lg:top-24 lg:self-start space-y-7 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+          <div className="lg:sticky lg:top-24 lg:self-start space-y-8 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
 
             {/* Category + Name */}
             <div>
               {product.categoryName && (
                 <Link
                   to={`/products?category=${product.categoryId}`}
-                  className="inline-flex items-center gap-2 text-[10px] tracking-[0.28em] text-[#B08A90] uppercase hover:text-[#6B1F2A] transition-colors mb-3"
+                  className="inline-flex items-center gap-2 text-[10px] tracking-[0.28em] text-[#B08A90] uppercase hover:text-[#6B1F2A] transition-colors mb-4"
                 >
                   <span className="w-6 h-px bg-[#DEB8BE]" />
                   {product.categoryName}
                 </Link>
               )}
               <h1
-                className="text-[32px] sm:text-[42px] lg:text-[46px] font-bold text-[#1A0A0D] leading-[1.1] tracking-[0.01em]"
+                className="text-[24px] sm:text-[30px] lg:text-[34px] font-medium text-[#2A1418] leading-[1.25] tracking-[0.015em]"
                 style={{ fontFamily: 'Playfair Display, serif' }}
               >
                 {product.name}
@@ -457,21 +458,21 @@ export default function ProductDetailPage() {
                 {hasDiscount ? (
                   <>
                     <span
-                      className="text-[42px] font-bold text-[#6B1F2A] leading-none nums-normal"
+                      className="text-[26px] sm:text-[28px] font-medium text-[#8B2F3A] leading-none nums-normal"
                       style={{ fontFamily: 'Cormorant Garamond, serif' }}
                     >
                       {formatPrice(product.discountPrice)}
                     </span>
-                    <span className="text-lg text-[#C4A0A6] line-through leading-none mb-1.5 nums-normal">
+                    <span className="text-base text-[#C4A0A6] line-through leading-none mb-1 nums-normal">
                       {formatPrice(product.price)}
                     </span>
-                    <span className="ms-auto text-[10px] font-bold tracking-[0.15em] uppercase bg-[#6B1F2A] text-white px-3 py-1.5 rounded-full mb-1 shadow-md shadow-[#6B1F2A]/20">
+                    <span className="ms-auto text-[10px] font-semibold tracking-[0.15em] uppercase bg-[#8B2F3A] text-white px-3 py-1.5 rounded-full mb-1 shadow-sm shadow-[#8B2F3A]/15">
                       {t('product.off')} {discountPct}%
                     </span>
                   </>
                 ) : (
                   <span
-                    className="text-[42px] font-bold text-[#1A0A0D] leading-none nums-normal"
+                    className="text-[26px] sm:text-[28px] font-medium text-[#8B2F3A] leading-none nums-normal"
                     style={{ fontFamily: 'Cormorant Garamond, serif' }}
                   >
                     {formatPrice(product.price)}
@@ -485,7 +486,7 @@ export default function ProductDetailPage() {
               {allSelectableColors.length > 0 && !selectedColor
                 ? <Badge variant="secondary">{t('product.selectColor')}</Badge>
                 : selectedColorHasVariants && !selectedSize
-                ? <Badge variant="secondary">{t('product.selectSize')}</Badge>
+                ? null
                 : isOutOfStock
                 ? <Badge variant="danger">{t('product.outOfStock')}</Badge>
                 : maxStock > 0 && maxStock < 10
@@ -516,12 +517,9 @@ export default function ProductDetailPage() {
                 {/* Size selector */}
                 {selectedColorHasVariants && selectedColor && (
                   <div>
-                    <p className="text-[10px] font-semibold text-[#3D1A1E] uppercase tracking-[0.2em] mb-3">
-                      {t('product.size')}
-                      {selectedSize && (
-                        <span className="ms-2 font-normal text-[#9B7B80] normal-case tracking-normal">{selectedSize}</span>
-                      )}
-                    </p>
+                    <label className="block text-xs font-medium tracking-[0.04em] text-[#6B1F2B] mb-2.5" style={{ fontFamily: 'Playfair Display, serif' }}>
+                      {t('product.selectYourSize')}
+                    </label>
                     <div className="flex flex-wrap gap-2">
                       {sizesForColor.map(size => {
                         const variant = product.variants.find(v => v.color === selectedColor && v.size === size)
@@ -554,80 +552,44 @@ export default function ProductDetailPage() {
                         )
                       })}
                     </div>
+
+                    {!selectedSize && (
+                      <p className="mt-2 text-[11px] text-[#B08A90] tracking-wide flex items-center gap-1.5">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /></svg>
+                        {t('product.selectSizeWarning')}
+                      </p>
+                    )}
+
+                    {/* Measurements — shown only when a size is selected and the variant has any measurement */}
+                    {(() => {
+                      if (!selectedVariant) return null
+                      const fields = [
+                        { key: 'chest',      label: t('product.chest') },
+                        { key: 'waist',      label: t('product.waist') },
+                        { key: 'shoulders',  label: t('product.shoulders') },
+                        { key: 'backWidth',  label: t('product.backWidth') },
+                        { key: 'length',     label: t('product.length') },
+                      ].filter(f => selectedVariant[f.key] != null)
+                      if (fields.length === 0) return null
+                      return (
+                        <div className="mt-4 bg-[#FDF6F7] border border-[#F0D5D8] rounded-xl px-4 py-3">
+                          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B7B80] mb-2">
+                            {t('product.measurements')} <span className="font-normal normal-case tracking-normal text-[#B08A90]">({t('product.cm')})</span>
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5">
+                            {fields.map(f => (
+                              <div key={f.key} className="flex items-baseline justify-between gap-2 text-xs">
+                                <span className="text-[#9B7B80]">{f.label}</span>
+                                <span className="font-medium text-[#3D1A1E] nums-normal">{selectedVariant[f.key]}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 )}
 
-                {/* Size guide / measurements table */}
-                {selectedColorHasVariants && selectedColor && (() => {
-                  const variantsForColor = product.variants
-                    .filter(v => v.color === selectedColor && v.size)
-                    .filter((v, i, arr) => arr.findIndex(x => x.size === v.size) === i)
-                  const measureCols = [
-                    { key: 'chest', label: 'الصدر' },
-                    { key: 'waist', label: 'الخصر' },
-                    { key: 'shoulders', label: 'الكتف' },
-                    { key: 'backWidth', label: 'الظهر' },
-                    { key: 'length', label: 'الطول' },
-                  ]
-                  const hasMeasurements = variantsForColor.some(v => measureCols.some(c => v[c.key] != null))
-                  if (!hasMeasurements) return null
-                  return (
-                    <div className="rounded-2xl border border-[#F0D5D8] overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setSpecsOpen(v => !v)}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-[#FDF6F7] hover:bg-[#FAF0F2] transition-colors"
-                      >
-                        <span className="text-xs font-semibold text-[#3D1A1E] uppercase tracking-widest">
-                          {t('product.specifications')} <span className="text-[#B08A90] font-normal normal-case tracking-normal">(سم)</span>
-                        </span>
-                        <svg
-                          className={`w-4 h-4 text-[#9B7B80] transition-transform duration-300 ${specsOpen ? 'rotate-180' : ''}`}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      <div
-                        className="overflow-hidden transition-all duration-300"
-                        style={{ maxHeight: specsOpen ? '500px' : '0', opacity: specsOpen ? 1 : 0 }}
-                      >
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs text-center">
-                            <thead>
-                              <tr className="bg-[#FDF6F7] border-b border-[#F0D5D8]">
-                                <th className="px-3 py-2.5 text-start text-[#6B3840] font-semibold">{t('product.size')}</th>
-                                {measureCols.map(c => (
-                                  <th key={c.key} className="px-3 py-2.5 text-[#6B3840] font-semibold">{c.label}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {variantsForColor.map((v, idx) => (
-                                <tr key={`${v.size}-${idx}`}
-                                  className={`border-b border-[#FAF0F2] last:border-0 transition-colors ${
-                                    selectedSize === v.size
-                                      ? 'bg-[#FDF0F2]'
-                                      : 'hover:bg-[#FDF8F9]'
-                                  }`}>
-                                  <td className={`px-3 py-2.5 text-start font-semibold ${selectedSize === v.size ? 'text-[#6B1F2A]' : 'text-[#3D1A1E]'}`}>
-                                    {v.size}
-                                  </td>
-                                  {measureCols.map(c => (
-                                    <td key={c.key} className="px-3 py-2.5 text-[#6B4E53]">
-                                      {v[c.key] != null ? v[c.key] : '—'}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })()}
               </div>
             )}
 
@@ -938,16 +900,13 @@ export default function ProductDetailPage() {
                         className="p-0.5 transition-transform hover:scale-110"
                       >
                         <svg
-                          className={`w-8 h-8 transition-colors ${star <= (hoverRating || reviewForm.rating) ? 'text-[#DFA3AD] fill-[#DFA3AD]' : 'text-[#EDD8DC] fill-[#EDD8DC]'}`}
+                          className={`w-8 h-8 transition-colors ${star <= (hoverRating || reviewForm.rating) ? 'text-[#F59E0B] fill-[#F59E0B]' : 'text-[#E5E7EB] fill-[#E5E7EB]'}`}
                           viewBox="0 0 24 24"
                         >
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                         </svg>
                       </button>
                     ))}
-                    <span className="ms-2 text-sm text-[#9B7B80]">
-                      {['', 'ضعيف', 'مقبول', 'جيد', 'جيد جداً', 'ممتاز'][hoverRating || reviewForm.rating]}
-                    </span>
                   </div>
                 </div>
                 <div>
@@ -1033,9 +992,6 @@ export default function ProductDetailPage() {
                   </div>
                   <div className="flex items-center gap-2 mb-2.5">
                     <Stars rating={review.rating} size="sm" />
-                    <span className="text-xs font-semibold text-[#6B4E53]">
-                      {['', 'ضعيف', 'مقبول', 'جيد', 'جيد جداً', 'ممتاز'][review.rating]}
-                    </span>
                   </div>
                   {review.comment && (
                     <p className="text-sm text-[#6B4E53] leading-relaxed">{review.comment}</p>
@@ -1046,25 +1002,6 @@ export default function ProductDetailPage() {
           )}
         </div>
 
-        {/* ═══ RECENTLY VIEWED ═══ */}
-        {recentlyViewed.length > 1 && (
-          <section className="mt-16 sm:mt-20">
-            <h2 className="text-2xl sm:text-3xl font-light text-[#3D1A1E] mb-6 text-center"
-                style={{ fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic' }}>
-              {t('product.recentlyViewed')}
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-              {recentlyViewed
-                .filter(p => String(p.id) !== String(id))
-                .slice(0, 4)
-                .map((p, i) => (
-                  <div key={p.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
-                    <ProductCard product={p} />
-                  </div>
-                ))}
-            </div>
-          </section>
-        )}
       </div>
     </div>
   )
@@ -1075,7 +1012,7 @@ function Stars({ rating, size = 'sm' }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map(s => (
-        <svg key={s} className={`${sizes[size]} ${s <= Math.round(rating) ? 'text-[#DFA3AD] fill-[#DFA3AD]' : 'text-[#EDD8DC] fill-[#EDD8DC]'}`} viewBox="0 0 24 24">
+        <svg key={s} className={`${sizes[size]} ${s <= Math.round(rating) ? 'text-[#F59E0B] fill-[#F59E0B]' : 'text-[#E5E7EB] fill-[#E5E7EB]'}`} viewBox="0 0 24 24">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
       ))}

@@ -18,6 +18,7 @@ import SearchOverlay from './components/search/SearchOverlay'
 import FloatingWhatsApp from './components/ui/FloatingWhatsApp'
 import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './routes/ProtectedRoute'
+import ScrollToTop from './components/ScrollToTop'
 
 import HomePage from './pages/HomePage'
 import ProductsPage from './pages/ProductsPage'
@@ -79,13 +80,14 @@ function StoreLayout({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <LanguageProvider>
       <UIProvider>
         <SiteSettingsProvider>
+          <ToastProvider>
           <AuthProvider>
             <CartProvider>
               <WishlistProvider>
-                <ToastProvider>
                 <Routes>
                   {/* Store routes */}
                   <Route path="/" element={<StoreLayout><HomePage /></StoreLayout>} />
@@ -121,10 +123,10 @@ export default function App() {
 
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-                </ToastProvider>
               </WishlistProvider>
             </CartProvider>
           </AuthProvider>
+          </ToastProvider>
         </SiteSettingsProvider>
         </UIProvider>
       </LanguageProvider>

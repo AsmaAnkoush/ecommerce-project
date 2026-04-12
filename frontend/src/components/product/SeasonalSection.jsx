@@ -2,18 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getSeasonProducts } from '../../api/productApi'
 import { useLanguage } from '../../context/LanguageContext'
-import { useSiteSettings } from '../../context/SiteSettingsContext'
 import ProductCard from './ProductCard'
 import Spinner from '../ui/Spinner'
 
 const LIMIT = 8
 
-const oppositeSeasonOf = (active) => (active === 'WINTER' ? 'SUMMER' : 'WINTER')
-
-export default function SeasonalSection({ className = '' }) {
+export default function SeasonalSection({ season = 'WINTER', className = '' }) {
   const { t } = useLanguage()
-  const { activeSeason } = useSiteSettings()
-  const oppositeSeason = oppositeSeasonOf(activeSeason)
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,7 +16,7 @@ export default function SeasonalSection({ className = '' }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    getSeasonProducts(oppositeSeason)
+    getSeasonProducts(season)
       .then(res => {
         if (cancelled) return
         const list = res.data?.data ?? []
@@ -30,11 +25,10 @@ export default function SeasonalSection({ className = '' }) {
       .catch(() => { if (!cancelled) setProducts([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [oppositeSeason])
+  }, [season])
 
-  const isWinter = oppositeSeason === 'WINTER'
-  const titleKey = isWinter ? 'home.prepareForWinter' : 'home.prepareForSummer'
-  const viewAllHref = `/products?season=${oppositeSeason}`
+  const titleKey = season === 'WINTER' ? 'home.winterCollection' : 'home.summerCollection'
+  const viewAllHref = `/products?season=${season}`
 
   const ViewAllArrow = () => (
     <svg className="w-3 h-3 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

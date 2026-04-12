@@ -32,7 +32,8 @@
       "Bash(powershell -c \"Get-PSDrive C | Select-Object Used,Free\")",
       "Bash(powershell:*)",
       "Bash(npm list:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(find C:\\\\Users\\\\user\\\\Desktop\\\\ecommerce-project\\\\frontend\\\\src\\\\pages\\\\admin:*)"
     ]
   }
 }

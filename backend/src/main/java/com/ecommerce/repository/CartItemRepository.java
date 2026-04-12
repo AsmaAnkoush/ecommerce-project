@@ -2,6 +2,7 @@ package com.ecommerce.repository;
 
 import com.ecommerce.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -21,4 +22,8 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
            "AND (:color IS NULL AND ci.color IS NULL OR ci.color = :color)")
     Optional<CartItem> findVariant(@Param("cartId") Long cartId, @Param("productId") Long productId,
                                    @Param("size") String size, @Param("color") String color);
+
+    @Modifying
+    @Query("DELETE FROM CartItem ci WHERE ci.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 }

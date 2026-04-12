@@ -5,9 +5,11 @@ import BestSellersSection from '../components/product/BestSellersSection'
 import SeasonalSection from '../components/product/SeasonalSection'
 import useInView from '../hooks/useInView'
 import { useLanguage } from '../context/LanguageContext'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 
 /* ── Hero ───────────────────────────────────────────────────────────────── */
-function Hero({ innerRef, inView, t }) {
+function Hero({ innerRef, inView, t, activeSeason }) {
+  const shopHref = activeSeason ? `/products?season=${activeSeason}` : '/products'
   return (
     <section ref={innerRef} className="bg-[#F2E0E4] lg:min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-14 py-10 sm:py-14 lg:py-0 lg:min-h-screen lg:flex lg:items-center lg:pb-24">
@@ -51,14 +53,14 @@ function Hero({ innerRef, inView, t }) {
             </p>
 
             <div className="flex items-center gap-4 sm:gap-6 mt-5 sm:mt-7">
-              <Link to="/products"
-                className="group relative inline-flex items-center gap-2 sm:gap-2.5 bg-[#6B1F2A] text-white text-[8px] sm:text-[11px] font-semibold tracking-[0.22em] sm:tracking-[0.24em] uppercase px-5 sm:px-10 py-2.5 sm:py-4 rounded-full shadow-[0_4px_24px_rgba(107,31,42,0.3)] hover:bg-[#551820] hover:shadow-[0_8px_32px_rgba(107,31,42,0.4)] hover:scale-[1.04] active:scale-[0.97] transition-all duration-300 ease-out">
+              <Link to={shopHref}
+                className="hero-cta group relative inline-flex items-center gap-2 sm:gap-2.5 bg-[#6B1F2A] text-white text-[8px] sm:text-[11px] font-semibold tracking-[0.22em] sm:tracking-[0.24em] uppercase px-5 sm:px-10 py-2.5 sm:py-4 rounded-full animate-hero-btn-float hover:[animation-play-state:paused] hover:bg-[#551820] hover:-translate-y-1 hover:scale-[1.06] hover:shadow-[0_14px_40px_rgba(107,31,42,0.45),0_0_32px_6px_rgba(223,163,173,0.6)] active:scale-[0.97] transition-[transform,box-shadow,background-color] duration-300 ease-out">
                 {t('home.shopNow')}
                 <svg className="w-3.5 h-3.5 rtl:rotate-180 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
-              <Link to="/products"
+              <Link to={shopHref}
                 className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.18em] uppercase text-[#6B1F2A] hover:text-[#3D1A1E] hover:tracking-[0.22em] transition-all duration-300">
                 {t('home.viewAll')}
                 <svg className="w-3 h-3 rtl:rotate-180 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -95,16 +97,18 @@ function Hero({ innerRef, inView, t }) {
 /* Home Page */
 export default function HomePage() {
   const { t } = useLanguage()
+  const { activeSeason } = useSiteSettings()
   const [heroRef, heroInView] = useInView()
 
   return (
     <div className="bg-[#FDF6F7] pb-12 overflow-x-hidden">
-      <Hero innerRef={heroRef} inView={heroInView} t={t} />
+      <Hero innerRef={heroRef} inView={heroInView} t={t} activeSeason={activeSeason} />
       <div className="space-y-2 sm:space-y-3">
         <CategorySection />
         <NewArrivalsSection />
         <BestSellersSection />
-        <SeasonalSection />
+        <SeasonalSection season="WINTER" />
+        <SeasonalSection season="SUMMER" />
       </div>
     </div>
   )

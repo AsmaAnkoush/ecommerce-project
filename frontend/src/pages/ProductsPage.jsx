@@ -7,6 +7,7 @@ import ProductRow from '../components/product/ProductRow'
 import Spinner from '../components/ui/Spinner'
 import ProductSkeleton from '../components/ui/ProductSkeleton'
 import { useLanguage } from '../context/LanguageContext'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 
 /* ── Sort options ─────────────────────────────────────────────────────── */
 const SORT_OPTIONS = [
@@ -90,6 +91,7 @@ const NextArrow = () => (
 /* ═══════════════════════════════════════════════════════════════════════ */
 export default function ProductsPage() {
   const { t } = useLanguage()
+  const { activeSeason } = useSiteSettings()
   const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -132,14 +134,16 @@ export default function ProductsPage() {
   useEffect(() => { setMinInput(minPrice) }, [minPrice])
   useEffect(() => { setMaxInput(maxPrice) }, [maxPrice])
 
-  /* ── Data fetching (unchanged) ───────────────────────────────────────── */
+  /* ── Data fetching ───────────────────────────────────────────────────── */
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
       const { sortBy, sortDir } = currentSort
       let list = [], pageMeta = { totalPages: 0, totalElements: 0, number: 0 }
-      if (season) {
-        const res = await getSeasonProducts(season)
+      const hasExplicitFilters = !!(categoryId || minPrice || maxPrice || color || size || search)
+      const effectiveSeason = season || (!hasExplicitFilters ? activeSeason : '')
+      if (effectiveSeason) {
+        const res = await getSeasonProducts(effectiveSeason)
         list = res.data?.data ?? []
         pageMeta = { totalPages: 0, totalElements: list.length, number: 0 }
         list = clientSort(list, sortBy, sortDir)
@@ -164,7 +168,7 @@ export default function ProductsPage() {
       setProducts(list)
       setPagination(pageMeta)
     } finally { setLoading(false) }
-  }, [search, categoryId, minPrice, maxPrice, color, size, season, page, currentSort])
+  }, [search, categoryId, minPrice, maxPrice, color, size, season, activeSeason, page, currentSort])
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
   useEffect(() => { getCategories().then(r => setCategories(r.data.data ?? [])).catch(() => {}) }, [])
@@ -320,101 +324,88 @@ export default function ProductsPage() {
   return (
     <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10">
 
-      {/* ──────────────────────────────────────────────────────────────
-          § 1  DESKTOP — single row: Sort + View | Categories
-         ────────────────────────────────────────────────────────────── */}
-      <div className="hidden md:flex items-center gap-4 mb-6">
-        {/* Start — Sort + View toggle */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {sortDropdown}
-          {viewToggle}
-        </div>
-
-        {/* Center — Category pills (scrolls if many) */}
-        <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+      {/* ── Categories container ───────────────────────────────────── */}
+      <div className="bg-white/60 border border-[#F0D5D8] rounded-2xl px-4 sm:px-5 py-4 sm:py-5 mb-8 shadow-[0_2px_12px_rgba(107,31,42,0.04)]">
+        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide py-1 -mx-1 px-1 justify-start md:justify-center md:flex-wrap md:gap-y-3">
           <CategoryPill label={t('products.all')} active={!categoryId} onClick={() => setFilter('category', '')} />
           {categories.map(cat => (
             <CategoryPill key={cat.id} label={cat.name} active={String(cat.id) === categoryId} onClick={() => setFilter('category', cat.id)} />
           ))}
         </div>
       </div>
-
-      {/* § 2  DESKTOP — Price filter row below */}
-      <div className="hidden md:flex items-center justify-center gap-4 mb-8">
-        <span className="text-xs text-[#9B7B80] shrink-0">{t('products.price')}</span>
-        <div className="flex items-center gap-3">
-          <input type="number" inputMode="numeric" placeholder={t('products.from')} value={minInput}
-            onChange={e => setMinInput(e.target.value)} onBlur={applyPrice}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPrice() } }}
-            className="w-28 px-3 py-2 border border-[#EDD8DC] rounded-lg text-center text-sm text-[#3D1A1E] placeholder:text-[#C4A0A6] outline-none focus:border-[#DFA3AD] focus:ring-2 focus:ring-[#DFA3AD]/20 transition-all bg-white" />
-          <span className="text-[#C4A0A6]">—</span>
-          <input type="number" inputMode="numeric" placeholder={t('products.to')} value={maxInput}
-            onChange={e => setMaxInput(e.target.value)} onBlur={applyPrice}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPrice() } }}
-            className="w-28 px-3 py-2 border border-[#EDD8DC] rounded-lg text-center text-sm text-[#3D1A1E] placeholder:text-[#C4A0A6] outline-none focus:border-[#DFA3AD] focus:ring-2 focus:ring-[#DFA3AD]/20 transition-all bg-white" />
-        </div>
-        {hasPriceFilter && (
-          <button type="button" onClick={clearPrice}
-            className="text-xs text-[#9B7B80] hover:text-[#6B1F2A] underline underline-offset-2 decoration-[#DFA3AD] transition-colors shrink-0">
-            {t('products.clearFilters')}
-          </button>
-        )}
-      </div>
+      {/* ── /Categories container ──────────────────────────────────── */}
 
       {/* ──────────────────────────────────────────────────────────────
-          § 3  MOBILE — stacked layout (unchanged)
+          § 4  PAGE HEADER — title + inline count
          ────────────────────────────────────────────────────────────── */}
-      <div className="md:hidden space-y-4 mb-6">
-        <div className="flex items-center gap-2.5">
-          {sortDropdown}
-          <button type="button" onClick={() => setPriceOpen(v => !v)}
-            className={[
-              'inline-flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs transition-all duration-200 whitespace-nowrap',
-              hasPriceFilter
-                ? 'bg-[#6B1F2A] text-white border-[#6B1F2A] shadow-sm'
-                : 'bg-white text-[#6B1F2A] border-[#EDD8DC] hover:bg-[#FDF0F2] hover:border-[#DFA3AD] shadow-[0_1px_4px_rgba(107,31,42,0.05)]',
-            ].join(' ')}>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="font-medium">{t('products.price')}</span>
-            <ChevronDown open={priceOpen} />
-          </button>
-        </div>
-        {priceOpen && (
-          <div className="bg-white border border-[#F0D5D8] rounded-2xl px-4 py-4 shadow-[0_2px_12px_rgba(107,31,42,0.05)] animate-fade-in-scale">
-            {priceInputs}
-          </div>
-        )}
-        {/* Mobile categories */}
-        <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4">
-          <CategoryPill label={t('products.all')} active={!categoryId} onClick={() => setFilter('category', '')} />
-          {categories.map(cat => (
-            <CategoryPill key={cat.id} label={cat.name} active={String(cat.id) === categoryId} onClick={() => setFilter('category', cat.id)} />
-          ))}
-        </div>
-      </div>
-
-      {/* ──────────────────────────────────────────────────────────────
-          § 4  PAGE HEADER — title (start) + count (end)
-         ────────────────────────────────────────────────────────────── */}
-      <div className="flex items-baseline justify-between gap-4 mb-6 pb-5 border-b border-[#F0D5D8]">
+      <div className="flex items-baseline justify-between gap-4 mb-8 mt-2 pb-5 border-b border-[#F0D5D8]">
         <h1 className="text-2xl sm:text-3xl font-light text-[#3D1A1E]"
             style={{ fontFamily: 'Cormorant Garamond, serif' }}>
           {pageTitle}
+          <span className="text-base sm:text-lg text-[#9B7B80] font-light ms-2 nums-normal">
+            ({pagination.totalElements} {pagination.totalElements === 1 ? t('products.productCountSingular') : t('products.productCountPlural')})
+          </span>
         </h1>
-        <div className="flex items-center gap-3 shrink-0">
-          {pagination.totalElements > 0 && (
-            <span className="text-xs text-[#9B7B80] tracking-wider nums-normal">
-              {pagination.totalElements} {t('cart.item')}
-            </span>
-          )}
-          {hasFilters && (
-            <button onClick={clearFilters}
-              className="inline-flex items-center gap-1 text-[10px] text-[#9B7B80] hover:text-[#6B1F2A] transition-colors tracking-wide">
-              <CloseIcon /> {t('products.clearAll')}
+        {hasFilters && (
+          <button onClick={clearFilters}
+            className="inline-flex items-center gap-1 text-[10px] text-[#9B7B80] hover:text-[#6B1F2A] transition-colors tracking-wide shrink-0">
+            <CloseIcon /> {t('products.clearAll')}
+          </button>
+        )}
+      </div>
+
+      {/* ──────────────────────────────────────────────────────────────
+          § 4b  TOOLBAR — sort + price + view toggle (just above grid)
+         ────────────────────────────────────────────────────────────── */}
+      <div className="bg-white border border-[#F0D5D8] rounded-2xl px-4 sm:px-5 py-4 mb-6 shadow-[0_2px_12px_rgba(107,31,42,0.04)]">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {/* Sort + view toggle */}
+          <div className="flex items-center gap-2.5">
+            {sortDropdown}
+            {viewToggle}
+          </div>
+
+          {/* Desktop inline price inputs */}
+          <div className="hidden md:flex items-center gap-3">
+            <span className="text-xs text-[#9B7B80] shrink-0">{t('products.price')}</span>
+            <input type="number" inputMode="numeric" placeholder={t('products.from')} value={minInput}
+              onChange={e => setMinInput(e.target.value)} onBlur={applyPrice}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPrice() } }}
+              className="w-24 px-3 py-2 border border-[#EDD8DC] rounded-lg text-center text-sm text-[#3D1A1E] placeholder:text-[#C4A0A6] outline-none focus:border-[#DFA3AD] focus:ring-2 focus:ring-[#DFA3AD]/20 transition-all bg-white" />
+            <span className="text-[#C4A0A6]">—</span>
+            <input type="number" inputMode="numeric" placeholder={t('products.to')} value={maxInput}
+              onChange={e => setMaxInput(e.target.value)} onBlur={applyPrice}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyPrice() } }}
+              className="w-24 px-3 py-2 border border-[#EDD8DC] rounded-lg text-center text-sm text-[#3D1A1E] placeholder:text-[#C4A0A6] outline-none focus:border-[#DFA3AD] focus:ring-2 focus:ring-[#DFA3AD]/20 transition-all bg-white" />
+            {hasPriceFilter && (
+              <button type="button" onClick={clearPrice}
+                className="text-xs text-[#9B7B80] hover:text-[#6B1F2A] underline underline-offset-2 decoration-[#DFA3AD] transition-colors shrink-0">
+                {t('products.clearFilters')}
+              </button>
+            )}
+          </div>
+
+          {/* Mobile price toggle + collapsible panel */}
+          <div className="md:hidden">
+            <button type="button" onClick={() => setPriceOpen(v => !v)}
+              className={[
+                'w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border text-xs transition-all duration-200',
+                hasPriceFilter
+                  ? 'bg-[#6B1F2A] text-white border-[#6B1F2A] shadow-sm'
+                  : 'bg-white text-[#6B1F2A] border-[#EDD8DC] hover:bg-[#FDF0F2] hover:border-[#DFA3AD] shadow-[0_1px_4px_rgba(107,31,42,0.05)]',
+              ].join(' ')}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">{t('products.price')}</span>
+              <ChevronDown open={priceOpen} />
             </button>
-          )}
+            {priceOpen && (
+              <div className="mt-3 bg-[#FDF6F7] border border-[#F0D5D8] rounded-2xl px-4 py-4 animate-fade-in-scale">
+                {priceInputs}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -426,21 +417,27 @@ export default function ProductsPage() {
           {Array.from({ length: 8 }, (_, i) => <ProductSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-28 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#F9EEF0] flex items-center justify-center mb-5">
-            <svg className="w-7 h-7 text-[#DFA3AD]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="flex flex-col items-center justify-center text-center min-h-[55vh] px-6">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#FDF0F2] to-[#F9E0E5] flex items-center justify-center mb-6 shadow-[0_4px_20px_rgba(107,31,42,0.06)]">
+            <svg className="w-11 h-11 sm:w-12 sm:h-12 text-[#DFA3AD]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </div>
-          <p className="font-light text-[#3D1A1E] mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px' }}>
+          <h2 className="font-light text-[#3D1A1E] mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px' }}>
             {t('products.noProducts')}
+          </h2>
+          <p className="text-sm sm:text-base text-[#9B7B80] font-light max-w-md leading-relaxed mb-8">
+            {t('products.tryDifferentFilter')}
           </p>
-          <p className="text-sm text-[#9B7B80] font-light mt-1">{t('products.tryDifferentFilter')}</p>
-          {hasFilters && (
-            <button onClick={clearFilters} className="mt-6 px-5 py-2.5 border border-[#DFA3AD] text-[#6B1F2A] rounded-full text-xs font-medium tracking-wide hover:bg-[#FDF0F2] transition-colors">
-              {t('products.clearFilters')}
-            </button>
-          )}
+          <button
+            onClick={clearFilters}
+            className="inline-flex items-center gap-2 px-7 py-3 bg-[#6B1F2A] text-white rounded-full text-xs font-medium tracking-[0.12em] uppercase hover:bg-[#8B2535] transition-colors shadow-[0_4px_16px_rgba(107,31,42,0.2)]"
+          >
+            {t('products.viewAllProducts')}
+            <svg className="w-3.5 h-3.5 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </button>
         </div>
       ) : (
         <>

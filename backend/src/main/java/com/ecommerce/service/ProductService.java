@@ -13,11 +13,14 @@ import com.ecommerce.entity.ProductImage;
 import com.ecommerce.entity.ProductVariant;
 import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.exception.ResourceNotFoundException;
+import com.ecommerce.repository.CartItemRepository;
 import com.ecommerce.repository.CategoryRepository;
+import com.ecommerce.repository.OrderRepository;
 import com.ecommerce.repository.ProductImageRepository;
 import com.ecommerce.repository.ProductRepository;
 import com.ecommerce.repository.ProductVariantRepository;
 import com.ecommerce.repository.ReviewRepository;
+import com.ecommerce.repository.WishlistItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +45,9 @@ public class ProductService {
     private final ProductImageRepository productImageRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ReviewRepository reviewRepository;
+    private final CartItemRepository cartItemRepository;
+    private final WishlistItemRepository wishlistItemRepository;
+    private final OrderRepository orderRepository;
 
     public Page<ProductResponse> findAll(Pageable pageable) {
         return productRepository.findByActiveTrue(pageable).map(this::toResponse);
@@ -72,7 +78,7 @@ public class ProductService {
     }
 
     public List<ProductResponse> findBestSellers() {
-        return productRepository.findTop8ByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc()
+        return productRepository.findByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc()
                 .stream().map(this::toResponse).toList();
     }
 
@@ -209,9 +215,22 @@ public class ProductService {
 
     @Transactional
     public void delete(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Product", id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+
+        // Always safe to purge — these reference the product but carry no business history
+        cartItemRepository.deleteByProductId(id);
+        wishlistItemRepository.deleteByProductId(id);
+        reviewRepository.deleteByProductId(id);
+
+        // Order history must be preserved — if the product is referenced by any order
+        // item, fall back to soft delete so receipts remain intact.
+        if (orderRepository.countOrderItemsByProductId(id) > 0) {
+            product.setActive(false);
+            productRepository.save(product);
+            return;
         }
+
         productImageRepository.deleteByProductId(id);
         productVariantRepository.deleteByProductId(id);
         productRepository.deleteById(id);

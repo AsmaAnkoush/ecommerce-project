@@ -86,14 +86,12 @@ export default function Navbar() {
 
   const desktopLinks = [
     { to: '/', label: t('nav.home'), end: true },
-    { to: '/products', label: t('nav.shop') },
     { to: '/offers', label: t('nav.offers') },
     { to: '/shipping', label: t('nav.delivery') },
   ]
 
   const mobileLinks = [
     { to: '/', label: t('nav.home'), end: true },
-    { to: '/products', label: t('nav.shop') },
     { to: '/offers', label: t('nav.offers') },
     { to: '/shipping', label: t('nav.delivery') },
     { to: '/about', label: t('nav.about') },
@@ -138,7 +136,7 @@ export default function Navbar() {
           {/* ── CENTER / LEFT on desktop: Logo ─────────────────── */}
           <Link
             to="/"
-            onClick={closeAll}
+            onClick={() => { closeAll(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
             className="flex flex-col items-center hover:opacity-75 transition-opacity select-none shrink-0 mx-auto md:mx-0"
           >
             <img

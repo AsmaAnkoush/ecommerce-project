@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Spinner from '../../components/ui/Spinner'
 import ImagePreviewModal from '../../components/ui/ImagePreviewModal'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function AdminCategories() {
@@ -18,6 +19,8 @@ export default function AdminCategories() {
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
   const [lightboxSrc, setLightboxSrc] = useState(null)
+  const [confirmTarget, setConfirmTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchCategories = () =>
     getCategories().then(r => setCategories(r.data.data ?? [])).finally(() => setLoading(false))
@@ -67,13 +70,17 @@ export default function AdminCategories() {
 
   const cancelEdit = () => resetForm()
 
-  const handleDelete = async id => {
-    if (!confirm(t('admin.deleteCategory'))) return
+  const handleDelete = async () => {
+    if (!confirmTarget) return
+    setDeleting(true)
     try {
-      await deleteCategory(id)
-      setCategories(prev => prev.filter(c => c.id !== id))
+      await deleteCategory(confirmTarget.id)
+      setCategories(prev => prev.filter(c => c.id !== confirmTarget.id))
+      setConfirmTarget(null)
     } catch (err) {
       alert(t('admin.failedDelete'))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -145,7 +152,7 @@ export default function AdminCategories() {
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => startEdit(c)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">{t('admin.edit')}</button>
-                    <button onClick={() => handleDelete(c.id)} className="text-xs text-red-500 hover:text-red-600 font-medium">{t('admin.delete')}</button>
+                    <button onClick={() => setConfirmTarget(c)} className="text-xs text-red-500 hover:text-red-600 font-medium">{t('admin.delete')}</button>
                   </div>
                 </li>
               ))}
@@ -163,6 +170,14 @@ export default function AdminCategories() {
           onChange={() => {}}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        itemName={confirmTarget?.name}
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   )
 }

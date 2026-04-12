@@ -72,7 +72,9 @@
     "community": "مجتمع",
     "boutique": "boutique",
     "phonePlaceholder": "+970 59 123 4567",
-    "addressPlaceholder": "عنوانك"
+    "addressPlaceholder": "عنوانك",
+    "loginToast": "أهلاً بعودتك 👋",
+    "logoutToast": "إلى اللقاء 👋"
   },
 
   "home": {
@@ -89,6 +91,8 @@
     "prepareForWinterEyebrow": "❄ WINTER COLLECTION",
     "prepareForSummer": "استعد للصيف",
     "prepareForSummerEyebrow": "☀ SUMMER COLLECTION",
+    "winterCollection": "تشكيلة الشتاء",
+    "summerCollection": "تشكيلة الصيف",
     "noSeasonalProducts": "لا توجد منتجات حالياً",
     "onSale": "عروض خاصة",
     "onSaleDesc": "صفقات حصرية على أجمل مجموعاتنا",
@@ -144,9 +148,18 @@
     "viewDetails": "عرض التفاصيل",
     "selectSize": "اختاري المقاس",
     "selectColor": "اختاري اللون",
+    "selectYourSize": "اختاري مقاسك",
+    "selectSizeWarning": "يرجى اختيار المقاس",
     "quantity": "الكمية",
     "description": "الوصف",
     "specifications": "المواصفات",
+    "measurements": "المقاسات التفصيلية",
+    "chest": "الصدر",
+    "waist": "الخصر",
+    "shoulders": "الكتف",
+    "backWidth": "الظهر",
+    "length": "الطول",
+    "cm": "سم",
     "relatedProducts": "قد يعجبكِ أيضاً",
     "recentlyViewed": "شاهدتِ مؤخراً",
     "noReviews": "لا توجد تقييمات بعد",
@@ -174,8 +187,11 @@
     "clearAll": "مسح الكل",
     "filters": "الفلاتر",
     "showResults": "عرض النتائج",
-    "noProducts": "لا يوجد منتجات",
-    "tryDifferentFilter": "جربي فلتراً مختلفاً أو ابحثي بكلمة أخرى",
+    "noProducts": "لا يوجد منتجات حالياً",
+    "tryDifferentFilter": "جرب تغيير الفلاتر أو تصفح جميع المنتجات",
+    "viewAllProducts": "عرض جميع المنتجات",
+    "productCountSingular": "منتج",
+    "productCountPlural": "منتجات",
     "previous": "السابق",
     "next": "التالي",
     "sortNewest": "الأحدث أولاً",
@@ -215,7 +231,7 @@
     "pieces": "قطع",
     "securePayment": "دفع آمن",
     "fastDelivery": "توصيل سريع",
-    "freeReturns": "إرجاع مجاني"
+    "freeReturns": "تبديل خلال 24 ساعة"
   },
 
   "orders": {
@@ -425,6 +441,10 @@
     "pending": "معلقة",
     "products": "المنتجات",
     "lowStock": "مخزون منخفض",
+    "almostSoldOut": "قرب النفاد",
+    "lowStockBadge": "قرب النفاد",
+    "outOfStockBadge": "نفذ المخزون",
+    "stockAlertToast": "تنبيه: يوجد منتجات قربت من النفاد أو نفذت",
     "lowStockAlert": "مخزون منخفض في {count} منتج",
     "lowStockAlertPlural": "مخزون منخفض في {count} منتجات",
     "tapToRestock": "اضغط للمراجعة وإعادة التخزين",
@@ -582,6 +602,10 @@
     "viewAll": "عرض الكل",
     "discoverMore": "اكتشفي المزيد",
     "learnMore": "اعرفي أكثر",
-    "home": "الرئيسية"
+    "home": "الرئيسية",
+    "deleteTitle": "تأكيد الحذف",
+    "deleteMessage": "هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirm": "تأكيد الحذف",
+    "reviewSubmitted": "شكراً على تقييمك! 🌸 سيتم مراجعة تقييمك قبل نشره."
   }
 }
