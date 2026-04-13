@@ -174,7 +174,7 @@
      baseline so every page agrees on the look. */
   .admin-table-wrap {
     background: #ffffff;
-    border: 1px solid #F1DEDE;
+    border: 1px solid #F0D5D8;
     border-radius: 1rem;
     box-shadow: 0 1px 4px rgba(107, 31, 42, 0.06);
     overflow: hidden;
@@ -285,6 +285,56 @@
   .nums-normal {
     font-style: normal;
     font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  /* ── Design-system tokens ─────────────────────────────────────
+     Centralised so a single edit propagates across every page that
+     uses the boutique palette. Adding new pages? Reach for these
+     classes before inventing a new className string. */
+
+  /* Typography */
+  .font-display { font-family: 'Cormorant Garamond', serif; }
+  .font-heading { font-family: 'Playfair Display', serif; }
+  .font-sans-ui { font-family: 'Raleway', sans-serif; }
+
+  /* Primary pill — the customer-facing "Complete Order / Continue Shopping"
+     button. Previously inlined as a PRIMARY_BTN constant in 4 pages. */
+  .btn-primary-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: #6B1F2A;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    padding: 0.875rem 2.25rem;
+    border-radius: 9999px;
+    box-shadow: 0 8px 24px rgba(107, 31, 42, 0.25);
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .btn-primary-pill:hover {
+    background: #551820;
+    box-shadow: 0 12px 32px rgba(107, 31, 42, 0.35);
+    transform: translateY(-2px) scale(1.03);
+  }
+  .btn-primary-pill:active { transform: scale(0.98); }
+  .btn-primary-pill:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 12px rgba(107, 31, 42, 0.15);
+  }
+
+  /* Surface — the boutique card with rose border. Use this instead of
+     mixing border-gray-100 / border-[#F0D5D8] on white surfaces. */
+  .surface-card {
+    background: #fff;
+    border: 1px solid #F0D5D8;
+    border-radius: 1rem;
+    box-shadow: 0 1px 6px rgba(107, 31, 42, 0.04);
   }
 }
 

@@ -50,11 +50,11 @@ public class ProductService {
     private final OrderRepository orderRepository;
 
     public Page<ProductResponse> findAll(Pageable pageable) {
-        return mapPageWithStats(productRepository.findByActiveTrue(pageable));
+        return mapPageWithStats(productRepository.findByActiveTrueAndIsDeletedFalse(pageable));
     }
 
     public Page<ProductResponse> findByCategory(Long categoryId, Pageable pageable) {
-        return mapPageWithStats(productRepository.findByCategoryIdAndActiveTrue(categoryId, pageable));
+        return mapPageWithStats(productRepository.findByCategoryIdAndActiveTrueAndIsDeletedFalse(categoryId, pageable));
     }
 
     public Page<ProductResponse> search(String keyword, Pageable pageable) {
@@ -67,26 +67,26 @@ public class ProductService {
     }
 
     public List<ProductResponse> findLatest() {
-        return toResponses(productRepository.findTop8ByActiveTrueOrderByCreatedAtDesc());
+        return toResponses(productRepository.findTop8ByActiveTrueAndIsDeletedFalseOrderByCreatedAtDesc());
     }
 
     public List<ProductResponse> findNew() {
-        return toResponses(productRepository.findByActiveTrueAndIsNewTrueOrderByCreatedAtDesc());
+        return toResponses(productRepository.findByActiveTrueAndIsNewTrueAndIsDeletedFalseOrderByCreatedAtDesc());
     }
 
     public List<ProductResponse> findBestSellers() {
-        return toResponses(productRepository.findByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc());
+        return toResponses(productRepository.findByActiveTrueAndIsBestSellerTrueAndIsDeletedFalseOrderByConfirmedOrderCountDesc());
     }
 
     public List<ProductResponse> findBySeason(Season season) {
         List<Season> seasons = (season == Season.ALL_SEASON)
                 ? List.of(Season.ALL_SEASON)
                 : List.of(season, Season.ALL_SEASON);
-        return toResponses(productRepository.findByActiveTrueAndSeasonInOrderByCreatedAtDesc(seasons));
+        return toResponses(productRepository.findByActiveTrueAndSeasonInAndIsDeletedFalseOrderByCreatedAtDesc(seasons));
     }
 
     public List<ProductResponse> findOnSale() {
-        return toResponses(productRepository.findByActiveTrueAndDiscountPriceIsNotNull());
+        return toResponses(productRepository.findByActiveTrueAndDiscountPriceIsNotNullAndIsDeletedFalse());
     }
 
     /** Customer-facing offers feed. Returns active products with any active
@@ -113,10 +113,13 @@ public class ProductService {
     public ProductResponse findById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
-        if (!product.getActive()) {
+        if (Boolean.TRUE.equals(product.getIsDeleted()) || !product.getActive()) {
             throw new ResourceNotFoundException("Product", id);
         }
-        product.setViewCount(product.getViewCount() + 1);
+        // @PostLoad coalesces nulls, but be defensive in case the entity was
+        // constructed without going through Hibernate's lifecycle.
+        long currentViews = product.getViewCount() != null ? product.getViewCount() : 0L;
+        product.setViewCount(currentViews + 1);
         productRepository.save(product);
         return toResponse(product);
     }
@@ -124,11 +127,14 @@ public class ProductService {
     public ProductResponse findByIdAdmin(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+        if (Boolean.TRUE.equals(product.getIsDeleted())) {
+            throw new ResourceNotFoundException("Product", id);
+        }
         return toResponse(product);
     }
 
     public Page<ProductResponse> findAllAdmin(Pageable pageable) {
-        return mapPageWithStats(productRepository.findAll(pageable));
+        return mapPageWithStats(productRepository.findByIsDeletedFalse(pageable));
     }
 
     /** Admin-side offers list — returns every product (active or hidden) that has a discount. */
@@ -230,20 +236,30 @@ public class ProductService {
         return toResponse(productRepository.save(product));
     }
 
+    /**
+     * Soft-delete: tombstones the product so historical order_items, reviews,
+     * etc. keep working (refunds, accounting, customer order history all stay
+     * intact), but it disappears from every public and admin listing.
+     *
+     * Cart and wishlist entries are still purged because they only represent
+     * "intent to buy" — keeping deleted products in users' carts would let
+     * them check out something that no longer exists.
+     */
     @Transactional
     public void delete(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Product", id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+        if (Boolean.TRUE.equals(product.getIsDeleted())) {
+            return; // already tombstoned — idempotent
         }
-        // Purge every FK reference so the product row can actually be deleted.
-        // Order lines are wiped too — purchase history entries lose their product link.
+        // Drop transient references that would let users buy a tombstoned product.
         cartItemRepository.deleteByProductId(id);
         wishlistItemRepository.deleteByProductId(id);
-        reviewRepository.deleteByProductId(id);
-        orderRepository.deleteOrderItemsByProductId(id);
-        productImageRepository.deleteByProductId(id);
-        productVariantRepository.deleteByProductId(id);
-        productRepository.deleteById(id);
+
+        // Hide from listings and (for safety) from active-only product feeds.
+        product.setIsDeleted(true);
+        product.setActive(false);
+        productRepository.save(product);
     }
 
     private void saveVariants(Product product, List<ProductVariantRequest> variantRequests) {
@@ -397,7 +413,7 @@ public class ProductService {
     private ProductResponse toResponse(Product p, double[] stats) {
         List<String> imageUrls = p.getImages().stream()
                 .filter(img -> img.getColor() == null)
-                .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+                .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                 .map(ProductImage::getImageUrl)
                 .toList();
 
@@ -406,13 +422,13 @@ public class ProductService {
         // image rendered on customer-facing product cards.
         String mainImageUrl = p.getImages().stream()
                 .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
-                .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+                .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                 .map(ProductImage::getImageUrl)
                 .findFirst()
                 .orElse(p.getImageUrl() != null
                         ? p.getImageUrl()
                         : p.getImages().stream()
-                                .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+                                .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                                 .map(ProductImage::getImageUrl)
                                 .findFirst()
                                 .orElse(null));
@@ -421,7 +437,7 @@ public class ProductService {
         Map<String, List<ProductResponse.ColorImageEntry>> colorImages = new LinkedHashMap<>();
         p.getImages().stream()
                 .filter(img -> img.getColor() != null)
-                .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+                .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                 .forEach(img -> colorImages
                         .computeIfAbsent(img.getColor(), k -> new ArrayList<>())
                         .add(ProductResponse.ColorImageEntry.builder()

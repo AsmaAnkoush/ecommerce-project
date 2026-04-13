@@ -14,7 +14,7 @@ const WHATSAPP_PATH = 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-
 
 const CARD_BASE = 'bg-white border border-[#F0D5D8] rounded-2xl'
 const CARD_SHADOW = { boxShadow: '0 2px 12px rgba(107,31,42,0.05)' }
-const PRIMARY_BTN = 'inline-flex items-center justify-center gap-2 bg-[#6B1F2A] text-white text-xs font-semibold tracking-[0.2em] uppercase px-9 py-3.5 rounded-full shadow-[0_8px_24px_rgba(107,31,42,0.25)] hover:bg-[#551820] hover:shadow-[0_12px_32px_rgba(107,31,42,0.35)] hover:-translate-y-0.5 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300'
+const PRIMARY_BTN = 'btn-primary-pill'
 
 function PageHero({ icon, title, subtitle, children }) {
   return (

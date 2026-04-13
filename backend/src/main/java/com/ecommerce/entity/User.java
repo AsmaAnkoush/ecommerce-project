@@ -48,6 +48,15 @@ public class User {
     @Builder.Default
     private Role role = Role.CUSTOMER;
 
+    /** Password-reset token + expiry. Both null when no reset is in flight.
+     *  Token is a single-use opaque random string; the row is flagged when
+     *  /forgot-password is hit and consumed when /reset-password succeeds. */
+    @JsonIgnore
+    private String resetToken;
+
+    @JsonIgnore
+    private LocalDateTime resetTokenExpiry;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

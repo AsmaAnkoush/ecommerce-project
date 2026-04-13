@@ -341,7 +341,7 @@ export default function AdminSettings() {
                     <span className="text-3xl" aria-hidden="true">{cfg.icon}</span>
                     <span className="font-semibold text-sm tracking-wide">{cfg.label}</span>
                     <span className={`text-xs ${isActive ? 'text-gray-300' : 'text-gray-400'}`}>{cfg.description}</span>
-                    {isActive && <span className="absolute top-2.5 end-2.5 w-2 h-2 rounded-full bg-emerald-400" title="Active" />}
+                    {isActive && <span className="absolute top-2.5 end-2.5 w-2 h-2 rounded-full bg-emerald-400" title={t('admin.active')} />}
                   </button>
                 )
               })}

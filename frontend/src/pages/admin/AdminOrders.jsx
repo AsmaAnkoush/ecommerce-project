@@ -435,7 +435,7 @@ export default function AdminOrders() {
                   <th>{t('admin.status')}</th>
                   <th>{t('admin.total')}</th>
                   <th>{t('admin.date') || 'Date'}</th>
-                  <th>{t('admin.itemsOrdered') || 'Products'}</th>
+                  <th style={{ minWidth: 280 }}>{t('admin.itemsOrdered') || 'Products'}</th>
                   <th className="text-end">{t('admin.actions') || 'Actions'}</th>
                 </tr>
               </thead>
@@ -478,7 +478,7 @@ export default function AdminOrders() {
                                 target="_blank" rel="noopener noreferrer"
                                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors"
                                 style={{ background: '#22C55E' }}
-                                title="WhatsApp"
+                                title={t('common.whatsapp') || 'WhatsApp'}
                                 onMouseEnter={e => e.currentTarget.style.background = '#16A34A'}
                                 onMouseLeave={e => e.currentTarget.style.background = '#22C55E'}
                               >
@@ -549,11 +549,56 @@ export default function AdminOrders() {
                           ) : <span className="text-sm text-gray-400">—</span>}
                         </td>
 
-                        {/* Products summary */}
+                        {/* Products summary — rich variant display */}
                         <td>
-                          <p className="text-xs leading-snug max-w-[280px] line-clamp-2" style={{ color: '#3D1A1E' }} title={summary}>
-                            {summary || '—'}
-                          </p>
+                          <div className="flex flex-col gap-1.5 max-w-[320px]" title={summary}>
+                            {(order.items || []).slice(0, 2).map(item => (
+                              <div key={item.id} className="flex items-center gap-2.5">
+                                {/* Variant-specific image (backend resolves by color) */}
+                                <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-[#EDD8DC] bg-[#FDF0F2]">
+                                  {item.productImage ? (
+                                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" loading="lazy" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-[#C4A0A6]">—</div>
+                                  )}
+                                </div>
+                                {/* Name + color circle + size badge */}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold truncate" style={{ color: '#3D1A1E' }}>
+                                    {item.productName}
+                                    {item.quantity > 1 && (
+                                      <span className="ms-1 text-[10px] font-medium tabular-nums text-[#9B7B80]">×{item.quantity}</span>
+                                    )}
+                                  </p>
+                                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                    {item.color && (
+                                      <span className="inline-flex items-center gap-1 text-[11px] text-[#6B4E53]">
+                                        <span
+                                          className="inline-block w-2.5 h-2.5 rounded-full border border-gray-300 shrink-0"
+                                          style={{ backgroundColor: item.color }}
+                                          aria-label={item.color}
+                                        />
+                                        {item.color}
+                                      </span>
+                                    )}
+                                    {item.size && (
+                                      <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[#FDF0F2] text-[#6B1F2A] border border-[#EDD8DC]">
+                                        {item.size}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {order.items && order.items.length > 2 && (
+                              <p className="text-[10px] text-[#9B7B80] ms-12">
+                                +{order.items.length - 2} {t('admin.items') || 'more'}
+                              </p>
+                            )}
+                            {(!order.items || order.items.length === 0) && (
+                              <span className="text-xs text-gray-400">—</span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Actions */}

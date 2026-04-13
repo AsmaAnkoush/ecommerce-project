@@ -42,7 +42,7 @@ const NAMED_COLORS = [
 ]
 const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '38', '40', '42', '44', '46']
 const EMPTY_SIZE_INPUT = { size: '', stockQuantity: 0, chest: '', waist: '', shoulders: '', backWidth: '', length: '' }
-const inputCls = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#6B1F2A] bg-white'
+const inputCls = 'w-full px-3 py-2.5 border border-[#EDD8DC] rounded-xl text-sm focus:outline-none focus:border-[#DFA3AD] input-focus-glow bg-white'
 
 const loadCustomColors = () => {
   try { return JSON.parse(localStorage.getItem('adminCustomColors') || '[]') } catch { return [] }
@@ -555,30 +555,30 @@ export default function AdminProductForm() {
           <div className="md:col-span-2">
             <Label>{t('product.description')}</Label>
             <textarea value={form.description} onChange={e => setField('description', e.target.value)}
-              rows={3} className={`${inputCls} resize-none`} placeholder="Product description..." />
+              rows={3} className={`${inputCls} resize-none`} placeholder={t('admin.productDescriptionPlaceholder')} />
           </div>
           <div>
-            <Label>Price *</Label>
+            <Label>{t('admin.price')} *</Label>
             <input required type="number" min="0" step="0.01" value={form.price}
               onChange={e => setField('price', e.target.value)} className={inputCls} placeholder="0.00" />
           </div>
           <div>
-            <Label>{t('product.quantity')} <span className="text-gray-400 font-normal text-xs">(auto-calculated)</span></Label>
+            <Label>{t('product.quantity')} <span className="text-gray-400 font-normal text-xs">({t('admin.autoCalculated')})</span></Label>
             <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-default select-none`}>
-              {colorEntries.reduce((sum, e) => sum + e.sizes.reduce((s2, sz) => s2 + (parseInt(sz.stockQuantity) || 0), 0), 0)} pcs
+              {colorEntries.reduce((sum, e) => sum + e.sizes.reduce((s2, sz) => s2 + (parseInt(sz.stockQuantity) || 0), 0), 0)} {t('admin.pieces')}
             </div>
           </div>
           <div>
             <Label>{t('admin.categories')}</Label>
             <select value={form.categoryId} onChange={e => setField('categoryId', e.target.value)} className={inputCls}>
-              <option value="">— None —</option>
+              <option value="">{t('admin.selectNone')}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <Label>Season</Label>
+            <Label>{t('admin.season')}</Label>
             <select value={form.season} onChange={e => setField('season', e.target.value)} className={inputCls}>
-              <option value="">— None —</option>
+              <option value="">{t('admin.selectNone')}</option>
               {SEASONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
@@ -586,19 +586,19 @@ export default function AdminProductForm() {
       </Section>
 
       {/* ── Discount ── */}
-      <Section title="Discount">
+      <Section title={t('admin.discount')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label>Discount Type</Label>
+            <Label>{t('admin.discountType')}</Label>
             <select value={form.discountType} onChange={e => setField('discountType', e.target.value)} className={inputCls}>
-              <option value="">— None —</option>
-              <option value="PERCENTAGE">Percentage (%)</option>
-              <option value="FIXED">Fixed Price</option>
+              <option value="">{t('admin.selectNone')}</option>
+              <option value="PERCENTAGE">{t('admin.discountPercentage')}</option>
+              <option value="FIXED">{t('admin.discountFixed')}</option>
             </select>
           </div>
           {form.discountType && (
             <div>
-              <Label>{form.discountType === 'PERCENTAGE' ? 'Discount %' : 'Sale Price ($)'}</Label>
+              <Label>{form.discountType === 'PERCENTAGE' ? t('admin.discountValuePercent') : t('admin.discountValueFixed')}</Label>
               <input type="number" min="0" step="0.01" value={form.discountValue}
                 onChange={e => setField('discountValue', e.target.value)} className={inputCls}
                 placeholder={form.discountType === 'PERCENTAGE' ? '10' : '49.99'} />
@@ -612,7 +612,7 @@ export default function AdminProductForm() {
         <div className="space-y-6">
           {/* Add color UI */}
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-gray-700">Add a Color</p>
+            <p className="text-sm font-semibold text-gray-700">{t('admin.addColor')}</p>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="w-12 h-12 rounded-xl border-2 border-gray-200 shrink-0 shadow-inner"
                 style={{ backgroundColor: newColorInput.startsWith('#') ? newColorInput : (newColorHex || '#e5e7eb') }} />
@@ -627,8 +627,8 @@ export default function AdminProductForm() {
                 }}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addColorEntry())}
                 className="flex-1 min-w-[140px] px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#6B1F2A] bg-white"
-                placeholder="Color name or #hex" />
-              <Button type="button" size="sm" onClick={addColorEntry}>Add</Button>
+                placeholder={t('admin.colorNamePlaceholder')} />
+              <Button type="button" size="sm" onClick={addColorEntry}>{t('admin.addLabel')}</Button>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {[...NAMED_COLORS, ...customColors].map(c => {
@@ -772,14 +772,14 @@ export default function AdminProductForm() {
                               <input type="number" min="0" value={s.stockQuantity}
                                 onChange={e => updateSizeField(color, s.size, 'stockQuantity', e.target.value)}
                                 className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#6B1F2A]" />
-                              <span className="text-xs text-gray-400 shrink-0">pcs</span>
+                              <span className="text-xs text-gray-400 shrink-0">{t('admin.pieces')}</span>
                               <button type="button" onClick={() => toggleSizeExpand(color, s.size)}
                                 className={`ml-auto text-xs px-2 py-1 rounded-lg border transition-all ${
                                   isExpanded || hasMeasurements
                                     ? 'border-indigo-300 text-indigo-700 bg-indigo-50'
                                     : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-white'
                                 }`}>
-                                {hasMeasurements ? '✓ Measurements' : 'Measurements'}
+                                {hasMeasurements ? t('admin.measurementsSetLabel') : t('admin.measurementsLabel')}
                               </button>
                               <button type="button" onClick={() => removeSizeFromColor(color, s.size)}
                                 className="text-red-400 hover:text-red-600 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 text-lg font-bold shrink-0 transition-colors">
@@ -824,7 +824,7 @@ export default function AdminProductForm() {
                         onChange={e => setSizeInput(color, { ...sizeInp, size: e.target.value })}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSizeToColor(color))}
                         className="w-28 px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#6B1F2A]"
-                        placeholder="Custom size…" />
+                        placeholder={t('admin.customSizePlaceholder')} />
                       <Button type="button" size="sm" variant="secondary" onClick={() => addSizeToColor(color)}>
                         {t('product.size')}
                       </Button>

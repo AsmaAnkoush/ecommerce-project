@@ -238,7 +238,8 @@ public class OrderService {
 
                 deductStock(product, item);
 
-                long newCount = product.getConfirmedOrderCount() + 1;
+                Long currentCount = product.getConfirmedOrderCount();
+                long newCount = (currentCount != null ? currentCount : 0L) + 1;
                 product.setConfirmedOrderCount(newCount);
                 if (newCount >= BEST_SELLER_THRESHOLD) {
                     product.setIsBestSeller(true);

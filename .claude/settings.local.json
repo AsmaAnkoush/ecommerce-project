@@ -39,7 +39,14 @@
       "Bash(ls mvnw* pom.xml)",
       "Bash(mvn -q -DskipTests compile)",
       "Bash(npx eslint:*)",
-      "Bash(find . -name \"*.java\" -type f -exec grep -l \"PageRequest.of\\\\|Pageable\" {} \\\\;)"
+      "Bash(find . -name \"*.java\" -type f -exec grep -l \"PageRequest.of\\\\|Pageable\" {} \\\\;)",
+      "Bash(grep -E \"\\\\.\\(jsx|js\\)$\")",
+      "Bash(find /c/Users/user/Desktop/ecommerce-project/frontend/src/pages -name \"*.jsx\" -exec basename {} \\\\;)",
+      "Bash(grep -c \"^import.*Input from\" /c/Users/user/Desktop/ecommerce-project/frontend/src/pages/**/*.jsx)",
+      "Bash(find /c/Users/user/Desktop/ecommerce-project/frontend/src/pages -name \"*.jsx\" -exec grep -l \"import.*Input\" {} \\\\;)",
+      "Bash(awk '$1 <= 2')",
+      "Bash(grep -n \"AdminReviews\\\\|AdminCategories\" /c/Users/user/Desktop/ecommerce-project/frontend/src/pages/admin/*.jsx)",
+      "Bash(grep:*)"
     ]
   }
 }

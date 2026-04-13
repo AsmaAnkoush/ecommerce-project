@@ -12,42 +12,48 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Note on soft-delete: every public-facing query filters
+ * `is_deleted = false` (either via derived-method naming or in the
+ * WHERE clause of @Query). Admin "find all" lists also exclude deleted
+ * rows so admins can't accidentally re-edit a tombstoned product.
+ */
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    Page<Product> findByActiveTrue(Pageable pageable);
+    Page<Product> findByActiveTrueAndIsDeletedFalse(Pageable pageable);
 
-    Page<Product> findByCategoryIdAndActiveTrue(Long categoryId, Pageable pageable);
+    Page<Product> findByCategoryIdAndActiveTrueAndIsDeletedFalse(Long categoryId, Pageable pageable);
 
-    List<Product> findTop8ByActiveTrueOrderByCreatedAtDesc();
+    List<Product> findTop8ByActiveTrueAndIsDeletedFalseOrderByCreatedAtDesc();
 
-    List<Product> findByActiveTrueAndIsNewTrueOrderByCreatedAtDesc();
+    List<Product> findByActiveTrueAndIsNewTrueAndIsDeletedFalseOrderByCreatedAtDesc();
 
-    List<Product> findByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc();
+    List<Product> findByActiveTrueAndIsBestSellerTrueAndIsDeletedFalseOrderByConfirmedOrderCountDesc();
 
-    List<Product> findByActiveTrueAndDiscountPriceIsNotNull();
+    List<Product> findByActiveTrueAndDiscountPriceIsNotNullAndIsDeletedFalse();
 
-    /** Active products that have any kind of discount applied —
-     *  either a stored discountPrice or a positive discountValue. */
-    @Query("SELECT p FROM Product p WHERE p.active = true AND " +
+    /** Active, non-deleted products that have any kind of discount. */
+    @Query("SELECT p FROM Product p WHERE p.active = true AND p.isDeleted = false AND " +
            "(p.discountPrice IS NOT NULL " +
            " OR (p.discountValue IS NOT NULL AND p.discountValue > 0))")
     List<Product> findActiveOffers();
 
-    /** Admin variant — ignores active flag so hidden discounted items still appear. */
-    @Query("SELECT p FROM Product p WHERE " +
+    /** Admin variant — ignores the active flag (hidden products still appear) but
+     *  still excludes soft-deleted rows. */
+    @Query("SELECT p FROM Product p WHERE p.isDeleted = false AND (" +
            "p.discountPrice IS NOT NULL " +
-           "OR (p.discountValue IS NOT NULL AND p.discountValue > 0)")
+           "OR (p.discountValue IS NOT NULL AND p.discountValue > 0))")
     List<Product> findAllWithDiscount();
 
-    @Query("SELECT p FROM Product p WHERE p.active = true AND " +
+    @Query("SELECT p FROM Product p WHERE p.active = true AND p.isDeleted = false AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(p.brand) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(p.category.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Product> searchProducts(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT p FROM Product p WHERE p.active = true " +
+    @Query("SELECT p FROM Product p WHERE p.active = true AND p.isDeleted = false " +
            "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
            "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
            "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
@@ -60,11 +66,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                   @Param("size") String size,
                                   Pageable pageable);
 
-    List<Product> findByActiveTrueAndSeasonOrderByCreatedAtDesc(Season season);
+    List<Product> findByActiveTrueAndSeasonAndIsDeletedFalseOrderByCreatedAtDesc(Season season);
 
-    List<Product> findByActiveTrueAndSeasonInOrderByCreatedAtDesc(List<Season> seasons);
+    List<Product> findByActiveTrueAndSeasonInAndIsDeletedFalseOrderByCreatedAtDesc(List<Season> seasons);
 
-    long countByActiveTrue();
+    long countByActiveTrueAndIsDeletedFalse();
 
-    long countByActiveTrueAndStockQuantityGreaterThanAndStockQuantityLessThan(int gt, int lt);
+    long countByActiveTrueAndIsDeletedFalseAndStockQuantityGreaterThanAndStockQuantityLessThan(int gt, int lt);
+
+    /** Admin "find all" — excludes tombstoned rows. */
+    Page<Product> findByIsDeletedFalse(Pageable pageable);
 }

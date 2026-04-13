@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import * as cartApi from '../api/cartApi'
 import { useAuth } from './AuthContext'
 
@@ -44,9 +44,46 @@ export function CartProvider({ children }) {
     }
   }, [isLoggedIn])
 
+  // Track the prior auth state so we can detect a guest → logged-in transition
+  // and merge the local guest cart into the server cart exactly once.
+  const wasLoggedInRef = useRef(isLoggedIn)
   useEffect(() => {
-    fetchCart()
-  }, [fetchCart])
+    const wasLoggedIn = wasLoggedInRef.current
+    wasLoggedInRef.current = isLoggedIn
+
+    const justLoggedIn = !wasLoggedIn && isLoggedIn
+    if (!justLoggedIn) {
+      fetchCart()
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      const guest = loadGuestCart()
+      if (!guest.items || guest.items.length === 0) {
+        if (!cancelled) await fetchCart()
+        return
+      }
+      // Push each guest item to the server. Backend keys cart rows by
+      // (productId, size, color), so duplicates merge naturally.
+      for (const it of guest.items) {
+        try {
+          await cartApi.addToCart({
+            productId: it.productId,
+            quantity:  it.quantity,
+            size:      it.size,
+            color:     it.color,
+          })
+        } catch {
+          /* skip — out-of-stock / soft-deleted items just won't merge */
+        }
+      }
+      saveGuestCart([])
+      if (!cancelled) await fetchCart()
+    })()
+
+    return () => { cancelled = true }
+  }, [isLoggedIn, fetchCart])
 
   // productData: { id, name, imageUrl, price, discountPrice } — required for guest mode
   const addToCart = useCallback(async (productId, quantity = 1, productData = null, size = null, color = null) => {

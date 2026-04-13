@@ -24,8 +24,8 @@ public class AdminService {
     private final UserRepository userRepository;
 
     public AdminDashboardResponse getDashboard() {
-        long totalProducts  = productRepository.countByActiveTrue();
-        long lowStockCount  = productRepository.countByActiveTrueAndStockQuantityGreaterThanAndStockQuantityLessThan(0, 5);
+        long totalProducts  = productRepository.countByActiveTrueAndIsDeletedFalse();
+        long lowStockCount  = productRepository.countByActiveTrueAndIsDeletedFalseAndStockQuantityGreaterThanAndStockQuantityLessThan(0, 5);
         long totalOrders    = orderRepository.count();
         long totalUsers     = userRepository.count();
         long pendingOrders  = orderRepository.countByStatus(Order.OrderStatus.PENDING);

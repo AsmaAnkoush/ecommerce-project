@@ -94,7 +94,9 @@ export default function AdminOffers() {
     setLoading(true)
     setLoadError('')
     try {
-      const res = await getAdminProducts({ size: 200 })
+      // Backend caps page size at 100 (PageRequestValidator). Use the max
+      // allowed so we still get the broadest catalogue in one call.
+      const res = await getAdminProducts({ size: 100 })
       const payload = res.data?.data
       const list = Array.isArray(payload?.content) ? payload.content
                  : Array.isArray(payload)         ? payload
