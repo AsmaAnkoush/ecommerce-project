@@ -33,7 +33,13 @@
       "Bash(powershell:*)",
       "Bash(npm list:*)",
       "Bash(python:*)",
-      "Bash(find C:\\\\Users\\\\user\\\\Desktop\\\\ecommerce-project\\\\frontend\\\\src\\\\pages\\\\admin:*)"
+      "Bash(find C:\\\\Users\\\\user\\\\Desktop\\\\ecommerce-project\\\\frontend\\\\src\\\\pages\\\\admin:*)",
+      "Bash(xargs ls:*)",
+      "Bash(./mvnw.cmd -q -DskipTests compile)",
+      "Bash(ls mvnw* pom.xml)",
+      "Bash(mvn -q -DskipTests compile)",
+      "Bash(npx eslint:*)",
+      "Bash(find . -name \"*.java\" -type f -exec grep -l \"PageRequest.of\\\\|Pageable\" {} \\\\;)"
     ]
   }
 }

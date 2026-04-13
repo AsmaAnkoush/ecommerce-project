@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
+import { useToast } from '../context/ToastContext'
 import { getProfile, updateProfile } from '../api/userApi'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
@@ -8,6 +9,7 @@ import Button from '../components/ui/Button'
 export default function ProfilePage() {
   const { user, logout } = useAuth()
   const { t } = useLanguage()
+  const { toast } = useToast()
   const [form, setForm]     = useState({ firstName: '', lastName: '', phone: '', address: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
@@ -32,9 +34,12 @@ export default function ProfilePage() {
       setError('')
       await updateProfile(form)
       setSuccess(true)
+      toast(t('profile.updated'))
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
-      setError(err.response?.data?.message || t('profile.failedUpdate'))
+      const msg = err.response?.data?.message || t('profile.failedUpdate')
+      setError(msg)
+      toast(msg, 'error')
     } finally {
       setSaving(false)
     }

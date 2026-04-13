@@ -1,10 +1,12 @@
 package com.ecommerce.controller;
 
+import com.ecommerce.dto.request.DiscountRequest;
 import com.ecommerce.dto.request.ProductRequest;
 import com.ecommerce.dto.response.ApiResponse;
 import com.ecommerce.dto.response.ProductResponse;
 import com.ecommerce.entity.Season;
 import com.ecommerce.service.ProductService;
+import com.ecommerce.util.PageRequestValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,7 @@ public class ProductController {
             @RequestParam(required = false) String color,
             @RequestParam(required = false) String size_filter) {
 
+        PageRequestValidator.validate(page, size);
         // Use filter query when any filter is present
         if (categoryId != null || minPrice != null || maxPrice != null || color != null || size_filter != null) {
             Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
@@ -87,6 +90,7 @@ public class ProductController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
+        PageRequestValidator.validate(page, size);
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.success("Search results", productService.search(keyword, pageable)));
     }
@@ -96,6 +100,7 @@ public class ProductController {
             @PathVariable Long categoryId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
+        PageRequestValidator.validate(page, size);
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(ApiResponse.success("Products by category", productService.findByCategory(categoryId, pageable)));
     }
@@ -128,11 +133,9 @@ public class ProductController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ProductResponse>> setDiscount(
             @PathVariable Long id,
-            @RequestBody java.util.Map<String, Object> body) {
-        Object raw = body == null ? null : body.get("discountPrice");
-        java.math.BigDecimal value = raw == null ? null : new java.math.BigDecimal(raw.toString());
+            @Valid @RequestBody DiscountRequest body) {
         return ResponseEntity.ok(ApiResponse.success("Discount updated",
-                productService.setDiscountPrice(id, value)));
+                productService.setDiscountPrice(id, body.getDiscountPrice())));
     }
 
     @DeleteMapping("/{id}")

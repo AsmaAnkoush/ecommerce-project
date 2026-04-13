@@ -27,6 +27,7 @@ public class OrderResponse {
     private String paymentMethod;
     private String trackingNumber;
     private Boolean isGuest;
+    private Boolean isArchived;
     private LocalDateTime createdAt;
 
     @Data

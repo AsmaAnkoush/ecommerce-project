@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useLanguage } from '../context/LanguageContext'
+import { useToast } from '../context/ToastContext'
 import { useFormatPrice } from '../utils/formatPrice'
 import Spinner from '../components/ui/Spinner'
 import Button from '../components/ui/Button'
@@ -40,7 +41,28 @@ export default function CartPage() {
   const { cart, loading, updateItem, removeItem } = useCart()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { toast } = useToast()
   const formatPrice = useFormatPrice()
+
+  // Wrap mutations so the user always gets feedback — the underlying context
+  // calls are silent so they can be reused by other surfaces (ProductCard etc.).
+  const handleQtyChange = async (itemId, nextQty) => {
+    try {
+      await updateItem(itemId, nextQty)
+      if (nextQty <= 0) toast(t('cart.removedToast'))
+      else              toast(t('cart.updatedToast'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('cart.updateFailed'), 'error')
+    }
+  }
+  const handleRemove = async (itemId) => {
+    try {
+      await removeItem(itemId)
+      toast(t('cart.removedToast'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('cart.removeFailed'), 'error')
+    }
+  }
 
   if (loading) {
     return (
@@ -142,7 +164,7 @@ export default function CartPage() {
                   <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
                     <div className="flex items-center border border-[#EDD8DC] rounded-xl overflow-hidden bg-white">
                       <button
-                        onClick={() => updateItem(item.id, item.quantity - 1)}
+                        onClick={() => handleQtyChange(item.cartItemId ?? item.id, item.quantity - 1)}
                         className="w-8 h-8 flex items-center justify-center text-[#9B7B80] hover:text-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors text-lg leading-none"
                       >
                         −
@@ -151,7 +173,7 @@ export default function CartPage() {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateItem(item.id, item.quantity + 1)}
+                        onClick={() => handleQtyChange(item.cartItemId ?? item.id, item.quantity + 1)}
                         className="w-8 h-8 flex items-center justify-center text-[#9B7B80] hover:text-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors text-lg leading-none"
                       >
                         +
@@ -163,7 +185,7 @@ export default function CartPage() {
                         {formatPrice(item.subtotal)}
                       </p>
                       <button
-                        onClick={() => removeItem(item.cartItemId ?? item.id)}
+                        onClick={() => handleRemove(item.cartItemId ?? item.id)}
                         className="w-8 h-8 flex items-center justify-center text-[#C4A0A6] hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
                         title={t('cart.delete')}
                       >

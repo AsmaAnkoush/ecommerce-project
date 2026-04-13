@@ -4,6 +4,7 @@ import { placeOrder, placeGuestOrder } from '../api/orderApi'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useUI } from '../context/UIContext'
+import { useToast } from '../context/ToastContext'
 import { useFormatPrice } from '../utils/formatPrice'
 import { useLanguage } from '../context/LanguageContext'
 import Button from '../components/ui/Button'
@@ -48,6 +49,7 @@ export default function CheckoutPage() {
   const { isLoggedIn } = useAuth()
   const { openLogin, openRegister } = useUI()
   const { t } = useLanguage()
+  const { toast } = useToast()
   const formatPrice = useFormatPrice()
 
   const [form, setForm] = useState({
@@ -78,14 +80,18 @@ export default function CheckoutPage() {
         const items = cart.items.map(item => ({ productId: item.productId, quantity: item.quantity }))
         const { data } = await placeGuestOrder({ ...form, items })
         clearCart()
+        toast(t('orders.placedToast'))
         setGuestSuccess(data.data)
       } else {
         const { data } = await placeOrder(form)
         await fetchCart()
+        toast(t('orders.placedToast'))
         navigate(`/orders/${data.data.id}`, { state: { fromCheckout: true } })
       }
     } catch (err) {
-      setError(err.response?.data?.message || t('checkout.failedOrder'))
+      const msg = err.response?.data?.message || t('orders.placeFailed')
+      setError(msg)
+      toast(msg, 'error')
     } finally { setLoading(false) }
   }
 

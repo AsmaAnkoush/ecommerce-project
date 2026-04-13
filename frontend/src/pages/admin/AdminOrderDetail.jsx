@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { getAdminOrder, updateOrderStatus } from '../../api/adminApi'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { getAdminOrder, updateOrderStatus, deleteOrder } from '../../api/adminApi'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import Badge from '../../components/ui/Badge'
 import Spinner from '../../components/ui/Spinner'
 import PageHeader from '../../components/layout/PageHeader'
 import { useFormatPrice } from '../../utils/formatPrice'
 import { useLanguage } from '../../context/LanguageContext'
+import { useToast } from '../../context/ToastContext'
 
 const STATUS_VARIANT = { PENDING: 'warning', CONFIRMED: 'info', CANCELLED: 'danger' }
 const STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED']
@@ -13,12 +15,16 @@ const STATUS_STEPS = ['PENDING', 'CONFIRMED']
 
 export default function AdminOrderDetail() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const formatPrice = useFormatPrice()
   const { id } = useParams()
+  const navigate = useNavigate()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [statusSuccess, setStatusSuccess] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     getAdminOrder(id)
@@ -34,7 +40,26 @@ export default function AdminOrderDetail() {
       setOrder(o => ({ ...o, status }))
       setStatusSuccess(true)
       setTimeout(() => setStatusSuccess(false), 2500)
+      toast(t('admin.toastStatusChanged'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.toastError'), 'error')
     } finally { setUpdating(false) }
+  }
+
+  const handleDelete = async () => {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      await deleteOrder(order.id)
+      toast(t('admin.orderDeleted'))
+      setConfirmDelete(false)
+      setDeleting(false)
+      navigate('/admin/orders')
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedDelete'), 'error')
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
   }
 
   if (loading) return <div className="flex justify-center py-40"><Spinner size="lg" /></div>
@@ -243,9 +268,37 @@ export default function AdminOrderDetail() {
               <p className="text-xs text-green-600 mt-2 font-medium">{t('admin.statusUpdated')}</p>
             )}
           </div>
+
+          {/* Danger zone */}
+          <div className="bg-white rounded-2xl shadow-sm p-5 border border-red-100">
+            <h2 className="text-xs font-semibold text-red-500 uppercase tracking-widest mb-3">{t('admin.dangerZone') || 'Danger Zone'}</h2>
+            <p className="text-xs text-gray-500 mb-3">{t('admin.deleteOrderHint') || 'Permanently remove this order and all its items.'}</p>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="w-full inline-flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+              </svg>
+              {t('admin.deleteOrder')}
+            </button>
+          </div>
         </div>
       </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title={t('admin.deleteOrder')}
+        message={t('admin.deleteOrderConfirm')}
+        itemName={`#${order.id}`}
+        confirmLabel={t('admin.delete') || 'Delete'}
+        cancelLabel={t('common.cancel') || 'Cancel'}
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }

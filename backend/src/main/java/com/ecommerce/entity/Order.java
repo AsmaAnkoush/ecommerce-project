@@ -20,6 +20,12 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Optimistic lock — prevents concurrent status / archive / delete from
+     *  silently overwriting each other (e.g. confirm + delete fired together). */
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

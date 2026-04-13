@@ -3,6 +3,7 @@ import { getAdminReviews, approveReview, rejectReview } from '../../api/reviewAp
 import Spinner from '../../components/ui/Spinner'
 import PageHeader from '../../components/layout/PageHeader'
 import { useLanguage } from '../../context/LanguageContext'
+import { useToast } from '../../context/ToastContext'
 
 const STARS = [1, 2, 3, 4, 5]
 
@@ -33,6 +34,7 @@ function StatusBadge({ approved }) {
 
 export default function AdminReviews() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const [reviews, setReviews]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [page, setPage]         = useState(0)
@@ -58,6 +60,9 @@ export default function AdminReviews() {
     try {
       const res = await approveReview(id)
       setReviews(prev => prev.map(r => r.id === id ? { ...r, approved: res.data.data.approved } : r))
+      toast(t('admin.updatedSuccess'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
     } finally { setActing(null) }
   }
 
@@ -66,6 +71,9 @@ export default function AdminReviews() {
     try {
       const res = await rejectReview(id)
       setReviews(prev => prev.map(r => r.id === id ? { ...r, approved: res.data.data.approved } : r))
+      toast(t('admin.updatedSuccess'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
     } finally { setActing(null) }
   }
 

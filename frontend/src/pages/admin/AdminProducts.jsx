@@ -184,6 +184,7 @@ export default function AdminProducts() {
       await deleteProduct(id)
       setProducts(prev => prev.filter(p => p.id !== id))
       setConfirmTarget(null)
+      toast(t('admin.deletedSuccess'))
     } catch (err) {
       console.error('Delete failed:', err)
       const msg = err?.response?.data?.message || t('admin.failedDelete')
@@ -299,7 +300,7 @@ export default function AdminProducts() {
       {loading ? (
         <div className="flex items-center justify-center py-24"><Spinner size="lg" /></div>
       ) : (
-        <div className="bg-white rounded-2xl overflow-hidden overflow-x-auto" style={{ border: '1px solid #F5EDEF', boxShadow: '0 1px 4px rgba(107,31,42,0.06)' }}>
+        <div className="admin-table-wrap"><div className="admin-table-scroll">
           <table className="w-full text-sm min-w-[960px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ background: '#FDF9FA', color: '#9B7B80' }}>
@@ -545,6 +546,7 @@ export default function AdminProducts() {
               )}
             </tbody>
           </table>
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (

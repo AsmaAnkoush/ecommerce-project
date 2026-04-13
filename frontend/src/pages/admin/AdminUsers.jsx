@@ -4,6 +4,7 @@ import Spinner from '../../components/ui/Spinner'
 import PageHeader from '../../components/layout/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
+import { useToast } from '../../context/ToastContext'
 
 function RoleBadge({ role }) {
   const { t } = useLanguage()
@@ -25,6 +26,7 @@ function formatDate(iso) {
 
 export default function AdminUsers() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const { user: me } = useAuth()
   const [users, setUsers] = useState([])
   const [total, setTotal] = useState(0)
@@ -68,7 +70,10 @@ export default function AdminUsers() {
     try {
       await deleteAdminUser(id)
       setConfirmDelete(null)
+      toast(t('admin.deletedSuccess'))
       load()
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedDelete'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -105,7 +110,7 @@ export default function AdminUsers() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="admin-table-wrap">
         {loading ? (
           <div className="flex justify-center py-24"><Spinner size="lg" /></div>
         ) : users.length === 0 ? (

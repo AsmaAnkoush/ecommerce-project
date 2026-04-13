@@ -17,6 +17,7 @@ import com.ecommerce.service.OrderService;
 import com.ecommerce.service.ProductService;
 import com.ecommerce.service.ReviewService;
 import com.ecommerce.service.UserService;
+import com.ecommerce.util.PageRequestValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -61,6 +62,7 @@ public class AdminController {
     public ResponseEntity<ApiResponse<Page<ProductResponse>>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size) {
+        PageRequestValidator.validate(page, size);
         Page<ProductResponse> products = productService.findAllAdmin(
                 PageRequest.of(page, size, Sort.by("createdAt").descending()));
         return ResponseEntity.ok(ApiResponse.success("All products", products));
@@ -87,6 +89,7 @@ public class AdminController {
     public ResponseEntity<ApiResponse<Page<OrderResponse>>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        PageRequestValidator.validate(page, size);
         Page<OrderResponse> orders = orderService.getAllOrders(
                 PageRequest.of(page, size, Sort.by("createdAt").descending()));
         return ResponseEntity.ok(ApiResponse.success("All orders", orders));
@@ -109,10 +112,17 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Order archived", orderService.archive(id)));
     }
 
+    @DeleteMapping("/orders/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long id) {
+        orderService.deleteOrder(id);
+        return ResponseEntity.ok(ApiResponse.success("Order deleted", null));
+    }
+
     @GetMapping("/orders/archived")
     public ResponseEntity<ApiResponse<Page<OrderResponse>>> getArchivedOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        PageRequestValidator.validate(page, size);
         return ResponseEntity.ok(ApiResponse.success("Archived orders",
                 orderService.getArchivedOrders(PageRequest.of(page, size, Sort.by("createdAt").descending()))));
     }
@@ -123,6 +133,7 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
             @RequestParam(required = false) String search) {
+        PageRequestValidator.validate(page, size);
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<UserResponse> users = (search != null && !search.isBlank())
                 ? userService.search(search, pageable)

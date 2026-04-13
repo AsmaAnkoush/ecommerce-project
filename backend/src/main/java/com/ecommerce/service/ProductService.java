@@ -50,57 +50,50 @@ public class ProductService {
     private final OrderRepository orderRepository;
 
     public Page<ProductResponse> findAll(Pageable pageable) {
-        return productRepository.findByActiveTrue(pageable).map(this::toResponse);
+        return mapPageWithStats(productRepository.findByActiveTrue(pageable));
     }
 
     public Page<ProductResponse> findByCategory(Long categoryId, Pageable pageable) {
-        return productRepository.findByCategoryIdAndActiveTrue(categoryId, pageable).map(this::toResponse);
+        return mapPageWithStats(productRepository.findByCategoryIdAndActiveTrue(categoryId, pageable));
     }
 
     public Page<ProductResponse> search(String keyword, Pageable pageable) {
-        return productRepository.searchProducts(keyword, pageable).map(this::toResponse);
+        return mapPageWithStats(productRepository.searchProducts(keyword, pageable));
     }
 
     public Page<ProductResponse> findWithFilters(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice,
                                                   String color, String size, Pageable pageable) {
-        return productRepository.findWithFilters(categoryId, minPrice, maxPrice, color, size, pageable)
-                .map(this::toResponse);
+        return mapPageWithStats(productRepository.findWithFilters(categoryId, minPrice, maxPrice, color, size, pageable));
     }
 
     public List<ProductResponse> findLatest() {
-        return productRepository.findTop8ByActiveTrueOrderByCreatedAtDesc()
-                .stream().map(this::toResponse).toList();
+        return toResponses(productRepository.findTop8ByActiveTrueOrderByCreatedAtDesc());
     }
 
     public List<ProductResponse> findNew() {
-        return productRepository.findByActiveTrueAndIsNewTrueOrderByCreatedAtDesc()
-                .stream().map(this::toResponse).toList();
+        return toResponses(productRepository.findByActiveTrueAndIsNewTrueOrderByCreatedAtDesc());
     }
 
     public List<ProductResponse> findBestSellers() {
-        return productRepository.findByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc()
-                .stream().map(this::toResponse).toList();
+        return toResponses(productRepository.findByActiveTrueAndIsBestSellerTrueOrderByConfirmedOrderCountDesc());
     }
 
     public List<ProductResponse> findBySeason(Season season) {
         List<Season> seasons = (season == Season.ALL_SEASON)
                 ? List.of(Season.ALL_SEASON)
                 : List.of(season, Season.ALL_SEASON);
-        return productRepository.findByActiveTrueAndSeasonInOrderByCreatedAtDesc(seasons)
-                .stream().map(this::toResponse).toList();
+        return toResponses(productRepository.findByActiveTrueAndSeasonInOrderByCreatedAtDesc(seasons));
     }
 
     public List<ProductResponse> findOnSale() {
-        return productRepository.findByActiveTrueAndDiscountPriceIsNotNull()
-                .stream().map(this::toResponse).toList();
+        return toResponses(productRepository.findByActiveTrueAndDiscountPriceIsNotNull());
     }
 
     /** Customer-facing offers feed. Returns active products with any active
      *  discount (discountPrice not null OR discountValue > 0), sorted by the
      *  largest savings percentage first. */
     public List<ProductResponse> findOffers() {
-        return productRepository.findActiveOffers().stream()
-                .map(this::toResponse)
+        return toResponses(productRepository.findActiveOffers()).stream()
                 .sorted(Comparator.comparingDouble(this::discountPercent).reversed())
                 .toList();
     }
@@ -135,13 +128,12 @@ public class ProductService {
     }
 
     public Page<ProductResponse> findAllAdmin(Pageable pageable) {
-        return productRepository.findAll(pageable).map(this::toResponse);
+        return mapPageWithStats(productRepository.findAll(pageable));
     }
 
     /** Admin-side offers list — returns every product (active or hidden) that has a discount. */
     public List<ProductResponse> findAllOffersAdmin() {
-        return productRepository.findAllWithDiscount().stream()
-                .map(this::toResponse)
+        return toResponses(productRepository.findAllWithDiscount()).stream()
                 .sorted(Comparator.comparingDouble(this::discountPercent).reversed())
                 .toList();
     }
@@ -373,7 +365,36 @@ public class ProductService {
         product.setDiscountPrice(finalPrice);
     }
 
+    /** Batch-load review stats once for the whole list, eliminating N+1. */
+    private Map<Long, double[]> fetchStats(List<Product> products) {
+        if (products == null || products.isEmpty()) return Map.of();
+        List<Long> ids = products.stream().map(Product::getId).toList();
+        Map<Long, double[]> map = new java.util.HashMap<>();
+        for (Object[] row : reviewRepository.findRatingStatsForProducts(ids)) {
+            Long pid = (Long) row[0];
+            Double avg = row[1] == null ? null : ((Number) row[1]).doubleValue();
+            long count = ((Number) row[2]).longValue();
+            map.put(pid, new double[]{ avg == null ? Double.NaN : avg, count });
+        }
+        return map;
+    }
+
+    public List<ProductResponse> toResponses(List<Product> products) {
+        Map<Long, double[]> stats = fetchStats(products);
+        return products.stream().map(p -> toResponse(p, stats.get(p.getId()))).toList();
+    }
+
+    public Page<ProductResponse> mapPageWithStats(Page<Product> page) {
+        Map<Long, double[]> stats = fetchStats(page.getContent());
+        return page.map(p -> toResponse(p, stats.get(p.getId())));
+    }
+
     public ProductResponse toResponse(Product p) {
+        // Single-item path: one extra query is fine; reuses the batch helper for symmetry.
+        return toResponse(p, fetchStats(List.of(p)).get(p.getId()));
+    }
+
+    private ProductResponse toResponse(Product p, double[] stats) {
         List<String> imageUrls = p.getImages().stream()
                 .filter(img -> img.getColor() == null)
                 .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
@@ -422,8 +443,8 @@ public class ProductService {
                         .build())
                 .toList();
 
-        Double avgRating = reviewRepository.findAverageRatingByProductId(p.getId());
-        long reviewCount = reviewRepository.countByProductIdAndApprovedTrue(p.getId());
+        Double avgRating = (stats != null && !Double.isNaN(stats[0])) ? stats[0] : null;
+        long reviewCount = stats != null ? (long) stats[1] : 0L;
 
         return ProductResponse.builder()
                 .id(p.getId())

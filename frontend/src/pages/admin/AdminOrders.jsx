@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAdminOrders, updateOrderStatus, archiveOrder, getArchivedOrders } from '../../api/adminApi'
+import { getAdminOrders, updateOrderStatus, archiveOrder, getArchivedOrders, deleteOrder } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { useToast } from '../../context/ToastContext'
 import PageHeader from '../../components/layout/PageHeader'
 import { useFormatPrice } from '../../utils/formatPrice'
@@ -261,6 +262,8 @@ export default function AdminOrders() {
   const [updating, setUpdating]             = useState(null)
   const [archiving, setArchiving]           = useState(null)
   const [activeTab, setActiveTab]           = useState('ALL')
+  const [confirmDelete, setConfirmDelete]   = useState(null)
+  const [deleting, setDeleting]             = useState(false)
 
   const isArchivedTab = activeTab === 'ARCHIVED'
 
@@ -315,8 +318,30 @@ export default function AdminOrders() {
 
   const handleStatusChange = async (orderId, status) => {
     setUpdating(orderId)
-    try { await updateOrderStatus(orderId, status); await fetchOrders(page, activeTab) }
-    finally { setUpdating(null) }
+    try {
+      await updateOrderStatus(orderId, status)
+      // Optimistic update — avoid a full refetch so the row stays in place.
+      const updater = list => list.map(o => o.id === orderId ? { ...o, status } : o)
+      setOrders(updater)
+      setArchivedOrders(updater)
+      toast(t('admin.statusUpdated') || t('admin.toastStatusChanged'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
+    } finally { setUpdating(null) }
+  }
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return
+    setDeleting(true)
+    try {
+      await deleteOrder(confirmDelete.id)
+      setOrders(prev => prev.filter(o => o.id !== confirmDelete.id))
+      setArchivedOrders(prev => prev.filter(o => o.id !== confirmDelete.id))
+      setConfirmDelete(null)
+      toast(t('admin.orderDeleted'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedDelete'), 'error')
+    } finally { setDeleting(false) }
   }
 
   const displayed = isArchivedTab
@@ -398,151 +423,205 @@ export default function AdminOrders() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {displayed.map(order => {
-            const isOpen = expanded === order.id
-            return (
-              <div
-                key={order.id}
-                className={`bg-white rounded-2xl border border-gray-100 shadow-sm transition-shadow duration-200 hover:shadow-md ${order.isArchived ? 'opacity-80' : ''}`}
-              >
-                {/* ── Header — clickable summary ── */}
-                <div
-                  className="px-5 py-4 cursor-pointer select-none"
-                  onClick={() => setExpanded(isOpen ? null : order.id)}
-                >
-                  {/* Top row: Order# + Customer | Phone+WA | Date/Time + Total + Status */}
-                  <div className="flex items-start gap-4 flex-wrap lg:flex-nowrap">
+        <>
+        <div className="admin-table-wrap">
+          <div className="admin-table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('admin.order')} #</th>
+                  <th>{t('admin.customer')}</th>
+                  <th>{t('admin.phone') || 'Phone'}</th>
+                  <th>{t('admin.status')}</th>
+                  <th>{t('admin.total')}</th>
+                  <th>{t('admin.date') || 'Date'}</th>
+                  <th>{t('admin.itemsOrdered') || 'Products'}</th>
+                  <th className="text-end">{t('admin.actions') || 'Actions'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayed.map(order => {
+                  const isOpen = expanded === order.id
+                  const canArchive = !order.isArchived && (order.status === 'CONFIRMED' || order.status === 'CANCELLED')
+                  const isBusy = updating === order.id
+                  const summary = (order.items || []).map(i =>
+                    `${i.productName}${i.size ? ' - ' + i.size : ''}${i.color ? ' - ' + i.color : ''} (x${i.quantity})`
+                  ).join(' • ')
+                  return (
+                    <Fragment key={order.id}>
+                      <tr className={order.isArchived ? 'opacity-70' : ''}>
+                        {/* Order # */}
+                        <td>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-md" style={{ background: '#FDF0F2', color: '#6B1F2A', border: '1px solid #EDD8DC' }}>
+                              #{order.id}
+                            </span>
+                            {order.isGuest && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{t('admin.guest')}</span>
+                            )}
+                          </div>
+                        </td>
 
-                    {/* Order # + Customer */}
-                    <div className="min-w-0 flex-1 lg:flex-initial lg:w-48">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-md" style={{ background: '#FDF0F2', color: '#6B1F2A', border: '1px solid #EDD8DC' }}>
-                          #{order.id}
-                        </span>
-                        {order.isGuest && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{t('admin.guest')}</span>
-                        )}
-                        {order.isArchived && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                            </svg>
-                            {t('admin.archived')}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm font-semibold truncate mt-1.5" style={{ color: '#3D1A1E', fontFamily: 'Raleway, sans-serif' }}>
-                        {order.customerName || 'N/A'}
-                      </p>
-                    </div>
-
-                    {/* Phone + WhatsApp */}
-                    <div className="min-w-0 flex-1 lg:flex-initial lg:w-56">
-                      {order.customerPhone ? (
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={waLink(order.customerPhone, order.items)}
-                            target="_blank" rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                            style={{ background: '#22C55E' }}
-                            title="WhatsApp"
-                            onMouseEnter={e => e.currentTarget.style.background = '#16A34A'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#22C55E'}
-                          >
-                            <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: '#fff' }}>
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                            </svg>
-                          </a>
-                          <p className="text-sm tabular-nums truncate" style={{ color: '#3D1A1E', fontFamily: 'Raleway, sans-serif' }} dir="ltr">
-                            {order.customerPhone}
+                        {/* Customer */}
+                        <td>
+                          <p className="text-sm font-semibold whitespace-nowrap" style={{ color: '#3D1A1E' }}>
+                            {order.customerName || '—'}
                           </p>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-400">—</p>
-                      )}
-                    </div>
+                        </td>
 
-                    {/* Date + Time */}
-                    <div className="shrink-0 lg:w-32">
-                      {order.createdAt ? (
-                        <>
-                          <p className="text-sm font-medium" style={{ color: '#3D1A1E', fontFamily: 'Raleway, sans-serif' }}>
-                            {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                        {/* Phone + WA */}
+                        <td>
+                          {order.customerPhone ? (
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={waLink(order.customerPhone, order.items)}
+                                target="_blank" rel="noopener noreferrer"
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                                style={{ background: '#22C55E' }}
+                                title="WhatsApp"
+                                onMouseEnter={e => e.currentTarget.style.background = '#16A34A'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#22C55E'}
+                              >
+                                <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, fill: '#fff' }}>
+                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                </svg>
+                              </a>
+                              <span className="text-sm tabular-nums whitespace-nowrap" style={{ color: '#3D1A1E' }} dir="ltr">
+                                {order.customerPhone}
+                              </span>
+                            </div>
+                          ) : <span className="text-sm text-gray-400">—</span>}
+                        </td>
+
+                        {/* Status — quick-change select */}
+                        <td>
+                          {order.isArchived ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-gray-100 text-gray-600 border border-gray-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                              {t('admin.archived')}
+                            </span>
+                          ) : (
+                            <div className="relative inline-block">
+                              <select
+                                value={order.status}
+                                onChange={e => handleStatusChange(order.id, e.target.value)}
+                                disabled={isBusy}
+                                className="text-xs font-semibold rounded-xl pl-2.5 pr-7 py-1 outline-none transition-colors disabled:opacity-50 cursor-pointer appearance-none"
+                                style={{
+                                  background: STATUS_CONFIG[order.status]?.bg || '#F9FAFB',
+                                  color:      STATUS_CONFIG[order.status]?.text || '#374151',
+                                  border:     `1px solid ${STATUS_CONFIG[order.status]?.border || '#E5E7EB'}`,
+                                  fontFamily: 'Raleway, sans-serif',
+                                }}
+                                title={t('admin.updateStatus')}
+                              >
+                                {ALL_STATUSES.map(s => (
+                                  <option key={s} value={s} style={{ background: '#fff', color: '#374151' }}>
+                                    {t('status.' + s)}
+                                  </option>
+                                ))}
+                              </select>
+                              <svg className="absolute end-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} style={{ color: STATUS_CONFIG[order.status]?.text || '#374151' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Total */}
+                        <td>
+                          <p className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#6B1F2A' }}>
+                            {formatPrice(order.totalAmount)}
                           </p>
-                          <p className="text-[11px] tabular-nums mt-0.5" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif' }}>
-                            {new Date(order.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </td>
+
+                        {/* Date & time */}
+                        <td>
+                          {order.createdAt ? (
+                            <div className="whitespace-nowrap">
+                              <p className="text-sm font-medium" style={{ color: '#3D1A1E' }}>
+                                {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </p>
+                              <p className="text-[11px] tabular-nums mt-0.5" style={{ color: '#9B7B80' }}>
+                                {new Date(order.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                              </p>
+                            </div>
+                          ) : <span className="text-sm text-gray-400">—</span>}
+                        </td>
+
+                        {/* Products summary */}
+                        <td>
+                          <p className="text-xs leading-snug max-w-[280px] line-clamp-2" style={{ color: '#3D1A1E' }} title={summary}>
+                            {summary || '—'}
                           </p>
-                        </>
-                      ) : (
-                        <p className="text-sm text-gray-400">—</p>
-                      )}
-                    </div>
+                        </td>
 
-                    {/* Total + Status + chevron */}
-                    <div className="shrink-0 flex items-center gap-3 ms-auto">
-                      <div className="text-end">
-                        <p className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>{t('admin.total')}</p>
-                        <p className="text-base font-bold tabular-nums" style={{ color: '#6B1F2A', fontFamily: 'Cormorant Garamond, serif', fontSize: '20px' }}>
-                          {formatPrice(order.totalAmount)}
-                        </p>
-                      </div>
-                      <StatusBadge status={order.status} />
-                      <svg
-                        className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                        style={{ color: '#DFA3AD' }}
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
+                        {/* Actions */}
+                        <td>
+                          <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => setExpanded(isOpen ? null : order.id)}
+                              className="p-1.5 rounded-lg transition-colors hover:bg-gray-100"
+                              title={t('admin.viewDetails') || 'View'}
+                              aria-label="View"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7} style={{ color: '#6B1F2A' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
 
-                  {/* Second row — shipping + notes (always visible, truncated) */}
-                  {(order.shippingAddress || order.notes) && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs" style={{ color: '#6B4E53', fontFamily: 'Raleway, sans-serif' }}>
-                      {order.shippingAddress && (
-                        <span className="inline-flex items-center gap-1.5 min-w-0">
-                          <svg className="w-3.5 h-3.5 shrink-0 text-[#DFA3AD]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <span className="truncate max-w-[260px] sm:max-w-[420px]">
-                            {[order.shippingAddress, order.city].filter(Boolean).join(', ')}
-                          </span>
-                        </span>
-                      )}
-                      {order.notes && (
-                        <span className="inline-flex items-center gap-1.5 min-w-0">
-                          <svg className="w-3.5 h-3.5 shrink-0 text-[#DFA3AD]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span className="truncate max-w-[260px] sm:max-w-[360px] italic">{order.notes}</span>
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                            {canArchive && (
+                              <button
+                                type="button"
+                                onClick={() => handleArchive(order.id)}
+                                disabled={archiving === order.id}
+                                className="p-1.5 rounded-lg transition-colors hover:bg-gray-100 disabled:opacity-50"
+                                title={t('admin.archive')}
+                                aria-label="Archive"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7} style={{ color: '#6B4E53' }}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                </svg>
+                              </button>
+                            )}
 
-                {/* ── Expanded body — items + actions ── */}
-                <div
-                  className="overflow-hidden transition-all duration-300 ease-out"
-                  style={{ maxHeight: isOpen ? '1600px' : '0', opacity: isOpen ? 1 : 0 }}
-                >
-                  {isOpen && (
-                    <OrderDetail
-                      order={order}
-                      updating={updating}
-                      onStatusChange={handleStatusChange}
-                      onArchive={handleArchive}
-                      archiving={archiving}
-                    />
-                  )}
-                </div>
-              </div>
-            )
-          })}
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDelete(order)}
+                              className="p-1.5 rounded-lg transition-colors hover:bg-red-50"
+                              title={t('admin.deleteOrder')}
+                              aria-label="Delete"
+                            >
+                              <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isOpen && (
+                        <tr>
+                          <td colSpan={8} style={{ padding: 0, background: '#FDFBFC' }}>
+                            <OrderDetail
+                              order={order}
+                              updating={updating}
+                              onStatusChange={handleStatusChange}
+                              onArchive={handleArchive}
+                              archiving={archiving}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -579,9 +658,21 @@ export default function AdminOrders() {
               >›</button>
             </div>
           )}
-        </div>
+        </>
       )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title={t('admin.deleteOrder')}
+        message={t('admin.deleteOrderConfirm')}
+        itemName={confirmDelete ? `#${confirmDelete.id}` : ''}
+        confirmLabel={t('admin.delete') || 'Delete'}
+        cancelLabel={t('common.cancel') || 'Cancel'}
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

@@ -205,7 +205,7 @@ export default function AdminOffers() {
       {loading ? (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
       ) : (
-        <div className="bg-white rounded-2xl overflow-hidden overflow-x-auto" style={{ border: '1px solid #F5EDEF', boxShadow: '0 1px 4px rgba(107,31,42,0.06)' }}>
+        <div className="admin-table-wrap"><div className="admin-table-scroll">
           <table className="w-full text-sm min-w-[960px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ background: '#FDF9FA', color: '#9B7B80' }}>
@@ -424,6 +424,7 @@ export default function AdminOffers() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

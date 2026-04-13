@@ -31,6 +31,12 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     long countByProductIdAndApprovedTrue(Long productId);
 
+    /** Batch aggregate: returns rows of [productId, avgRating, count] for the given products. */
+    @Query("SELECT r.product.id, AVG(r.rating), COUNT(r) FROM Review r " +
+           "WHERE r.product.id IN :productIds AND r.approved = true " +
+           "GROUP BY r.product.id")
+    List<Object[]> findRatingStatsForProducts(@Param("productIds") List<Long> productIds);
+
     @Modifying
     @Query("DELETE FROM Review r WHERE r.product.id = :productId")
     void deleteByProductId(@Param("productId") Long productId);

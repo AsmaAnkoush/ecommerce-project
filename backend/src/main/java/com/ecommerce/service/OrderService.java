@@ -58,6 +58,9 @@ public class OrderService {
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
 
+            // Block placement if the requested quantity exceeds available stock.
+            validateStockAvailable(product, cartItem.getColor(), cartItem.getSize(), cartItem.getQuantity());
+
             BigDecimal unitPrice = product.getDiscountPrice() != null ? product.getDiscountPrice() : product.getPrice();
 
             OrderItem orderItem = OrderItem.builder()
@@ -81,6 +84,28 @@ public class OrderService {
         cartRepository.save(cart);
 
         return toResponse(order);
+    }
+
+    /** Throws BadRequestException if not enough stock is available for the given variant.
+     *  When color+size are provided we look at the matching ProductVariant; otherwise
+     *  we fall back to the flat Product.stockQuantity. */
+    private void validateStockAvailable(Product product, String color, String size, Integer qty) {
+        if (product == null || qty == null || qty <= 0) {
+            throw new BadRequestException("Invalid item quantity");
+        }
+        int available;
+        if (color != null && !color.isBlank() && size != null && !size.isBlank()) {
+            available = productVariantRepository
+                    .findByProductIdAndColorIgnoreCaseAndSizeIgnoreCase(product.getId(), color, size)
+                    .map(ProductVariant::getStockQuantity)
+                    .orElse(0);
+        } else {
+            available = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+        }
+        if (qty > available) {
+            throw new BadRequestException(
+                    "Not enough stock for \"" + product.getName() + "\" — available: " + available + ", requested: " + qty);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -111,6 +136,13 @@ public class OrderService {
     }
 
     @Transactional
+    public void deleteOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        orderRepository.delete(order);
+    }
+
+    @Transactional
     public OrderResponse placeGuestOrder(GuestOrderRequest request) {
         String guestPhone = PhoneUtils.normalize(request.getCustomerPhone());
         PhoneUtils.validate(guestPhone);
@@ -130,6 +162,10 @@ public class OrderService {
         for (GuestOrderItemRequest itemReq : request.getItems()) {
             Product product = productRepository.findById(itemReq.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product", itemReq.getProductId()));
+
+            // Same stock guard as authenticated checkout — prevents over-ordering
+            // and abuse of the public guest endpoint.
+            validateStockAvailable(product, itemReq.getColor(), itemReq.getSize(), itemReq.getQuantity());
 
             BigDecimal unitPrice = product.getDiscountPrice() != null ? product.getDiscountPrice() : product.getPrice();
 
@@ -293,6 +329,7 @@ public class OrderService {
                 .paymentMethod(order.getPaymentMethod())
                 .trackingNumber(order.getTrackingNumber())
                 .isGuest(order.getUser() == null)
+                .isArchived(order.isArchived())
                 .createdAt(order.getCreatedAt())
                 .build();
     }

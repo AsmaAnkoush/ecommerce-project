@@ -177,15 +177,22 @@ export default function ProductDetailPage() {
       fetchReviews()
       toast(t('common.reviewSubmitted'))
     } catch (err) {
-      setReviewError(err.response?.data?.message || 'Failed to submit review')
+      const msg = err.response?.data?.message || t('profile.reviewSubmitFailed')
+      setReviewError(msg)
+      toast(msg, 'error')
     } finally { setReviewSubmitting(false) }
   }
 
   const handleDeleteReview = async () => {
     if (!confirm(t('product.deleteReviewConfirm'))) return
-    await deleteReview(id)
-    setUserReview(null)
-    fetchReviews()
+    try {
+      await deleteReview(id)
+      setUserReview(null)
+      fetchReviews()
+      toast(t('profile.reviewDeletedToast'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('profile.reviewDeleteFailed'), 'error')
+    }
   }
 
   const openEditForm = () => {

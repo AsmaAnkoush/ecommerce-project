@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Spinner from '../../components/ui/Spinner'
 import ImagePreviewModal from '../../components/ui/ImagePreviewModal'
+import ImageCropModal from '../../components/ui/ImageCropModal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import PageHeader from '../../components/layout/PageHeader'
 import { useLanguage } from '../../context/LanguageContext'
@@ -25,6 +26,7 @@ export default function AdminCategories() {
   const [lightboxSrc, setLightboxSrc] = useState(null)
   const [confirmTarget, setConfirmTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [cropSrc, setCropSrc] = useState(null) // object URL of the source we're cropping
   const [togglingId, setTogglingId] = useState(null)
 
   const fetchCategories = () =>
@@ -55,8 +57,24 @@ export default function AdminCategories() {
   const handleFileChange = e => {
     const file = e.target.files[0]
     if (!file) return
-    setImageFile(file)
-    setPreviewUrl(URL.createObjectURL(file))
+    // Open the same crop modal used by the product form, then discard the picker
+    // value so the user can re-pick the same file again if they cancel.
+    setCropSrc(URL.createObjectURL(file))
+    e.target.value = ''
+  }
+
+  const handleCropConfirm = (croppedFile) => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc)
+    setCropSrc(null)
+    if (!croppedFile) return
+    if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
+    setImageFile(croppedFile)
+    setPreviewUrl(URL.createObjectURL(croppedFile))
+  }
+
+  const handleCropCancel = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc)
+    setCropSrc(null)
   }
 
   const handleSubmit = async e => {
@@ -68,13 +86,16 @@ export default function AdminCategories() {
       if (form.description) formData.append('description', form.description)
       if (imageFile) formData.append('image', imageFile)
 
-      if (editingId) await updateCategory(editingId, formData)
+      const wasEdit = !!editingId
+      if (wasEdit) await updateCategory(editingId, formData)
       else await createCategory(formData)
 
       resetForm()
       await fetchCategories()
+      toast(wasEdit ? t('admin.updatedSuccess') : t('admin.createdSuccess'))
     } catch (err) {
       setError(err.response?.data?.message || t('admin.failedSave'))
+      toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
     } finally { setSaving(false) }
   }
 
@@ -103,8 +124,9 @@ export default function AdminCategories() {
       await deleteCategory(confirmTarget.id)
       setCategories(prev => prev.filter(c => c.id !== confirmTarget.id))
       setConfirmTarget(null)
+      toast(t('admin.deletedSuccess'))
     } catch (err) {
-      alert(t('admin.failedDelete'))
+      toast(err?.response?.data?.message || t('admin.failedDelete'), 'error')
     } finally {
       setDeleting(false)
     }
@@ -318,6 +340,15 @@ export default function AdminCategories() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmTarget(null)}
       />
+
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspect={1}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   )
 }

@@ -166,6 +166,59 @@
   .delay-700 { animation-delay: 700ms; }
   .delay-800 { animation-delay: 800ms; }
 
+  /* ── Unified admin table system ────────────────────────────────────────
+     Apply .admin-table-wrap to the outer container around any admin table
+     to inherit shared chrome (background, border, shadow, padding) and
+     consistent typography/spacing inside <thead>/<tbody>. Individual cells
+     can still receive Tailwind utilities — these rules only set the
+     baseline so every page agrees on the look. */
+  .admin-table-wrap {
+    background: #ffffff;
+    border: 1px solid #F1DEDE;
+    border-radius: 1rem;
+    box-shadow: 0 1px 4px rgba(107, 31, 42, 0.06);
+    overflow: hidden;
+  }
+  .admin-table-wrap > .admin-table-scroll { overflow-x: auto; }
+  .admin-table-wrap table {
+    width: 100%;
+    font-size: 0.875rem;
+    color: #374151;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .admin-table-wrap thead tr { background: #FAFAFA; }
+  .admin-table-wrap thead th {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.875rem 1rem;
+    text-align: start;
+    border-bottom: 1px solid #F0DDE0;
+    white-space: nowrap;
+  }
+  .admin-table-wrap tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    color: #374151;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .admin-table-wrap tbody tr { transition: background-color 0.18s ease; }
+  .admin-table-wrap tbody tr:hover { background: #F9FAFB; }
+  .admin-table-wrap tbody tr:last-child td { border-bottom: 0; }
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
   /* Smooth card lift — luxury feel */
   .card-hover {
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),

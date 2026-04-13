@@ -5,6 +5,7 @@ C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\response\UserResponse.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\service\WebsiteSettingsService.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\response\ApiResponse.java
+C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\request\DiscountRequest.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\service\AdminService.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\controller\UserController.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\entity\Category.java
@@ -27,6 +28,7 @@ C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\serv
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\entity\ProductVariant.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\controller\OrderController.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\config\SecurityConfig.java
+C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\util\PageRequestValidator.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\entity\ProductImage.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\repository\WishlistItemRepository.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\security\JwtTokenProvider.java

@@ -2,6 +2,7 @@ package com.ecommerce.service;
 
 import com.ecommerce.entity.Season;
 import com.ecommerce.entity.WebsiteSettings;
+import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.repository.WebsiteSettingsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,12 @@ public class WebsiteSettingsService {
 
     @Transactional
     public WebsiteSettings updateSettings(WebsiteSettings updated) {
+        // WhatsApp number is required and must be 9-15 digits (international format).
+        String wa = updated.getContactWhatsApp();
+        String waDigits = wa == null ? "" : wa.replaceAll("\\D", "");
+        if (waDigits.length() < 9 || waDigits.length() > 15) {
+            throw new BadRequestException("WhatsApp number is required and must contain 9-15 digits");
+        }
         WebsiteSettings settings = getSettings();
         settings.setSiteName(updated.getSiteName());
         settings.setLogoUrl(updated.getLogoUrl());
