@@ -103,12 +103,17 @@ export default function AuthForms({ mode, onSwitchMode, onSuccess }) {
     try {
       setLoading(true)
       setApiError('')
+      let userData
       if (isLogin) {
-        await login({ email: form.email, password: form.password })
+        userData = await login({ email: form.email, password: form.password })
       } else {
-        await register(form)
+        userData = await register(form)
       }
       if (onSuccess) onSuccess()
+      // Admin lands directly in the admin panel; everyone else stays where they were.
+      if (userData?.role === 'ADMIN' && typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin')) {
+        window.location.assign('/admin')
+      }
     } catch (err) {
       setApiError(
         err.response?.data?.message ||

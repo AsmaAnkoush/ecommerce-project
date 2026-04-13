@@ -53,6 +53,10 @@ public class Order {
 
     private String trackingNumber;
 
+    @Column(name = "is_archived", nullable = false)
+    @Builder.Default
+    private boolean isArchived = false;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

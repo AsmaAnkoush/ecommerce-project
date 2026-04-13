@@ -124,6 +124,17 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success("Visibility updated", productService.toggleVisibility(id)));
     }
 
+    @PatchMapping("/{id}/discount")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ProductResponse>> setDiscount(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, Object> body) {
+        Object raw = body == null ? null : body.get("discountPrice");
+        java.math.BigDecimal value = raw == null ? null : new java.math.BigDecimal(raw.toString());
+        return ResponseEntity.ok(ApiResponse.success("Discount updated",
+                productService.setDiscountPrice(id, value)));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {

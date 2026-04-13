@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
+import { useSiteSettings } from '../../context/SiteSettingsContext'
 import AdminBottomNav from './AdminBottomNav'
 import LanguageToggle from '../ui/LanguageToggle'
 
@@ -20,6 +21,7 @@ const getNavItems = (t) => [
   { to: '/admin/products',   label: t('admin.products'),    icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
   { to: '/admin/orders',     label: t('admin.orders'),      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
   { to: '/admin/categories', label: t('admin.categories'),  icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z' },
+  { to: '/admin/users',      label: t('admin.users'),       icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
   { to: '/admin/reviews',    label: t('admin.reviews'),     icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
   { to: '/admin/offers',     label: t('admin.offers'),      icon: 'M7 7h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z' },
   { to: '/admin/settings',   label: t('admin.settings'),    icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
@@ -40,54 +42,63 @@ const getPageTitles = (t) => ({
 function Sidebar({ onClose }) {
   const { logout } = useAuth()
   const { t } = useLanguage()
+  const { siteName, logoUrl } = useSiteSettings()
   const navigate   = useNavigate()
   const handleLogout = () => { logout(); navigate('/') }
   const NAV_ITEMS = getNavItems(t)
 
   const linkClass = ({ isActive }) => [
-    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150',
+    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-200',
     'font-medium tracking-[0.01em]',
     isActive
-      ? 'bg-[#FDF0F2] text-[#6B1F2A] font-semibold border-s-[2.5px] border-[#6B1F2A]'
-      : 'text-[#9B7B80] border-s-[2.5px] border-transparent hover:bg-[#FDF6F7] hover:text-[#6B1F2A]',
+      ? 'bg-[#FDF0F2] text-[#6B1F2A] font-semibold border-s-[2.5px] border-[#6B1F2A] shadow-sm'
+      : 'text-[#9B7B80] border-s-[2.5px] border-transparent hover:bg-[#FDF6F7] hover:text-[#6B1F2A] hover:border-[#EDD8DC]',
   ].join(' ')
 
   return (
-    <div className="flex flex-col h-full bg-white" style={{ borderInlineEnd: '1px solid #F0DDE0' }}>
+    <div className="flex flex-col h-full max-h-screen bg-white overflow-hidden" style={{ borderInlineEnd: '1px solid #F0DDE0' }}>
 
-      {/* ── Brand ── */}
-      <div className="px-6 pt-7 pb-5 shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <p style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontWeight: 400,
-              letterSpacing: '0.45em',
-              fontSize: '17px',
-              color: '#6B1F2A',
-              lineHeight: 1,
-            }}>
-              IWEAR
-            </p>
-            <p className="text-[9px] tracking-[0.25em] text-[#C4A0A6] mt-1 uppercase"
+      {/* ── Brand — dynamic logo from settings ── */}
+      <div className="px-6 pt-6 pb-5 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0 flex flex-col items-center mb-4">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={siteName || 'Store logo'}
+                className="h-12 max-w-full object-contain"
+              />
+            ) : (
+              <p className="truncate text-center" style={{
+                fontFamily: 'Cormorant Garamond, serif',
+                fontWeight: 500,
+                letterSpacing: '0.18em',
+                fontSize: '18px',
+                color: '#6B1F2A',
+                lineHeight: 1.1,
+              }}>
+                {siteName || 'Store Name'}
+              </p>
+            )}
+            <p className="text-[9px] tracking-[0.25em] text-[#C4A0A6] mt-2 uppercase"
                style={{ fontFamily: 'Raleway, sans-serif' }}>
               {t('admin.adminPanel')}
             </p>
           </div>
           {onClose && (
             <button onClick={onClose}
-              className="md:hidden w-7 h-7 rounded-lg flex items-center justify-center text-[#C4A0A6] hover:bg-[#FDF0F2] hover:text-[#6B1F2A] transition-colors">
+              className="md:hidden w-7 h-7 rounded-lg flex items-center justify-center text-[#C4A0A6] hover:bg-[#FDF0F2] hover:text-[#6B1F2A] transition-colors shrink-0 self-start">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           )}
         </div>
-        <div className="mt-5 divider-rose" />
+        <div className="divider-rose" />
       </div>
 
-      {/* ── Flat navigation ── */}
-      <nav className="flex-1 px-3 py-2 overflow-y-auto space-y-1">
+      {/* ── Scrollable navigation ── */}
+      <nav className="flex-1 min-h-0 px-3 py-2 overflow-y-auto overscroll-contain space-y-1" style={{ scrollBehavior: 'smooth' }}>
         {NAV_ITEMS.map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/admin'} onClick={onClose} className={linkClass}>
             <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
@@ -157,38 +168,14 @@ function Topbar({ onMenuClick }) {
         </svg>
       </button>
 
-      {/* Page title */}
-      <div className="flex-1">
-        <h1 style={{
-          fontFamily: 'Cormorant Garamond, serif',
-          fontWeight: 500,
-          fontSize: '18px',
-          color: '#3D1A1E',
-          letterSpacing: '0.02em',
-          lineHeight: 1,
-        }}>
-          {pageTitle}
-        </h1>
-      </div>
+      {/* Spacer — page title is rendered by <PageHeader /> below the topbar */}
+      <div className="flex-1" />
+
 
       {/* Right side */}
-      <div className="flex items-center gap-2">
-        {/* Notification bell */}
-        <button
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hidden sm:flex"
-          style={{ color: '#C4A0A6' }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#FDF0F2'; e.currentTarget.style.color = '#6B1F2A' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#C4A0A6' }}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-        </button>
-
-        {/* Language toggle */}
+      <div className="flex items-center gap-3">
         <LanguageToggle />
 
-        {/* Divider */}
         <div className="w-px h-5 hidden sm:block" style={{ background: '#EDD8DC' }} />
 
         {/* User avatar */}

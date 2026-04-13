@@ -19,14 +19,28 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
+    /** Customer-facing — only visible categories. */
     @GetMapping
     public ResponseEntity<ApiResponse<List<Category>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success("Categories retrieved", categoryService.findAll()));
+        return ResponseEntity.ok(ApiResponse.success("Categories retrieved", categoryService.findVisible()));
+    }
+
+    /** Admin view — every category, including hidden ones. */
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<Category>>> getAllForAdmin() {
+        return ResponseEntity.ok(ApiResponse.success("All categories", categoryService.findAll()));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Category>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Category found", categoryService.findById(id)));
+    }
+
+    @PatchMapping("/{id}/toggle-visibility")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Category>> toggleVisibility(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Visibility toggled", categoryService.toggleVisibility(id)));
     }
 
     @PostMapping(consumes = "multipart/form-data")

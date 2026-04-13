@@ -2,61 +2,43 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getDashboard } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
+import PageHeader from '../../components/layout/PageHeader'
 import { useLanguage } from '../../context/LanguageContext'
 import { useFormatPrice } from '../../utils/formatPrice'
 
-/* ─── Stat card ────────────────────────────────────────────────────────── */
+/* ─── Stat card — minimal, centered icon, soft palette ─────────────────── */
 function StatCard({ label, value, sub, icon, tint, to }) {
   return (
     <Link
       to={to}
-      className="group bg-white rounded-2xl p-5 flex flex-col items-center text-center gap-3 transition-all duration-300"
-      style={{
-        boxShadow: '0 2px 8px rgba(107,31,42,0.06), 0 0 0 1px #F5EDEF',
-        textDecoration: 'none',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.boxShadow = '0 8px 32px rgba(107,31,42,0.12), 0 0 0 1px #EDD8DC'
-        e.currentTarget.style.transform = 'translateY(-2px)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(107,31,42,0.06), 0 0 0 1px #F5EDEF'
-        e.currentTarget.style.transform = 'translateY(0)'
-      }}
+      className="group relative bg-white rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg no-underline"
+      style={{ boxShadow: '0 2px 12px rgba(107,31,42,0.05), 0 0 0 1px #F5EDEF' }}
     >
-      {/* Icon */}
-      <div className="flex items-center justify-center">
-        <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center"
-          style={{ background: tint.bg, border: `1px solid ${tint.border}` }}
-        >
-          <svg className="w-5 h-5" style={{ color: tint.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-          </svg>
-        </div>
+      {/* Centered icon */}
+      <div
+        className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105"
+        style={{ background: tint.bg, border: `1px solid ${tint.border}` }}
+      >
+        <svg className="w-6 h-6" style={{ color: tint.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+          <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+        </svg>
       </div>
 
       {/* Value */}
       <div>
         <p
-          className="text-2xl font-bold leading-none tabular-nums"
-          style={{ color: '#3D1A1E', fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, fontSize: '26px' }}
+          className="leading-none tabular-nums"
+          style={{ color: '#3D1A1E', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600, fontSize: '32px', letterSpacing: '0.01em' }}
         >
           {value}
         </p>
-        <p className="text-sm font-medium mt-1.5" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif' }}>
+        <p className="text-xs font-medium mt-2 tracking-wide uppercase" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif', letterSpacing: '0.08em' }}>
           {label}
         </p>
         {sub && (
-          <p className="text-xs mt-0.5" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>{sub}</p>
+          <p className="text-[11px] mt-1" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>{sub}</p>
         )}
       </div>
-
-      {/* Gradient bottom accent */}
-      <div
-        className="h-0.5 rounded-full -mx-5 -mb-5 mt-auto w-[calc(100%+40px)]"
-        style={{ background: `linear-gradient(90deg, ${tint.icon}40, ${tint.icon}, ${tint.icon}40)` }}
-      />
     </Link>
   )
 }
@@ -225,31 +207,25 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="p-5 lg:p-7 space-y-6 max-w-[1280px]">
+    <div>
+      <PageHeader />
+      <div className="p-5 lg:p-7 space-y-6 max-w-[1280px]">
 
-      {/* ── Welcome strip ── */}
-      <div
-        className="rounded-2xl px-6 py-5 flex items-center justify-between overflow-hidden relative"
-        style={{
-          background: 'linear-gradient(135deg, #6B1F2A 0%, #8B2535 60%, #A33040 100%)',
-          boxShadow: '0 4px 20px rgba(107,31,42,0.25)',
-        }}
-      >
-        {/* Decorative circles */}
-        <div className="absolute right-0 top-0 w-48 h-48 rounded-full opacity-10" style={{ background: '#DFA3AD', transform: 'translate(30%,-30%)' }} />
-        <div className="absolute right-16 bottom-0 w-32 h-32 rounded-full opacity-10" style={{ background: '#EDD8DC', transform: 'translateY(40%)' }} />
+      {/* ── Welcome strip — compact, light backdrop, single rose accent ── */}
+      <div className="rounded-2xl px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 overflow-hidden relative bg-white border border-[#F0DDE0] shadow-[0_2px_12px_rgba(107,31,42,0.06)]">
+        <div className="absolute -top-12 -end-10 w-40 h-40 rounded-full opacity-30 blur-3xl pointer-events-none" style={{ background: '#FDF0F2' }} />
 
-        <div className="relative z-10">
-          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', fontWeight: 400, color: '#fff', letterSpacing: '0.03em', lineHeight: 1 }}>
+        <div className="relative z-10 min-w-0">
+          <p className="text-[#3D1A1E] truncate" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', fontWeight: 500, letterSpacing: '0.02em', lineHeight: 1.1 }}>
             {t('admin.welcomeBack')}
           </p>
-          <p style={{ fontFamily: 'Raleway, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', letterSpacing: '0.05em' }}>
+          <p className="mt-1 text-xs text-[#9B7B80]" style={{ fontFamily: 'Raleway, sans-serif', letterSpacing: '0.04em' }}>
             {t('admin.storeToday')}
           </p>
         </div>
 
-        <div className="relative z-10 hidden sm:flex items-center gap-2 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'Raleway, sans-serif' }}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+        <div className="relative z-10 hidden sm:inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-[#FDF6F7] border border-[#F0DDE0] text-[#6B1F2A]" style={{ fontFamily: 'Raleway, sans-serif' }}>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })}
@@ -289,7 +265,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
         <StatCard
           label={t('admin.ordersToday')}
           value={stats.ordersToday}
@@ -324,40 +300,40 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* ── Revenue analytics ── */}
+      {/* ── Sales analytics ── */}
       <Card>
         <SectionHeader title={t('admin.revenueAnalytics')} linkTo="/admin/orders" linkLabel={t('admin.viewAll')} />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-5 py-5">
           {[
-            { key: 'daily',   label: t('admin.revenueDaily'),   value: stats.revenueDaily,   accent: { bg: '#FDF0F2', border: '#EDD8DC', icon: '#6B1F2A' }, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-            { key: 'weekly',  label: t('admin.revenueWeekly'),  value: stats.revenueWeekly,  accent: { bg: '#FFFBEB', border: '#FCD34D', icon: '#D97706' }, icon: 'M3 12h18M3 6h18M3 18h18' },
-            { key: 'monthly', label: t('admin.revenueMonthly'), value: stats.revenueMonthly, accent: { bg: '#ECFDF5', border: '#A7F3D0', icon: '#059669' }, icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { key: 'daily',   label: t('admin.revenueDaily'),   value: stats.revenueDaily,   tile: { bg: '#ECFDF5', border: '#A7F3D0', icon: '#059669', valueColor: '#065F46' }, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+            { key: 'weekly',  label: t('admin.revenueWeekly'),  value: stats.revenueWeekly,  tile: { bg: '#FFFBEB', border: '#FCD34D', icon: '#D97706', valueColor: '#92400E' }, icon: 'M3 12h18M3 6h18M3 18h18' },
+            { key: 'monthly', label: t('admin.revenueMonthly'), value: stats.revenueMonthly, tile: { bg: '#F5F3FF', border: '#DDD6FE', icon: '#7C3AED', valueColor: '#5B21B6' }, icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
           ].map(c => (
             <div
               key={c.key}
-              className="rounded-2xl p-5 flex items-center gap-4 transition-all"
-              style={{ boxShadow: '0 1px 4px rgba(107,31,42,0.04)', border: '1px solid #F5EDEF', background: '#fff' }}
+              className="group rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              style={{ background: c.tile.bg, border: `1px solid ${c.tile.border}` }}
             >
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: c.accent.bg, border: `1px solid ${c.accent.border}` }}
+                className="flex items-center justify-center w-12 h-12 rounded-full mx-auto mb-1 group-hover:scale-110 transition-transform duration-300"
+                style={{ background: '#fff', border: `1px solid ${c.tile.border}` }}
               >
-                <svg className="w-5 h-5" style={{ color: c.accent.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <svg className="w-5 h-5" style={{ color: c.tile.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d={c.icon} />
                 </svg>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs tracking-wide" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif' }}>
-                  {c.label}
-                </p>
+              <div className="text-center">
                 <p
-                  className="tabular-nums mt-1 truncate"
-                  style={{ color: '#3D1A1E', fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, fontSize: '22px', lineHeight: 1 }}
+                  className="tabular-nums truncate"
+                  style={{ color: c.tile.valueColor, fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, fontSize: '28px', lineHeight: 1 }}
                   title={formatPrice(c.value ?? 0)}
                 >
                   {formatPrice(c.value ?? 0)}
                 </p>
-                <p className="text-[10px] mt-1" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>
+                <p className="text-xs font-medium mt-2 tracking-wide" style={{ color: c.tile.icon, fontFamily: 'Raleway, sans-serif' }}>
+                  {c.label}
+                </p>
+                <p className="text-[10px] mt-1 tracking-wide" style={{ color: c.tile.icon, fontFamily: 'Raleway, sans-serif', opacity: 0.7 }}>
                   {t('admin.fromConfirmed')}
                 </p>
               </div>
@@ -418,6 +394,7 @@ export default function AdminDashboard() {
             </div>
           </Card>
         </div>
+      </div>
       </div>
     </div>
   )

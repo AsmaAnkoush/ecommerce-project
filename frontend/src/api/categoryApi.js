@@ -1,6 +1,7 @@
 import api from './axios'
 
 export const getCategories = () => api.get('/categories')
+export const getAdminCategories = () => api.get('/categories/admin')
 export const getCategory = (id) => api.get(`/categories/${id}`)
 export const createCategory = (data) => api.post('/categories', data, {
   headers: { 'Content-Type': 'multipart/form-data' },
@@ -9,3 +10,4 @@ export const updateCategory = (id, data) => api.put(`/categories/${id}`, data, {
   headers: { 'Content-Type': 'multipart/form-data' },
 })
 export const deleteCategory = (id) => api.delete(`/categories/${id}`)
+export const toggleCategoryVisibility = (id) => api.patch(`/categories/${id}/toggle-visibility`)

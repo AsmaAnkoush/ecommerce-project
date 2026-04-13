@@ -221,6 +221,23 @@ public class ProductService {
         return toResponse(productRepository.save(product));
     }
 
+    /** Apply or clear an offer on a single product. Pass null to remove the discount. */
+    @Transactional
+    public ProductResponse setDiscountPrice(Long id, BigDecimal discountPrice) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+        if (discountPrice != null) {
+            if (discountPrice.signum() <= 0) {
+                throw new BadRequestException("Discount price must be greater than zero");
+            }
+            if (product.getPrice() != null && discountPrice.compareTo(product.getPrice()) >= 0) {
+                throw new BadRequestException("Discount price must be less than the original price");
+            }
+        }
+        product.setDiscountPrice(discountPrice);
+        return toResponse(productRepository.save(product));
+    }
+
     @Transactional
     public void delete(Long id) {
         if (!productRepository.existsById(id)) {
@@ -272,6 +289,12 @@ public class ProductService {
         if (colorImages == null || colorImages.isEmpty()) return;
         colorImages.forEach(group -> {
             if (group.getImageUrls() == null || group.getImageUrls().isEmpty()) return;
+            // Explicit primary if the admin picked one and it's still in the list,
+            // otherwise the first image takes the role.
+            String requestedPrimary = group.getPrimaryImageUrl();
+            String effectivePrimary = (requestedPrimary != null && group.getImageUrls().contains(requestedPrimary))
+                    ? requestedPrimary
+                    : group.getImageUrls().get(0);
             AtomicInteger order = new AtomicInteger(0);
             group.getImageUrls().forEach(url -> productImageRepository.save(
                     ProductImage.builder()
@@ -279,7 +302,7 @@ public class ProductService {
                             .imageUrl(url)
                             .color(group.getColor())
                             .sortOrder(order.getAndIncrement())
-                            .isPrimary(order.get() == 1)
+                            .isPrimary(url.equals(effectivePrimary))
                             .build()
             ));
         });
@@ -357,6 +380,22 @@ public class ProductService {
                 .map(ProductImage::getImageUrl)
                 .toList();
 
+        // Resolve the main display image: explicit primary > snapshotted Product.imageUrl >
+        // first available ProductImage. This keeps admin's ⭐ choice consistent with the
+        // image rendered on customer-facing product cards.
+        String mainImageUrl = p.getImages().stream()
+                .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+                .map(ProductImage::getImageUrl)
+                .findFirst()
+                .orElse(p.getImageUrl() != null
+                        ? p.getImageUrl()
+                        : p.getImages().stream()
+                                .sorted(Comparator.comparingInt(ProductImage::getSortOrder))
+                                .map(ProductImage::getImageUrl)
+                                .findFirst()
+                                .orElse(null));
+
         // Build color → images map (preserving insertion order)
         Map<String, List<ProductResponse.ColorImageEntry>> colorImages = new LinkedHashMap<>();
         p.getImages().stream()
@@ -396,7 +435,7 @@ public class ProductService {
                 .discountType(p.getDiscountType())
                 .discountValue(p.getDiscountValue())
                 .stockQuantity(p.getStockQuantity())
-                .imageUrl(p.getImageUrl())
+                .imageUrl(mainImageUrl)
                 .imageUrls(imageUrls)
                 .brand(p.getBrand())
                 .size(p.getSize())

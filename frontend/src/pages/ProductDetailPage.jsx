@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { useUI } from '../context/UIContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useToast } from '../context/ToastContext'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 import ProductCard from '../components/product/ProductCard'
 import Spinner from '../components/ui/Spinner'
 import Button from '../components/ui/Button'
@@ -89,6 +90,8 @@ export default function ProductDetailPage() {
   const { t } = useLanguage()
   const formatPrice = useFormatPrice()
   const { toast } = useToast()
+  const { contactWhatsApp } = useSiteSettings()
+  const storeWhatsApp = (contactWhatsApp || '972594828117').replace(/\D/g, '')
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -104,6 +107,7 @@ export default function ProductDetailPage() {
   // Variant selection
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
+  const [showMeasurements, setShowMeasurements] = useState(false)
 
   // Reviews state
   const [reviews, setReviews] = useState([])
@@ -575,7 +579,7 @@ export default function ProductDetailPage() {
                       </p>
                     )}
 
-                    {/* Measurements — shown only when a size is selected and the variant has any measurement */}
+                    {/* Measurements — toggle button + table; only rendered when the selected variant has any measurement */}
                     {(() => {
                       if (!selectedVariant) return null
                       const fields = [
@@ -587,17 +591,52 @@ export default function ProductDetailPage() {
                       ].filter(f => selectedVariant[f.key] != null)
                       if (fields.length === 0) return null
                       return (
-                        <div className="mt-4 bg-[#FDF6F7] border border-[#F0D5D8] rounded-xl px-4 py-3">
-                          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B7B80] mb-2">
-                            {t('product.measurements')} <span className="font-normal normal-case tracking-normal text-[#B08A90]">({t('product.cm')})</span>
-                          </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5">
-                            {fields.map(f => (
-                              <div key={f.key} className="flex items-baseline justify-between gap-2 text-xs">
-                                <span className="text-[#9B7B80]">{f.label}</span>
-                                <span className="font-medium text-[#3D1A1E] nums-normal">{selectedVariant[f.key]}</span>
+                        <div className="mt-4">
+                          <button
+                            type="button"
+                            onClick={() => setShowMeasurements(v => !v)}
+                            aria-expanded={showMeasurements}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#6B1F2A] text-[#6B1F2A] text-xs font-medium tracking-wide hover:bg-[#6B1F2A] hover:text-white transition-all duration-200"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            {showMeasurements ? t('product.hideMeasurements') : t('product.viewMeasurements')}
+                            <svg className={`w-3 h-3 transition-transform duration-200 ${showMeasurements ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+
+                          <div
+                            className="overflow-hidden transition-all duration-300 ease-out"
+                            style={{ maxHeight: showMeasurements ? '320px' : '0', opacity: showMeasurements ? 1 : 0, marginTop: showMeasurements ? '12px' : 0 }}
+                          >
+                            <div className="rounded-xl border border-[#F0D5D8] bg-[#FDFAFB] p-4">
+                              <div className="flex items-baseline justify-between mb-3">
+                                <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B7B80]">
+                                  {t('product.measurements')}
+                                </p>
+                                <span className="text-[10px] text-[#B08A90]">({t('product.cm')})</span>
                               </div>
-                            ))}
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-center text-sm" style={{ borderCollapse: 'collapse' }}>
+                                  <thead>
+                                    <tr className="border-b border-[#F0D5D8]">
+                                      {fields.map(f => (
+                                        <th key={f.key} className="px-3 py-2 font-semibold text-[#6B4E53] text-xs tracking-wide">{f.label}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      {fields.map(f => (
+                                        <td key={f.key} className="px-3 py-2 font-medium text-[#3D1A1E] nums-normal">{selectedVariant[f.key]}</td>
+                                      ))}
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )
@@ -682,7 +721,7 @@ export default function ProductDetailPage() {
                 </div>
               </div>
               <a
-                href="https://wa.me/972594828117"
+                href={`https://wa.me/${storeWhatsApp}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-50 hover:bg-green-100 border-t border-[#F5E0E3] text-xs text-green-700 hover:text-green-800 font-semibold tracking-wide transition-colors"

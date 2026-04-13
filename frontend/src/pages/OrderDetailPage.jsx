@@ -85,7 +85,7 @@ export default function OrderDetailPage() {
       <PageHero
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         title={t('orders.orderDetails')}
-        subtitle={`${t('orders.placedOn')} ${new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`}
+        subtitle={`${t('orders.placedOn')} ${new Date(order.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}`}
       />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 space-y-6">
@@ -110,7 +110,7 @@ export default function OrderDetailPage() {
         {/* Status row */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="text-xs text-[#9B7B80] tracking-wide">
-            {t('orders.placedOn')} {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            {t('orders.placedOn')} {new Date(order.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
           </p>
           <span className={[
             'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold tracking-[0.12em] uppercase ring-1',
@@ -192,7 +192,28 @@ export default function OrderDetailPage() {
                   <p className="font-medium text-[#3D1A1E] leading-snug line-clamp-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '17px' }}>
                     {item.productName}
                   </p>
-                  <p className="text-sm text-[#9B7B80] mt-1.5 tracking-wide">
+                  {(item.size || item.color) && (
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-[#6B4E53]">
+                      {item.size && (
+                        <span className="inline-flex items-center gap-1 bg-[#FDF6F7] border border-[#F0D5D8] rounded-md px-2 py-0.5">
+                          <span className="text-[10px] text-[#9B7B80] uppercase tracking-wide">{t('product.size') || 'Size'}</span>
+                          <span className="font-medium text-[#3D1A1E]">{item.size}</span>
+                        </span>
+                      )}
+                      {item.color && (
+                        <span className="inline-flex items-center gap-1.5 bg-[#FDF6F7] border border-[#F0D5D8] rounded-md px-2 py-0.5">
+                          <span className="text-[10px] text-[#9B7B80] uppercase tracking-wide">{t('product.color') || 'Color'}</span>
+                          <span
+                            className="inline-block w-3.5 h-3.5 rounded-full border border-[#E5DDE0] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
+                            style={{ backgroundColor: item.color }}
+                            aria-label={item.color}
+                            title={item.color}
+                          />
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-sm text-[#9B7B80] mt-2 tracking-wide">
                     <span className="font-semibold text-[#6B3840]">{item.quantity}×</span>
                   </p>
                 </div>

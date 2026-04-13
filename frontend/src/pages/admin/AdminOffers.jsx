@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useFormatPrice } from '../../utils/formatPrice'
-import { updateProduct } from '../../api/productApi'
+import { setProductDiscount } from '../../api/productApi'
 import { getAdminProducts } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import PageHeader from '../../components/layout/PageHeader'
 import { useLanguage } from '../../context/LanguageContext'
 import { useToast } from '../../context/ToastContext'
 
@@ -34,12 +35,15 @@ function normalizeColorImages(ci) {
       }))
   }
   if (typeof ci === 'object') {
-    return Object.entries(ci).map(([color, entries]) => ({
-      color,
-      imageUrls: Array.isArray(entries)
-        ? entries.map(x => (typeof x === 'string' ? x : x?.url)).filter(Boolean)
-        : [],
-    }))
+    return Object.entries(ci).map(([color, entries]) => {
+      const list = Array.isArray(entries) ? entries : []
+      const primary = list.find(x => x && x.isPrimary)?.url || null
+      return {
+        color,
+        imageUrls: list.map(x => (typeof x === 'string' ? x : x?.url)).filter(Boolean),
+        primaryImageUrl: primary,
+      }
+    })
   }
   return []
 }
@@ -125,10 +129,12 @@ export default function AdminOffers() {
     if (val >= product.price)   { setError(t('admin.discountMustBeLess')); return }
     setSaving(product.id)
     try {
-      await updateProduct(product.id, buildUpdatePayload(product, { discountPrice: val }))
+      const res = await setProductDiscount(product.id, val)
+      const updated = res?.data?.data
+      // Optimistic in-place update so the row reflects the new price without a full reload
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, ...updated } : p))
       cancelEdit()
-      toast(t('admin.updatedSuccess'))
-      await load()
+      toast(t('admin.offerApplied') || t('admin.updatedSuccess'))
     } catch (err) {
       console.error('Save discount failed:', err)
       setError(err?.response?.data?.message || t('admin.failedSave'))
@@ -142,10 +148,11 @@ export default function AdminOffers() {
     const product = confirmTarget
     setSaving(product.id)
     try {
-      await updateProduct(product.id, buildUpdatePayload(product, { discountPrice: null }))
+      const res = await setProductDiscount(product.id, null)
+      const updated = res?.data?.data
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, ...updated, discountPrice: null } : p))
       setConfirmTarget(null)
-      toast(t('admin.updatedSuccess'))
-      await load()
+      toast(t('admin.offerRemoved') || t('admin.updatedSuccess'))
     } catch (err) {
       console.error('Remove discount failed:', err)
       toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
@@ -155,17 +162,14 @@ export default function AdminOffers() {
   }
 
   return (
-    <div className="p-5 lg:p-7">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('admin.offersDiscounts')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {onSale.length} {onSale.length !== 1 ? t('admin.activeOfferPlural') : t('admin.activeOffer')}
-          </p>
-        </div>
-      </div>
-
+    <div>
+      <PageHeader
+        title={t('admin.offersDiscounts')}
+        subtitle={t('admin.headerOffersSub')}
+        icon="🏷️"
+        color="#7B1E2B"
+      />
+      <div className="p-5 lg:p-7 pt-0">
       {loadError && (
         <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
           <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -431,6 +435,7 @@ export default function AdminOffers() {
         onConfirm={handleRemove}
         onCancel={() => setConfirmTarget(null)}
       />
+      </div>
     </div>
   )
 }

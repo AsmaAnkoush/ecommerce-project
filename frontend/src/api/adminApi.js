@@ -8,6 +8,8 @@ export const getDashboard = () => api.get('/admin/dashboard')
 export const getAdminOrders = (params) => api.get('/admin/orders', { params })
 export const getAdminOrder = (id) => api.get(`/admin/orders/${id}`)
 export const updateOrderStatus = (id, status) => api.patch(`/admin/orders/${id}/status`, null, { params: { status } })
+export const archiveOrder = (id) => api.patch(`/admin/orders/${id}/archive`)
+export const getArchivedOrders = (params) => api.get('/admin/orders/archived', { params })
 export const getSettings = () => api.get('/settings')
 export const updateSettings = (data) => api.put('/settings', data)
 

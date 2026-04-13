@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { createProduct, updateProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProductById } from '../../api/adminApi'
 import { getCategories } from '../../api/categoryApi'
 import { uploadImages } from '../../api/uploadApi'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
+import PageHeader from '../../components/layout/PageHeader'
 import ImageCropModal from '../../components/ui/ImageCropModal'
 import ImagePreviewModal from '../../components/ui/ImagePreviewModal'
 import { useLanguage } from '../../context/LanguageContext'
@@ -17,11 +18,11 @@ const SEASONS = [
   { value: 'ALL_SEASON', label: 'All Season' },
 ]
 const MEASUREMENT_FIELDS = [
-  { key: 'chest', label: 'Chest' },
-  { key: 'waist', label: 'Waist' },
-  { key: 'shoulders', label: 'Shoulders' },
-  { key: 'backWidth', label: 'Back' },
-  { key: 'length', label: 'Length' },
+  { key: 'chest',     tKey: 'product.chest' },
+  { key: 'waist',     tKey: 'product.waist' },
+  { key: 'shoulders', tKey: 'product.shoulders' },
+  { key: 'backWidth', tKey: 'product.backWidth' },
+  { key: 'length',    tKey: 'product.length' },
 ]
 const NAMED_COLORS = [
   { name: 'Black', hex: '#000000' },
@@ -51,8 +52,10 @@ export default function AdminProductForm() {
   const { t } = useLanguage()
   const { toast } = useToast()
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+  const presetCategoryId = searchParams.get('category')
 
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
@@ -64,7 +67,7 @@ export default function AdminProductForm() {
   const [form, setForm] = useState({
     name: '', description: '', price: '', stockQuantity: 0,
     imageUrl: '', brand: '', size: '', color: '', material: '',
-    isBestSeller: false, isNew: true, season: '', categoryId: '',
+    isBestSeller: false, isNew: true, season: '', categoryId: presetCategoryId || '',
     discountType: '', discountValue: '', confirmedOrderCount: 0,
   })
 
@@ -130,7 +133,8 @@ export default function AdminProductForm() {
           if (p.colorImages) {
             Object.entries(p.colorImages).forEach(([color, entries]) => {
               const urls = [...new Set(entries.map(e => e.url))]
-              map[color] = { color, imageUrls: urls, sizes: [] }
+              const primary = entries.find(e => e.isPrimary)?.url || null
+              map[color] = { color, imageUrls: urls, sizes: [], primaryImageUrl: primary }
             })
           }
           if (p.variants) {
@@ -184,7 +188,7 @@ export default function AdminProductForm() {
     const name = newColorInput.trim()
     if (!name) return
     if (colorEntries.some(e => e.color.toLowerCase() === name.toLowerCase())) return
-    setColorEntries(prev => [...prev, { color: name, imageUrls: [], sizes: [] }])
+    setColorEntries(prev => [...prev, { color: name, imageUrls: [], sizes: [], primaryImageUrl: null }])
     const isHex = /^#[0-9A-Fa-f]{6}$/.test(name)
     const alreadySaved = NAMED_COLORS.some(c => c.name === name) || customColors.some(c => c.name === name)
     if (!isHex && !alreadySaved) {
@@ -222,8 +226,27 @@ export default function AdminProductForm() {
     } finally { setUploadingColor(null) }
   }
 
+  const setPrimaryColorImage = (color, url) => setColorEntries(prev => prev.map(e =>
+    e.color === color ? { ...e, primaryImageUrl: url } : e
+  ))
+
+  const moveColorImage = (color, idx, dir) => setColorEntries(prev => prev.map(e => {
+    if (e.color !== color) return e
+    const next = [...e.imageUrls]
+    const j = idx + dir
+    if (j < 0 || j >= next.length) return e
+    ;[next[idx], next[j]] = [next[j], next[idx]]
+    return { ...e, imageUrls: next }
+  }))
+
   const removeColorImage = (color, idx) => setColorEntries(prev => prev.map(e =>
-    e.color === color ? { ...e, imageUrls: e.imageUrls.filter((_, i) => i !== idx) } : e
+    e.color === color
+      ? {
+          ...e,
+          imageUrls: e.imageUrls.filter((_, i) => i !== idx),
+          primaryImageUrl: e.imageUrls[idx] === e.primaryImageUrl ? null : e.primaryImageUrl,
+        }
+      : e
   ))
 
   // ── Sizes ───────────────────────────────────────────────────────────────────
@@ -363,16 +386,40 @@ export default function AdminProductForm() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    // Variant-only validation — every color must have ≥1 size with a quantity, and ≥1 image.
+    if (!colorEntries.length) {
+      setError(t('admin.errNoColor') || 'Please add at least one color')
+      return
+    }
+    for (const c of colorEntries) {
+      const validSizes = c.sizes.filter(s => s.size && s.size.toString().trim())
+      if (validSizes.length === 0) {
+        setError(t('admin.errNoSize') || 'Each color must have at least one size')
+        return
+      }
+      for (const s of validSizes) {
+        const qty = parseInt(s.stockQuantity)
+        if (!qty || qty <= 0) {
+          setError(t('admin.errNoQty') || 'Please enter quantity for all sizes')
+          return
+        }
+      }
+      const imgs = (c.imageUrls || []).filter(Boolean)
+      if (imgs.length === 0) {
+        setError(t('admin.errNoImages') || 'Please upload images for every color')
+        return
+      }
+    }
+
     setSaving(true)
     try {
-      // Upload main image if a new file was selected
-      let mainImageUrl = form.imageUrl || null
-      if (mainImageFile) {
-        setUploadingMain(true)
-        const urls = await uploadImages([mainImageFile])
-        mainImageUrl = urls[0] || null
-        setUploadingMain(false)
-      }
+      // Main image priority: explicit primary on the first color → first image of first color.
+      const firstColor = colorEntries[0]
+      const mainImageUrl =
+        (firstColor?.primaryImageUrl && firstColor.imageUrls.includes(firstColor.primaryImageUrl))
+          ? firstColor.primaryImageUrl
+          : (firstColor?.imageUrls?.find(Boolean) || null)
 
       const payload = {
         name: form.name,
@@ -380,21 +427,25 @@ export default function AdminProductForm() {
         price: parseFloat(form.price),
         stockQuantity: colorEntries.reduce((sum, e) => sum + e.sizes.reduce((s2, sz) => s2 + (parseInt(sz.stockQuantity) || 0), 0), 0),
         imageUrl: mainImageUrl,
-        brand: form.brand || null,
-        size: form.size || null,
-        color: form.color || null,
-        material: form.material || null,
-        isBestSeller: form.isBestSeller,
-        isNew: form.isNew,
+        brand: null,
+        size: null,
+        color: null,
+        material: null,
+        isBestSeller: false,
+        isNew: false,
         season: form.season || null,
         categoryId: form.categoryId ? parseInt(form.categoryId) : null,
         discountType: form.discountType || null,
         discountValue: form.discountValue ? parseFloat(form.discountValue) : null,
-        imageUrls: [...new Set(generalImages.filter(Boolean))],
-        colorImages: colorEntries.map(e => ({
-          color: e.color,
-          imageUrls: [...new Set(e.imageUrls.filter(Boolean))],
-        })),
+        imageUrls: [],
+        colorImages: colorEntries.map(e => {
+          const urls = [...new Set(e.imageUrls.filter(Boolean))]
+          return {
+            color: e.color,
+            imageUrls: urls,
+            primaryImageUrl: e.primaryImageUrl && urls.includes(e.primaryImageUrl) ? e.primaryImageUrl : null,
+          }
+        }),
         variants: colorEntries.flatMap(e =>
           e.sizes
             .filter(s => s.size && s.size.toString().trim())
@@ -415,10 +466,13 @@ export default function AdminProductForm() {
         toast(t('admin.updatedSuccess'))
       } else {
         await createProduct(payload)
+        toast(t('admin.productCreated') || '🎉 تم إضافة منتجك بنجاح')
         navigate('/admin/products')
       }
     } catch (err) {
-      setError(err.response?.data?.message || t('admin.failedSave'))
+      const msg = err.response?.data?.message || t('admin.failedSave')
+      setError(msg)
+      toast(msg, 'error')
     } finally {
       setSaving(false)
     }
@@ -442,7 +496,9 @@ export default function AdminProductForm() {
   if (loading) return <div className="flex justify-center py-40"><Spinner size="lg" /></div>
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-8 space-y-8">
+    <>
+      <PageHeader />
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-8 pt-0 space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-900">{isEdit ? t('admin.edit') : t('admin.addProduct')}</h1>
         <div className="flex items-center gap-3 flex-wrap">
@@ -520,86 +576,11 @@ export default function AdminProductForm() {
             </select>
           </div>
           <div>
-            <Label>Brand</Label>
-            <input value={form.brand} onChange={e => setField('brand', e.target.value)}
-              className={inputCls} placeholder="Brand name" />
-          </div>
-          <div>
-            <Label>Material</Label>
-            <input value={form.material} onChange={e => setField('material', e.target.value)}
-              className={inputCls} placeholder="e.g. 100% Cotton" />
-          </div>
-          <div>
             <Label>Season</Label>
             <select value={form.season} onChange={e => setField('season', e.target.value)} className={inputCls}>
               <option value="">— None —</option>
               {SEASONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
-          </div>
-          <div>
-            <Label>{t('product.size')} <span className="text-gray-400 font-normal text-xs">(non-variant)</span></Label>
-            <input value={form.size} onChange={e => setField('size', e.target.value)}
-              className={inputCls} placeholder="e.g. M" />
-          </div>
-          <div>
-            <Label>{t('product.color')} <span className="text-gray-400 font-normal text-xs">(non-variant)</span></Label>
-            <input value={form.color} onChange={e => setField('color', e.target.value)}
-              className={inputCls} placeholder="e.g. Black" />
-          </div>
-          <div className="md:col-span-2">
-            <Label>{t('admin.image')}</Label>
-            <input ref={mainImageRef} type="file" accept="image/*" onChange={handleMainImageSelect} className="hidden" />
-            <div className="flex items-center gap-4">
-              {/* Preview */}
-              <div className="w-20 h-20 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
-                {(uploadingMain) ? (
-                  <Spinner size="sm" />
-                ) : mainImagePreview ? (
-                  <img src={mainImagePreview} alt="Main preview" className="w-full h-full object-cover cursor-pointer"
-                       onClick={() => { setPreviewImages([mainImagePreview]); setPreviewIndex(0) }} />
-                ) : (
-                  <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                )}
-              </div>
-              {/* Buttons */}
-              <div className="space-y-1.5">
-                <button type="button" onClick={() => mainImageRef.current?.click()}
-                  className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
-                  {mainImagePreview ? t('admin.replaceImage') : t('admin.uploadLogo')}
-                </button>
-                {mainImagePreview && (
-                  <button type="button" onClick={removeMainImage}
-                    className="block text-xs text-red-500 hover:text-red-700 transition-colors">
-                    {t('admin.remove')}
-                  </button>
-                )}
-                <p className="text-xs text-gray-400">JPEG, PNG, WEBP</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 md:col-span-2">
-            <input type="checkbox" id="bestSeller" checked={form.isBestSeller}
-              onChange={e => setField('isBestSeller', e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 accent-[#6B1F2A]" />
-            <label htmlFor="bestSeller" className="text-sm font-medium text-gray-700 cursor-pointer">{t('product.bestSeller')}</label>
-            {isEdit && form.confirmedOrderCount > 0 && (
-              <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                🏆 {form.confirmedOrderCount} confirmed orders
-              </span>
-            )}
-            {isEdit && !form.isBestSeller && form.confirmedOrderCount < 3 && (
-              <span className="text-xs text-gray-400">
-                auto-promotes at 3 confirmed orders ({3 - (form.confirmedOrderCount || 0)} remaining)
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3 md:col-span-2">
-            <input type="checkbox" id="isNew" checked={form.isNew}
-              onChange={e => setField('isNew', e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 accent-[#6B1F2A]" />
-            <label htmlFor="isNew" className="text-sm font-medium text-gray-700 cursor-pointer">{t('product.newArrival')}</label>
           </div>
         </div>
       </Section>
@@ -623,56 +604,6 @@ export default function AdminProductForm() {
                 placeholder={form.discountType === 'PERCENTAGE' ? '10' : '49.99'} />
             </div>
           )}
-        </div>
-      </Section>
-
-      {/* ── General Images ── */}
-      <Section title={t('admin.image')}>
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2 min-h-[5rem]">
-            {generalImages.map((url, i) => (
-              <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 group">
-                <img src={url} alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
-                  <button type="button" onClick={() => { setPreviewImages(generalImages); setPreviewIndex(i) }}
-                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors">
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </button>
-                  <button type="button" onClick={() => removeGeneralImage(i)}
-                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500/80 flex items-center justify-center transition-colors">
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-            {generalPreviews.map((p, i) => (
-              <div key={`gp-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
-                <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
-                  <svg className="animate-spin w-4 h-4 text-[#6B1F2A]" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                </div>
-              </div>
-            ))}
-            {generalImages.length === 0 && generalPreviews.length === 0 && (
-              <p className="text-sm text-gray-400 italic self-center">No general images uploaded.</p>
-            )}
-          </div>
-          <div>
-            <input ref={generalInputRef} type="file" multiple accept="image/*" className="hidden"
-              onChange={e => { handleGeneralImageFiles(e.target.files); e.target.value = '' }} />
-            <Button type="button" variant="secondary" size="sm" loading={uploadingGeneral}
-              onClick={() => generalInputRef.current?.click()}>
-              Upload Images
-            </Button>
-          </div>
         </div>
       </Section>
 
@@ -726,7 +657,10 @@ export default function AdminProductForm() {
           )}
 
           {colorEntries.map(entry => {
-            const { color, imageUrls, sizes } = entry
+            const { color, imageUrls, sizes, primaryImageUrl } = entry
+            const effectivePrimary = (primaryImageUrl && imageUrls.includes(primaryImageUrl))
+              ? primaryImageUrl
+              : imageUrls[0]
             const previews = colorPreviews[color] || []
             const sizeInp = getSizeInput(color)
 
@@ -752,26 +686,53 @@ export default function AdminProductForm() {
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('admin.image')}</p>
                     <div className="flex flex-wrap gap-2">
-                      {imageUrls.map((url, i) => (
-                        <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 group">
-                          <img src={url} alt="" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
-                            <button type="button" onClick={() => { setPreviewImages(imageUrls); setPreviewIndex(i) }}
-                              className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors">
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                            <button type="button" onClick={() => removeColorImage(color, i)}
-                              className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500/80 flex items-center justify-center transition-colors">
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                      {imageUrls.map((url, i) => {
+                        const isMain = url === effectivePrimary
+                        return (
+                          <div key={i} className={`relative w-24 h-24 rounded-xl overflow-hidden group transition-all ${isMain ? 'border-2 border-[#6B1F2A] ring-2 ring-[#FDF0F2]' : 'border border-gray-200'}`}>
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            {isMain && (
+                              <span className="absolute top-1 start-1 text-[9px] font-semibold uppercase tracking-wide bg-[#6B1F2A] text-white px-1.5 py-0.5 rounded-md shadow-sm z-10">
+                                ⭐ {t('admin.main') || 'Main'}
+                              </span>
+                            )}
+                            <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <button type="button" onClick={() => setPrimaryColorImage(color, url)}
+                                  title={t('admin.setMain') || 'Set as main'}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${isMain ? 'bg-amber-400 text-white' : 'bg-white/20 hover:bg-amber-400/80 text-white'}`}>
+                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                  </svg>
+                                </button>
+                                <button type="button" onClick={() => removeColorImage(color, i)}
+                                  title={t('admin.delete') || 'Delete'}
+                                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500/80 flex items-center justify-center transition-colors">
+                                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <button type="button" onClick={() => moveColorImage(color, i, -1)} disabled={i === 0}
+                                  title={t('admin.moveLeft') || 'Move left'}
+                                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                  </svg>
+                                </button>
+                                <button type="button" onClick={() => moveColorImage(color, i, +1)} disabled={i === imageUrls.length - 1}
+                                  title={t('admin.moveRight') || 'Move right'}
+                                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                       {previews.map((p, i) => (
                         <div key={`cp-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
                           <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
@@ -830,7 +791,7 @@ export default function AdminProductForm() {
                                 <div className="grid grid-cols-5 gap-2">
                                   {MEASUREMENT_FIELDS.map(f => (
                                     <div key={f.key}>
-                                      <p className="text-xs text-gray-400 text-center mb-1">{f.label} <span className="text-gray-300">(cm)</span></p>
+                                      <p className="text-xs text-gray-400 text-center mb-1">{t(f.tKey)} <span className="text-gray-300">({t('product.cm')})</span></p>
                                       <input type="number" min="0" step="0.5"
                                         value={s[f.key] ?? ''}
                                         onChange={e => updateSizeField(color, s.size, f.key, e.target.value)}
@@ -902,7 +863,8 @@ export default function AdminProductForm() {
           onChange={setPreviewIndex}
         />
       )}
-    </form>
+      </form>
+    </>
   )
 }
 

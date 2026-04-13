@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { getSettings } from '../api/adminApi'
 
 const DEFAULT_SETTINGS = {
@@ -12,13 +12,13 @@ const DEFAULT_SETTINGS = {
   activeSeason: 'SUMMER',
 }
 
-const SiteSettingsContext = createContext(DEFAULT_SETTINGS)
+const SiteSettingsContext = createContext({ ...DEFAULT_SETTINGS, refresh: () => {} })
 
 export function SiteSettingsProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
 
-  useEffect(() => {
-    getSettings()
+  const refresh = useCallback(() => {
+    return getSettings()
       .then(res => {
         const s = res.data.data
         setSettings({
@@ -35,8 +35,10 @@ export function SiteSettingsProvider({ children }) {
       .catch(() => {/* use defaults */})
   }, [])
 
+  useEffect(() => { refresh() }, [refresh])
+
   return (
-    <SiteSettingsContext.Provider value={settings}>
+    <SiteSettingsContext.Provider value={{ ...settings, refresh }}>
       {children}
     </SiteSettingsContext.Provider>
   )

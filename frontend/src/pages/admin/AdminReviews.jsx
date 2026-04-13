@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAdminReviews, approveReview, rejectReview } from '../../api/reviewApi'
 import Spinner from '../../components/ui/Spinner'
+import PageHeader from '../../components/layout/PageHeader'
 import { useLanguage } from '../../context/LanguageContext'
 
 const STARS = [1, 2, 3, 4, 5]
@@ -78,13 +79,14 @@ export default function AdminReviews() {
   const approvedCount = reviews.filter(r => r.approved).length
 
   return (
-    <div className="p-6 sm:p-8 max-w-5xl">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('admin.reviewModeration')}</h1>
-        <p className="text-sm text-gray-500 mt-1">{t('admin.reviewModerationDesc')}</p>
-      </div>
-
+    <div>
+      <PageHeader
+        title={t('admin.reviews')}
+        subtitle={t('admin.headerReviewsSub')}
+        icon="⭐"
+        color="#7B1E2B"
+      />
+      <div className="p-6 sm:p-8 max-w-5xl pt-0">
       {/* Filter tabs */}
       <div className="flex gap-2 mb-5">
         {[
@@ -212,6 +214,7 @@ export default function AdminReviews() {
           </button>
         </div>
       )}
+      </div>
     </div>
   )
 }

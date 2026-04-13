@@ -20,6 +20,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long countByStatus(Order.OrderStatus status);
 
+    /** Active (non-archived) orders. Used by both the customer and the admin lists by default. */
+    org.springframework.data.domain.Page<Order> findByIsArchivedFalse(org.springframework.data.domain.Pageable pageable);
+
+    /** Archived orders only. */
+    org.springframework.data.domain.Page<Order> findByIsArchivedTrue(org.springframework.data.domain.Pageable pageable);
+
+    List<Order> findByUserIdAndIsArchivedFalseOrderByCreatedAtDesc(Long userId);
+
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = :status")

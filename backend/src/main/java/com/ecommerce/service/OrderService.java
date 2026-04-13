@@ -85,13 +85,29 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getUserOrders(Long userId) {
-        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId)
+        return orderRepository.findByUserIdAndIsArchivedFalseOrderByCreatedAtDesc(userId)
                 .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getAllOrders(Pageable pageable) {
-        return orderRepository.findAll(pageable).map(this::toResponse);
+        return orderRepository.findByIsArchivedFalse(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getArchivedOrders(Pageable pageable) {
+        return orderRepository.findByIsArchivedTrue(pageable).map(this::toResponse);
+    }
+
+    @Transactional
+    public OrderResponse archive(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (order.getStatus() != Order.OrderStatus.CONFIRMED && order.getStatus() != Order.OrderStatus.CANCELLED) {
+            throw new BadRequestException("Only confirmed or cancelled orders can be archived");
+        }
+        order.setArchived(true);
+        return toResponse(orderRepository.save(order));
     }
 
     @Transactional
@@ -232,9 +248,20 @@ public class OrderService {
                     String name = item.getProductName() != null
                             ? item.getProductName()
                             : (product != null ? product.getName() : "Unknown Product");
-                    String image = item.getProductImage() != null
-                            ? item.getProductImage()
-                            : (product != null ? product.getImageUrl() : null);
+                    // Prefer the variant-specific image matching the ordered color, then snapshot, then live product image.
+                    String variantImage = null;
+                    if (product != null && item.getColor() != null && product.getImages() != null) {
+                        variantImage = product.getImages().stream()
+                                .filter(img -> img.getColor() != null && img.getColor().equalsIgnoreCase(item.getColor()))
+                                .map(com.ecommerce.entity.ProductImage::getImageUrl)
+                                .findFirst()
+                                .orElse(null);
+                    }
+                    String image = variantImage != null
+                            ? variantImage
+                            : (item.getProductImage() != null
+                                ? item.getProductImage()
+                                : (product != null ? product.getImageUrl() : null));
                     Long productId = product != null ? product.getId() : null;
                     BigDecimal unitPrice = item.getUnitPrice() != null
                             ? item.getUnitPrice() : BigDecimal.ZERO;

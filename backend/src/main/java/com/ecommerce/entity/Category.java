@@ -27,8 +27,19 @@ public class Category {
 
     private String imageUrl;
 
+    @Column(name = "is_visible", nullable = false)
+    @Builder.Default
+    private boolean isVisible = true;
+
     @JsonIgnore
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     @Builder.Default
     private List<Product> products = new ArrayList<>();
+
+    /** Populated on demand by {@link com.ecommerce.service.CategoryService#findAll()} —
+     *  not persisted. Exposed to the API so admin UIs can show product counts without
+     *  forcing every caller to fetch the (JSON-ignored) products collection. */
+    @Transient
+    @Builder.Default
+    private Long productCount = 0L;
 }

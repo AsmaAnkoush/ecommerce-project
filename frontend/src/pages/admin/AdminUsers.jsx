@@ -1,14 +1,21 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getAdminUsers, deleteAdminUser } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
+import PageHeader from '../../components/layout/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 
 function RoleBadge({ role }) {
   const { t } = useLanguage()
   return role === 'ADMIN'
-    ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#6B1F2A] text-white">{t('profile.admin')}</span>
-    : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">{t('admin.customer')}</span>
+    ? <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+        {t('profile.admin')}
+      </span>
+    : <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+        {t('admin.customer')}
+      </span>
 }
 
 function formatDate(iso) {
@@ -68,30 +75,29 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
+    <div>
+      <PageHeader />
+      <div className="p-8 pt-0">
+      {/* Toolbar — count + search */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('admin.users')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{total} {t('admin.totalUsers')} {total === 1 ? t('admin.user') : t('admin.userPlural')}</p>
-        </div>
+        <p className="text-sm text-gray-500">{total} {t('admin.totalUsers')} {total === 1 ? t('admin.user') : t('admin.userPlural')}</p>
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
             </svg>
             <input
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               placeholder={t('admin.searchNameEmail')}
-              className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#DFA3AD] w-64"
+              className="pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#DFA3AD] focus:border-[#DFA3AD] w-72 transition-all"
             />
           </div>
-          <button type="submit" className="px-4 py-2 text-sm font-medium rounded-xl text-white transition-colors" style={{ background: '#6B1F2A' }}>
+          <button type="submit" className="px-5 py-2.5 text-sm font-medium rounded-full text-white transition-colors hover:opacity-90" style={{ background: '#6B1F2A' }}>
             {t('admin.search')}
           </button>
           {search && (
-            <button type="button" onClick={handleClearSearch} className="px-3 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50">
+            <button type="button" onClick={handleClearSearch} className="px-4 py-2.5 text-sm rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
               {t('admin.clear')}
             </button>
           )}
@@ -99,7 +105,7 @@ export default function AdminUsers() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-24"><Spinner size="lg" /></div>
         ) : users.length === 0 ? (
@@ -111,54 +117,57 @@ export default function AdminUsers() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[820px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
-                <tr className="text-left border-b border-gray-100" style={{ background: '#FDF6F7' }}>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600 w-8">#</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.name')}</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.email')}</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.phone')}</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.role')}</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600 text-center">{t('admin.orders')}</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600">{t('admin.joined')}</th>
-                  <th className="px-5 py-3.5 font-semibold text-gray-600 text-right">{t('admin.actions')}</th>
+                <tr className="text-[11px] font-medium uppercase tracking-wider text-gray-500" style={{ background: '#FAFAFA' }}>
+                  <th className="px-6 py-4 text-start w-12">#</th>
+                  <th className="px-6 py-4 text-start">{t('admin.name')}</th>
+                  <th className="px-6 py-4 text-start">{t('admin.phone')}</th>
+                  <th className="px-6 py-4 text-start">{t('admin.role')}</th>
+                  <th className="px-6 py-4 text-center">{t('admin.orders')}</th>
+                  <th className="px-6 py-4 text-start">{t('admin.joined')}</th>
+                  <th className="px-6 py-4 text-end">{t('admin.actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-100">
                 {users.map((user, idx) => {
                   const isSelf = me?.id === user.id
                   return (
-                    <tr key={user.id} className="hover:bg-[#FDF6F7] transition-colors">
-                      <td className="px-5 py-3.5 text-gray-400">{page * PAGE_SIZE + idx + 1}</td>
-                      <td className="px-5 py-3.5">
+                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-gray-400 tabular-nums align-middle">{page * PAGE_SIZE + idx + 1}</td>
+                      <td className="px-6 py-4 align-middle">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm"
                             style={{ background: 'linear-gradient(135deg, #6B1F2A, #DFA3AD)' }}>
-                            {user.firstName?.[0]}{user.lastName?.[0]}
+                            {(user.firstName?.[0] || '') + (user.lastName?.[0] || '')}
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
-                            {isSelf && <p className="text-[10px] text-[#9B3F4D]">{t('admin.you')}</p>}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-900 truncate flex items-center gap-1.5">
+                              {user.firstName} {user.lastName}
+                              {isSelf && <span className="text-[10px] font-normal text-[#9B3F4D] bg-[#FDF0F2] px-1.5 py-0.5 rounded-full">{t('admin.you')}</span>}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{user.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-gray-600">{user.email}</td>
-                      <td className="px-5 py-3.5 text-gray-600">{user.phone || <span className="text-gray-300">—</span>}</td>
-                      <td className="px-5 py-3.5"><RoleBadge role={user.role} /></td>
-                      <td className="px-5 py-3.5 text-center">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                          {user.orderCount}
+                      <td className="px-6 py-4 text-sm text-gray-600 align-middle tabular-nums" dir="ltr">
+                        {user.phone || <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-6 py-4 align-middle"><RoleBadge role={user.role} /></td>
+                      <td className="px-6 py-4 text-center align-middle">
+                        <span className="inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 tabular-nums">
+                          {user.orderCount ?? 0}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-gray-500">{formatDate(user.createdAt)}</td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4 text-sm text-gray-500 align-middle">{formatDate(user.createdAt)}</td>
+                      <td className="px-6 py-4 align-middle">
                         <div className="flex items-center justify-end gap-2">
-                          {/* Delete */}
                           <button
                             disabled={isSelf || actionLoading === `delete-${user.id}`}
                             onClick={() => setConfirmDelete(user)}
                             title={isSelf ? t('admin.cannotDeleteOwn') : t('admin.deleteUser')}
-                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label={t('admin.deleteUser')}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 transition-all hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -231,6 +240,7 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

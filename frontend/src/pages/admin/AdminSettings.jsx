@@ -3,48 +3,60 @@ import { getSettings, updateSettings, updateActiveSeason, uploadLogo } from '../
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
+import PageHeader from '../../components/layout/PageHeader'
 import { useLanguage } from '../../context/LanguageContext'
+import { useToast } from '../../context/ToastContext'
+import { useSiteSettings } from '../../context/SiteSettingsContext'
 
 function getSeasonConfig(t) {
   return {
-    SUMMER: {
-      label: t('admin.summerLabel'),
-      icon: '☀️',
-      description: t('admin.summerDesc'),
-      colors: 'bg-amber-50 border-amber-200 text-amber-800',
-      active: 'bg-amber-500 text-white',
-    },
-    WINTER: {
-      label: t('admin.winterLabel'),
-      icon: '❄️',
-      description: t('admin.winterDesc'),
-      colors: 'bg-blue-50 border-blue-200 text-blue-800',
-      active: 'bg-blue-600 text-white',
-    },
+    SUMMER: { label: t('admin.summerLabel'), icon: '☀️', description: t('admin.summerDesc') },
+    WINTER: { label: t('admin.winterLabel'), icon: '❄️', description: t('admin.winterDesc') },
   }
+}
+
+function SectionCard({ icon, title, hint, children }) {
+  return (
+    <section className="bg-white rounded-2xl shadow-sm border border-[#F5EDEF] p-6 space-y-5">
+      <div className="flex items-start gap-3">
+        <span className="text-2xl leading-none shrink-0" aria-hidden="true">{icon}</span>
+        <div className="min-w-0">
+          <h2 className="font-semibold text-gray-900 text-base">{title}</h2>
+          {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  )
 }
 
 export default function AdminSettings() {
   const { t } = useLanguage()
+  const { toast } = useToast()
+  const { refresh: refreshSiteSettings } = useSiteSettings()
   const SEASON_CONFIG = getSeasonConfig(t)
   const [form, setForm] = useState({ siteName: '', logoUrl: '', contactEmail: '', contactPhone: '', contactWhatsApp: '', description: '', address: '' })
   const [activeSeason, setActiveSeason] = useState('SUMMER')
   const [loading, setLoading]         = useState(true)
   const [saving, setSaving]           = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
-  const [logoPreview, setLogoPreview] = useState(null)  // blob URL for instant preview
+  const [logoPreview, setLogoPreview] = useState(null)
   const [seasonSaving, setSeasonSaving] = useState(false)
-  const [success, setSuccess]         = useState(false)
-  const [seasonSuccess, setSeasonSuccess] = useState(false)
   const [error, setError]             = useState('')
   const logoInputRef = useRef(null)
+
+  const whatsappDigits = (form.contactWhatsApp || '').replace(/\D/g, '')
+  const whatsappValid  = whatsappDigits.length >= 9 && whatsappDigits.length <= 15
+  const whatsappTestUrl = whatsappValid ? `https://wa.me/${whatsappDigits}` : null
 
   useEffect(() => {
     getSettings().then(res => {
       const s = res.data.data
-      setForm({ siteName: s.siteName || '', logoUrl: s.logoUrl || '', contactEmail: s.contactEmail || '',
+      setForm({
+        siteName: s.siteName || '', logoUrl: s.logoUrl || '', contactEmail: s.contactEmail || '',
         contactPhone: s.contactPhone || '', contactWhatsApp: s.contactWhatsApp || '',
-        description: s.description || '', address: s.address || '' })
+        description: s.description || '', address: s.address || '',
+      })
       setActiveSeason(s.activeSeason || 'SUMMER')
     }).finally(() => setLoading(false))
   }, [])
@@ -77,8 +89,8 @@ export default function AdminSettings() {
       setSeasonSaving(true)
       await updateActiveSeason(season)
       setActiveSeason(season)
-      setSeasonSuccess(true)
-      setTimeout(() => setSeasonSuccess(false), 2500)
+      await refreshSiteSettings()
+      toast(t('admin.seasonUpdated'))
     } catch {
       setError(t('admin.failedUpdateSeason'))
     } finally { setSeasonSaving(false) }
@@ -89,31 +101,38 @@ export default function AdminSettings() {
     try {
       setSaving(true); setError('')
       await updateSettings(form)
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      await refreshSiteSettings()
+      toast(t('admin.settingsSaved'))
     } catch (err) {
       setError(err.response?.data?.message || t('admin.failedUpdateSettings'))
+      toast(err?.response?.data?.message || t('admin.failedUpdateSettings'), 'error')
     } finally { setSaving(false) }
   }
 
   if (loading) return <div className="flex justify-center py-40"><Spinner size="lg" /></div>
 
   return (
-    <div className="p-8 max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('admin.websiteSettings')}</h1>
-
+    <div>
+      <PageHeader
+        title={t('admin.websiteSettings')}
+        subtitle={t('admin.settingsHint') || 'Manage your storefront configuration in one place.'}
+        icon="⚙️"
+        color="#7B1E2B"
+      />
+      <div className="p-5 lg:p-8 max-w-3xl pt-0">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">{t('admin.general')}</h2>
-          <Input label={t('admin.websiteName')} value={form.siteName} onChange={e => setForm(f => ({ ...f, siteName: e.target.value }))} />
 
-          {/* ── Logo Upload ── */}
+        {/* ── Store Information ── */}
+        <SectionCard icon="🏪" title={t('admin.general')}>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1.5">{t('admin.websiteName')}</label>
+            <Input value={form.siteName} onChange={e => setForm(f => ({ ...f, siteName: e.target.value }))} />
+          </div>
+
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-2">{t('admin.logo')}</label>
             <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleLogoUpload} />
-
             <div className="flex items-center gap-4">
-              {/* Preview */}
               <div className="w-20 h-20 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
                 {logoUploading ? (
                   <Spinner size="sm" />
@@ -125,23 +144,14 @@ export default function AdminSettings() {
                   </svg>
                 )}
               </div>
-
-              {/* Upload button + info */}
               <div className="space-y-1.5">
-                <button
-                  type="button"
-                  onClick={() => logoInputRef.current?.click()}
-                  disabled={logoUploading}
-                  className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
+                <button type="button" onClick={() => logoInputRef.current?.click()} disabled={logoUploading}
+                  className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-50">
                   {logoUploading ? t('admin.uploading') : form.logoUrl ? t('admin.replaceLogo') : t('admin.uploadLogo')}
                 </button>
                 {form.logoUrl && !logoUploading && (
-                  <button
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, logoUrl: '' }))}
-                    className="block text-xs text-red-500 hover:text-red-700 transition-colors"
-                  >
+                  <button type="button" onClick={() => setForm(f => ({ ...f, logoUrl: '' }))}
+                    className="block text-xs text-red-500 hover:text-red-700 transition-colors">
                     {t('admin.removeLogo')}
                   </button>
                 )}
@@ -149,71 +159,125 @@ export default function AdminSettings() {
               </div>
             </div>
           </div>
+
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">{t('admin.description')}</label>
+            <label className="text-sm font-medium text-gray-700 block mb-1.5">{t('admin.description')}</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-black" />
           </div>
-          <Input label={t('profile.address')} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
-        </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">{t('admin.contactInfo')}</h2>
-          <Input label={t('admin.email')} type="email" value={form.contactEmail} onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} />
-          <Input label={t('admin.phone')} value={form.contactPhone} onChange={e => setForm(f => ({ ...f, contactPhone: e.target.value }))} />
-          <Input label={t('admin.whatsAppNumber')} value={form.contactWhatsApp} onChange={e => setForm(f => ({ ...f, contactWhatsApp: e.target.value }))} placeholder="+1234567890" />
-          <p className="text-xs text-gray-400">{t('admin.whatsAppHint')}</p>
-        </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1.5">{t('profile.address')}</label>
+            <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+          </div>
+        </SectionCard>
 
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">{error}</div>}
-        {success && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3">{t('admin.settingsSaved')}</div>}
-
-        <Button type="submit" size="lg" loading={saving}>{t('admin.saveSettings')}</Button>
-      </form>
-
-      {/* ── Season Control ── */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4 mt-6">
-        <div>
-          <h2 className="font-semibold text-gray-900">{t('admin.activeSeason')}</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{t('admin.activeSeasonDesc')}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {Object.entries(SEASON_CONFIG).map(([key, cfg]) => {
-            const isActive = activeSeason === key
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handleSeasonChange(key)}
-                disabled={seasonSaving}
-                className={`relative flex flex-col items-center gap-2 p-5 rounded-2xl border-2 transition-all duration-200 disabled:opacity-60 ${
-                  isActive
-                    ? 'border-gray-900 bg-gray-900 text-white shadow-lg scale-[1.02]'
-                    : 'border-gray-200 hover:border-gray-400 bg-white text-gray-700'
+        {/* ── Contact Settings ── */}
+        <SectionCard icon="📞" title={t('admin.contactInfo')}>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1.5">{t('admin.email')}</label>
+            <Input type="email" value={form.contactEmail} onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1.5">{t('admin.phone')}</label>
+            <Input value={form.contactPhone} onChange={e => setForm(f => ({ ...f, contactPhone: e.target.value }))} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1.5">
+              {t('admin.whatsAppNumber')} <span className="text-emerald-600">★</span>
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={form.contactWhatsApp}
+                onChange={e => setForm(f => ({ ...f, contactWhatsApp: e.target.value }))}
+                placeholder="+1234567890"
+                className="flex-1"
+              />
+              <a
+                href={whatsappTestUrl || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => { if (!whatsappTestUrl) e.preventDefault() }}
+                className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 rounded-lg transition-colors ${
+                  whatsappTestUrl
+                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                    : 'bg-gray-50 border border-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
+                title={t('admin.testWhatsApp') || 'Test WhatsApp link'}
               >
-                <span className="text-3xl">{cfg.icon}</span>
-                <span className="font-semibold text-sm tracking-wide">{cfg.label}</span>
-                <span className={`text-xs ${isActive ? 'text-gray-300' : 'text-gray-400'}`}>{cfg.description}</span>
-                {isActive && (
-                  <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-green-400" title="Active" />
-                )}
-              </button>
-            )
-          })}
-        </div>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5h5v5M19 5l-9 9M19 13v6a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h6" />
+                </svg>
+                {t('admin.testWhatsApp') || 'Test'}
+              </a>
+            </div>
+            <p className="text-xs text-gray-500 mt-1.5">
+              {t('admin.whatsAppGlobalHint') || 'This number is used across the entire website (orders, contact buttons, footer, floating chat).'}
+            </p>
+            {form.contactWhatsApp && !whatsappValid && (
+              <p className="text-xs text-amber-600 mt-1">
+                {t('admin.whatsAppInvalid') || 'Enter a valid international number (9–15 digits, optional +).'}
+              </p>
+            )}
+          </div>
+        </SectionCard>
 
-        {seasonSaving && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Spinner size="sm" /><span>{t('admin.updatingSeason')}</span>
+        {/* ── Delivery Settings ── */}
+        <SectionCard
+          icon="🚚"
+          title={t('admin.deliverySettings') || 'Delivery Settings'}
+          hint={t('admin.deliveryHint') || 'Delivery zones, prices, and the exchange policy are fixed in the storefront. Edit them in the Delivery page if you need to change values.'}
+        >
+          <div className="bg-[#FDF6F7] border border-[#F0D5D8] rounded-xl p-4 text-xs text-[#6B4E53] leading-relaxed">
+            <p className="font-medium text-[#3D1A1E] mb-1">📦 {t('admin.deliveryFixed') || 'Delivery is configured statically'}</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>{t('shipping.westBank')} — 20</li>
+              <li>{t('shipping.jerusalem')} — 30</li>
+              <li>{t('shipping.inside48')} — 70</li>
+              <li>{t('checkout.exchangePolicy')}</li>
+            </ul>
           </div>
-        )}
-        {seasonSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3">
-            {t('admin.seasonUpdated')}
+        </SectionCard>
+
+        {/* ── General / Season ── */}
+        <SectionCard icon="⚙️" title={t('admin.activeSeason')} hint={t('admin.activeSeasonDesc')}>
+          <div className="grid grid-cols-2 gap-3">
+            {Object.entries(SEASON_CONFIG).map(([key, cfg]) => {
+              const isActive = activeSeason === key
+              return (
+                <button key={key} type="button" onClick={() => handleSeasonChange(key)} disabled={seasonSaving}
+                  className={`relative flex flex-col items-center gap-2 p-5 rounded-2xl border-2 transition-all duration-200 disabled:opacity-60 ${
+                    isActive
+                      ? 'border-gray-900 bg-gray-900 text-white shadow-lg scale-[1.02]'
+                      : 'border-gray-200 hover:border-gray-400 bg-white text-gray-700'
+                  }`}>
+                  <span className="text-3xl">{cfg.icon}</span>
+                  <span className="font-semibold text-sm tracking-wide">{cfg.label}</span>
+                  <span className={`text-xs ${isActive ? 'text-gray-300' : 'text-gray-400'}`}>{cfg.description}</span>
+                  {isActive && <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-green-400" title="Active" />}
+                </button>
+              )
+            })}
           </div>
+          {seasonSaving && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+              <Spinner size="sm" /><span>{t('admin.updatingSeason')}</span>
+            </div>
+          )}
+        </SectionCard>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">{error}</div>
         )}
+
+        {/* Inline save action — no longer overlapping content */}
+        <div className="flex flex-col items-end gap-2 pt-2">
+          <Button type="submit" size="lg" loading={saving}>
+            {t('admin.saveSettings')}
+          </Button>
+          <p className="text-xs text-gray-400 mt-2">{t('admin.unsavedHint') || 'Changes apply across the storefront once saved.'}</p>
+        </div>
+      </form>
       </div>
     </div>
   )

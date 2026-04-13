@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { getAdminOrder, updateOrderStatus } from '../../api/adminApi'
 import Badge from '../../components/ui/Badge'
 import Spinner from '../../components/ui/Spinner'
+import PageHeader from '../../components/layout/PageHeader'
 import { useFormatPrice } from '../../utils/formatPrice'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -40,12 +41,27 @@ export default function AdminOrderDetail() {
   if (!order) return <div className="p-8 text-gray-500">{t('admin.orderNotFound')}</div>
 
   const currentStep = STATUS_STEPS.indexOf(order.status)
+  const buildWaMessage = () => {
+    const first = order.items?.[0] || {}
+    const lines = [
+      'مرحبًا 🌸',
+      'هل تود تأكيد طلبك بناءً على التفاصيل التي قمت بإدخالها؟',
+      '',
+    ]
+    if (first.productName) lines.push(`📦 المنتج: ${first.productName}`)
+    if (first.color)       lines.push(`🎨 اللون: ${first.color}`)
+    if (first.size)        lines.push(`📏 المقاس: ${first.size}`)
+    lines.push('', 'يرجى تأكيد الطلب وإرسال الموقع 📍')
+    return lines.join('\n')
+  }
   const whatsappLink = order.customerPhone
-    ? `https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`مرحبا، تم استلام طلبك رقم #${order.id}. هل تؤكد الطلب؟ يرجى إرسال الموقع.`)}`
+    ? `https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(buildWaMessage())}`
     : null
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div>
+      <PageHeader />
+      <div className="p-6 max-w-4xl pt-0">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link to="/admin/orders" className="text-gray-400 hover:text-gray-700 transition-colors">
@@ -103,12 +119,20 @@ export default function AdminOrderDetail() {
             <div className="divide-y divide-gray-50">
               {order.items.map(item => (
                 <div key={item.id} className="flex gap-4 px-5 py-4">
-                  {/* Image */}
-                  <div className="w-16 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
+                  {/* Image — variant-specific when available, with a small color-dot overlay */}
+                  <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
                     {item.productImage
                       ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
                       : <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
                     }
+                    {item.color && (
+                      <span
+                        className="absolute bottom-1 end-1 w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                        style={{ backgroundColor: item.color }}
+                        aria-label={item.color}
+                        title={item.color}
+                      />
+                    )}
                   </div>
 
                   {/* Details */}
@@ -116,15 +140,20 @@ export default function AdminOrderDetail() {
                     <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
 
                     {/* Variant chips */}
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {item.size && (
-                        <span className="inline-flex items-center gap-1 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
-                          <span className="text-gray-400 text-[10px]">{t('admin.SIZE')}</span> {item.size}
-                        </span>
-                      )}
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      <span className="inline-flex items-center gap-1.5 text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-md">
+                        <span className="text-gray-400 text-[10px] uppercase tracking-wide">{t('admin.SIZE')}</span>
+                        <span className="font-medium">{item.size || '—'}</span>
+                      </span>
                       {item.color && (
                         <span className="inline-flex items-center gap-1.5 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
-                          <span className="text-gray-400 text-[10px]">{t('admin.COLOR')}</span> {item.color}
+                          <span className="text-gray-400 text-[10px]">{t('admin.COLOR')}</span>
+                          <span
+                            className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
+                            style={{ backgroundColor: item.color }}
+                            aria-label={item.color}
+                            title={item.color}
+                          />
                         </span>
                       )}
                     </div>
@@ -215,6 +244,7 @@ export default function AdminOrderDetail() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -104,6 +104,19 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Order status updated", orderService.updateStatus(id, status)));
     }
 
+    @PatchMapping("/orders/{id}/archive")
+    public ResponseEntity<ApiResponse<OrderResponse>> archiveOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Order archived", orderService.archive(id)));
+    }
+
+    @GetMapping("/orders/archived")
+    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getArchivedOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(ApiResponse.success("Archived orders",
+                orderService.getArchivedOrders(PageRequest.of(page, size, Sort.by("createdAt").descending()))));
+    }
+
     // ── Users ─────────────────────────────────────────────────────────────────
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> getUsers(

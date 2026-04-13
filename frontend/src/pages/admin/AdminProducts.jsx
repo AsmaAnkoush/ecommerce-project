@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { deleteProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProducts } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
+import PageHeader from '../../components/layout/PageHeader'
 import { useFormatPrice } from '../../utils/formatPrice'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
@@ -191,9 +192,24 @@ export default function AdminProducts() {
   }
 
   const handleToggleVisibility = async (id) => {
+    const target = products.find(p => p.id === id)
+    if (!target) return
+    const previous = !!target.active
+    const optimistic = !previous
+    // Optimistic: flip the row immediately
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, active: optimistic } : p))
     setToggling(id)
-    try { await toggleProductVisibility(id); await fetchProducts(page) }
-    finally { setToggling(null) }
+    try {
+      const res = await toggleProductVisibility(id)
+      const next = res?.data?.data?.active ?? optimistic
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, active: next } : p))
+      toast(next ? t('admin.productNowVisible') : t('admin.productNowHidden'))
+    } catch (err) {
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, active: previous } : p))
+      toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
+    } finally {
+      setToggling(null)
+    }
   }
 
   const toggleExpand = (id) =>
@@ -244,7 +260,9 @@ export default function AdminProducts() {
   )
 
   return (
-    <div className="p-5 lg:p-7">
+    <div>
+      <PageHeader />
+      <div className="p-5 lg:p-7 pt-0">
 
       {/* ── Toolbar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -418,7 +436,7 @@ export default function AdminProducts() {
 
                       {/* Actions — icon-only with tooltips */}
                       <td className="px-4 py-3 text-end">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-2">
                           {/* Edit */}
                           <Link to={`/admin/products/${p.id}/edit`} title={t('admin.edit')} aria-label={t('admin.edit')}
                             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
@@ -429,31 +447,21 @@ export default function AdminProducts() {
                               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
                             </svg>
                           </Link>
-                          {/* View (public page in new tab) */}
-                          <Link to={`/products/${p.id}`} target="_blank" rel="noopener noreferrer" title={t('admin.view')} aria-label={t('admin.view')}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-                            style={{ background: '#F5F3FF', color: '#7C3AED' }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#EDE9FE'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#F5F3FF'}>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                          </Link>
-                          {/* Hide / Show */}
+                          {/* Visibility toggle — same palette as categories: green when visible, gray when hidden */}
                           <button
                             type="button"
                             onClick={() => handleToggleVisibility(p.id)}
                             disabled={toggling === p.id}
-                            title={p.active ? t('admin.hide') : t('admin.show')}
-                            aria-label={p.active ? t('admin.hide') : t('admin.show')}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-40 disabled:hover:scale-100"
+                            title={p.active ? t('admin.categoryVisible') : t('admin.categoryHidden')}
+                            aria-label={p.active ? t('admin.categoryVisible') : t('admin.categoryHidden')}
+                            aria-pressed={!!p.active}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:hover:scale-100"
                             style={p.active
-                              ? { background: '#FDF6F7', color: '#C4768B' }
-                              : { background: '#ECFDF5', color: '#059669' }
+                              ? { background: '#ECFDF5', color: '#059669' }
+                              : { background: '#F3F4F6', color: '#9CA3AF' }
                             }
-                            onMouseEnter={e => e.currentTarget.style.background = p.active ? '#F5EDEF' : '#D1FAE5'}
-                            onMouseLeave={e => e.currentTarget.style.background = p.active ? '#FDF6F7' : '#ECFDF5'}>
+                            onMouseEnter={e => e.currentTarget.style.background = p.active ? '#D1FAE5' : '#E5E7EB'}
+                            onMouseLeave={e => e.currentTarget.style.background = p.active ? '#ECFDF5' : '#F3F4F6'}>
                             {toggling === p.id ? (
                               <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -461,14 +469,28 @@ export default function AdminProducts() {
                               </svg>
                             ) : p.active ? (
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                              </svg>
-                            ) : (
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                              </svg>
                             )}
+                          </button>
+                          {/* Preview — opens public product page in a new tab (external-link icon, distinct from the eye toggle) */}
+                          <button
+                            type="button"
+                            onClick={() => window.open(`/products/${p.id}`, '_blank', 'noopener,noreferrer')}
+                            title={t('admin.viewProductPage')}
+                            aria-label={t('admin.viewProductPage')}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+                            style={{ background: '#F5F3FF', color: '#7C3AED' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#EDE9FE'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#F5F3FF'}>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5h5v5M19 5l-9 9M19 13v6a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h6" />
+                            </svg>
                           </button>
                           {/* Delete */}
                           <button
@@ -554,6 +576,7 @@ export default function AdminProducts() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmTarget(null)}
       />
+      </div>
     </div>
   )
 }
