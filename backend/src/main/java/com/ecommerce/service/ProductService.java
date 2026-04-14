@@ -29,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -70,8 +72,24 @@ public class ProductService {
         return toResponses(productRepository.findTop8ByActiveTrueAndIsDeletedFalseOrderByCreatedAtDesc());
     }
 
+    /**
+     * Dynamic "new arrivals": active, non-deleted products created within the
+     * last 3 days whose season matches the current season (or ALL_SEASON).
+     * Auto-updating — no admin flag needed.
+     */
     public List<ProductResponse> findNew() {
-        return toResponses(productRepository.findByActiveTrueAndIsNewTrueAndIsDeletedFalseOrderByCreatedAtDesc());
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(3);
+        Season current = currentSeason();
+        List<Season> seasons = List.of(current, Season.ALL_SEASON);
+        return toResponses(productRepository
+                .findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(seasons, cutoff));
+    }
+
+    /** Northern-hemisphere split: Apr–Sep → SUMMER, Oct–Mar → WINTER. */
+    private Season currentSeason() {
+        Month m = LocalDateTime.now().getMonth();
+        int v = m.getValue();
+        return (v >= 4 && v <= 9) ? Season.SUMMER : Season.WINTER;
     }
 
     public List<ProductResponse> findBestSellers() {
@@ -154,6 +172,7 @@ public class ProductService {
 
     @Transactional
     public ProductResponse create(ProductRequest request) {
+        validateForSubmission(request);
         Product product = buildProduct(new Product(), request);
         Product saved = productRepository.save(product);
         saveImages(saved, request.getImageUrls());
@@ -164,6 +183,7 @@ public class ProductService {
 
     @Transactional
     public ProductResponse update(Long id, ProductRequest request) {
+        validateForSubmission(request);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
         buildProduct(product, request);
@@ -217,6 +237,52 @@ public class ProductService {
         }
 
         return toResponse(productRepository.save(product));
+    }
+
+    /**
+     * Hard guard against incomplete products. Mirrors the admin form's
+     * front-end checks so the database can never end up with half-populated
+     * rows even if a request bypasses the UI. Throws BadRequestException
+     * (→ 400) with a single, human-readable message.
+     */
+    private void validateForSubmission(ProductRequest request) {
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new BadRequestException("Product name is required");
+        }
+        if (request.getPrice() == null || request.getPrice().signum() <= 0) {
+            throw new BadRequestException("Product price must be greater than zero");
+        }
+        if (request.getCategoryId() == null) {
+            throw new BadRequestException("Category is required");
+        }
+        if (request.getSeason() == null) {
+            throw new BadRequestException("Season is required");
+        }
+        if (request.getColorImages() == null || request.getColorImages().isEmpty()) {
+            throw new BadRequestException("At least one color is required");
+        }
+        for (ColorImagesRequest group : request.getColorImages()) {
+            if (group.getColor() == null || group.getColor().isBlank()) {
+                throw new BadRequestException("Each color entry must have a color name");
+            }
+            if (group.getImageUrls() == null || group.getImageUrls().isEmpty()) {
+                throw new BadRequestException("Color \"" + group.getColor() + "\" needs at least one image");
+            }
+        }
+        if (request.getVariants() == null || request.getVariants().isEmpty()) {
+            throw new BadRequestException("At least one size variant is required");
+        }
+        for (ProductVariantRequest v : request.getVariants()) {
+            if (v.getColor() == null || v.getColor().isBlank()) {
+                throw new BadRequestException("Each size variant must reference a color");
+            }
+            if (v.getSize() == null || v.getSize().toString().isBlank()) {
+                throw new BadRequestException("Each size variant must have a size");
+            }
+            if (v.getStockQuantity() == null || v.getStockQuantity() <= 0) {
+                throw new BadRequestException("Size \"" + v.getSize() + "\" (" + v.getColor() + ") must have a quantity greater than zero");
+            }
+        }
     }
 
     /** Apply or clear an offer on a single product. Pass null to remove the discount. */

@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -28,6 +29,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findTop8ByActiveTrueAndIsDeletedFalseOrderByCreatedAtDesc();
 
     List<Product> findByActiveTrueAndIsNewTrueAndIsDeletedFalseOrderByCreatedAtDesc();
+
+    /** Dynamic "new arrivals" — products created after a cutoff and whose season
+     *  is in the supplied list (typically [currentSeason, ALL_SEASON]). */
+    List<Product> findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(
+            List<Season> seasons, LocalDateTime cutoff);
 
     List<Product> findByActiveTrueAndIsBestSellerTrueAndIsDeletedFalseOrderByConfirmedOrderCountDesc();
 

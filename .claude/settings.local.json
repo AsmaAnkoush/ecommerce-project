@@ -46,7 +46,11 @@
       "Bash(find /c/Users/user/Desktop/ecommerce-project/frontend/src/pages -name \"*.jsx\" -exec grep -l \"import.*Input\" {} \\\\;)",
       "Bash(awk '$1 <= 2')",
       "Bash(grep -n \"AdminReviews\\\\|AdminCategories\" /c/Users/user/Desktop/ecommerce-project/frontend/src/pages/admin/*.jsx)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(./mvnw -q -DskipTests compile)",
+      "Bash(ls mvnw*)",
+      "Bash(npx --no-install eslint src/pages/admin/AdminProductForm.jsx)",
+      "Bash(npx --no-install vite build)"
     ]
   }
 }

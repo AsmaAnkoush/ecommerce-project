@@ -309,6 +309,7 @@ export default function AdminProducts() {
                 <th className="text-start px-4 py-3 min-w-[140px]">{t('admin.price') || 'Price'}</th>
                 <th className="text-start px-4 py-3 min-w-[160px]">{t('admin.status') || 'Status'}</th>
                 <th className="text-start px-4 py-3 min-w-[220px]">{t('admin.variants') || 'Variants'}</th>
+                <th className="text-start px-4 py-3 min-w-[140px]">{t('admin.added') || 'Added'}</th>
                 <th className="text-end px-4 py-3 min-w-[180px]">{t('admin.actions') || 'Actions'}</th>
               </tr>
             </thead>
@@ -435,6 +436,11 @@ export default function AdminProducts() {
                         )}
                       </td>
 
+                      {/* Added — day · date · time, sorted newest-first by the API */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <CreatedAtCell value={p.createdAt} />
+                      </td>
+
                       {/* Actions — icon-only with tooltips */}
                       <td className="px-4 py-3 text-end">
                         <div className="flex items-center justify-end gap-2">
@@ -521,7 +527,7 @@ export default function AdminProducts() {
 
                     {isExpanded && hasVariants && (
                       <tr>
-                        <td colSpan={6} style={{ background: '#FDF9FA', borderTop: '1px solid #F5EDEF' }}>
+                        <td colSpan={7} style={{ background: '#FDF9FA', borderTop: '1px solid #F5EDEF' }}>
                           <VariantBreakdown product={p} />
                         </td>
                       </tr>
@@ -532,7 +538,7 @@ export default function AdminProducts() {
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <div className="flex flex-col items-center gap-3 py-16">
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: '#FDF0F2', border: '1px solid #EDD8DC' }}>
                         <svg className="w-7 h-7" style={{ color: '#DFA3AD' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -579,6 +585,27 @@ export default function AdminProducts() {
         onCancel={() => setConfirmTarget(null)}
       />
       </div>
+    </div>
+  )
+}
+
+/**
+ * Compact "created at" cell — three stacked lines: weekday, ISO date, time.
+ * Uses Intl so the weekday/AM-PM format adapts to the browser locale; the
+ * date stays as ISO `YYYY-MM-DD` because admins want it sortable at a glance.
+ */
+function CreatedAtCell({ value }) {
+  if (!value) return <span className="text-[11px]" style={{ color: '#C4A0A6' }}>—</span>
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return <span className="text-[11px]" style={{ color: '#C4A0A6' }}>—</span>
+  const weekday = d.toLocaleDateString(undefined, { weekday: 'long' })
+  const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  return (
+    <div title={d.toLocaleString()}>
+      <div className="text-xs text-gray-500">{weekday}</div>
+      <div className="text-sm font-medium tabular-nums" style={{ color: '#3D1A1E' }}>{isoDate}</div>
+      <div className="text-xs text-gray-400 tabular-nums">{time}</div>
     </div>
   )
 }
