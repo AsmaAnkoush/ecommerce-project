@@ -98,17 +98,18 @@ function Hero({ innerRef, inView, t, activeSeason }) {
 export default function HomePage() {
   const { t } = useLanguage()
   const { activeSeason } = useSiteSettings()
+  const secondSeason = activeSeason === 'SUMMER' ? 'WINTER' : 'SUMMER'
   const [heroRef, heroInView] = useInView()
 
   return (
     <div className="bg-[#FDF6F7] pb-12 overflow-x-hidden">
       <Hero innerRef={heroRef} inView={heroInView} t={t} activeSeason={activeSeason} />
-      <div className="space-y-2 sm:space-y-3">
+      <div className="space-y-6 sm:space-y-8 py-6 sm:py-8">
         <CategorySection />
-        <NewArrivalsSection />
-        <BestSellersSection />
-        <SeasonalSection season="WINTER" />
-        <SeasonalSection season="SUMMER" />
+        <NewArrivalsSection season={activeSeason} />
+        <BestSellersSection season={activeSeason} />
+        <SeasonalSection season={activeSeason} />
+        <SeasonalSection season={secondSeason} />
       </div>
     </div>
   )

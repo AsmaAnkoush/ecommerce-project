@@ -30,13 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class AuthRateLimitFilter extends OncePerRequestFilter {
 
-    private static final String[] PROTECTED_PATHS = {
-            "/api/auth/login",
-            "/api/auth/register",
-            "/api/auth/forgot-password",
-            "/api/auth/reset-password",
-    };
-
     @Value("${app.auth.rate-limit.max-requests:10}")
     private int maxRequests;
 
@@ -48,11 +41,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        for (String p : PROTECTED_PATHS) {
-            if (path.equals(p) || path.endsWith(p)) return false;
-        }
-        return true;
+        return !request.getRequestURI().startsWith("/api/auth");
     }
 
     @Override

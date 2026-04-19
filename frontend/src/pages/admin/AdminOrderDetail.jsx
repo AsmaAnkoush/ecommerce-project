@@ -1,4 +1,15 @@
 import { useEffect, useState } from 'react'
+
+const COLOR_MAP = {
+  black:'#1A1A1A', white:'#F0EEE9', navy:'#1B2A4A', beige:'#F2EBD9',
+  brown:'#7C4A2D', red:'#C0392B', green:'#2D6A4F', gray:'#8E8E8E',
+  camel:'#C19A6B', burgundy:'#7A1F2E', olive:'#6B7C44', coral:'#E8715A',
+  pink:'#F4A8B8', cream:'#FBF7ED', blue:'#1A56C4', yellow:'#F0C040',
+  orange:'#D4600A', purple:'#6B2FA0',
+}
+const resolveColor = (name) => name
+  ? (COLOR_MAP[name.toLowerCase().split(' ')[0]] ?? name)
+  : null
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { getAdminOrder, updateOrderStatus, deleteOrder } from '../../api/adminApi'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
@@ -153,7 +164,7 @@ export default function AdminOrderDetail() {
                     {item.color && (
                       <span
                         className="absolute bottom-1 end-1 w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                        style={{ backgroundColor: item.color }}
+                        style={{ backgroundColor: resolveColor(item.color) }}
                         aria-label={item.color}
                         title={item.color}
                       />
@@ -175,7 +186,7 @@ export default function AdminOrderDetail() {
                           <span className="text-gray-400 text-[10px]">{t('admin.COLOR')}</span>
                           <span
                             className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
-                            style={{ backgroundColor: item.color }}
+                            style={{ backgroundColor: resolveColor(item.color) }}
                             aria-label={item.color}
                             title={item.color}
                           />

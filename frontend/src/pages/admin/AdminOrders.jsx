@@ -1,12 +1,24 @@
 import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAdminOrders, updateOrderStatus, archiveOrder, getArchivedOrders, deleteOrder } from '../../api/adminApi'
+import { getAdminOrders, updateOrderStatus, updateOrderItemStatus, archiveOrder, getArchivedOrders, deleteOrder } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { useToast } from '../../context/ToastContext'
 import PageHeader from '../../components/layout/PageHeader'
 import { useFormatPrice } from '../../utils/formatPrice'
 import { useLanguage } from '../../context/LanguageContext'
+
+/* ─── Color name → hex (mirrors ProductCard COLOR_MAP) ─────────────────── */
+const COLOR_MAP = {
+  black:'#1A1A1A', white:'#F0EEE9', navy:'#1B2A4A', beige:'#F2EBD9',
+  brown:'#7C4A2D', red:'#C0392B', green:'#2D6A4F', gray:'#8E8E8E',
+  camel:'#C19A6B', burgundy:'#7A1F2E', olive:'#6B7C44', coral:'#E8715A',
+  pink:'#F4A8B8', cream:'#FBF7ED', blue:'#1A56C4', yellow:'#F0C040',
+  orange:'#D4600A', purple:'#6B2FA0',
+}
+const resolveColor = (name) => name
+  ? (COLOR_MAP[name.toLowerCase().split(' ')[0]] ?? name)
+  : null
 
 /* ─── Status config ─────────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
@@ -87,7 +99,7 @@ function InfoPair({ label, value }) {
 }
 
 /* ─── Expanded detail ───────────────────────────────────────────────────── */
-function OrderDetail({ order, updating, onStatusChange, onArchive, archiving }) {
+function OrderDetail({ order, updating, onStatusChange, onArchive, archiving, onItemStatusChange, updatingItem }) {
   const { t } = useLanguage()
   const formatPrice = useFormatPrice()
   return (
@@ -108,11 +120,15 @@ function OrderDetail({ order, updating, onStatusChange, onArchive, archiving }) 
           {t('admin.orderItems')} ({order.items.length})
         </p>
         <div className="space-y-2.5">
-          {order.items.map(item => (
+          {order.items.map(item => {
+            const iStatus = item.itemStatus || 'PENDING'
+            const iCfg = STATUS_CONFIG[iStatus] || STATUS_CONFIG.PENDING
+            const isItemFinal = iStatus === 'CONFIRMED' || iStatus === 'CANCELLED'
+            return (
             <div
               key={item.id}
-              className="flex items-center gap-4 p-3 rounded-xl"
-              style={{ background: '#fff', border: '1px solid #F5EDEF' }}
+              className="flex items-center gap-3 p-3 rounded-xl"
+              style={{ background: '#fff', border: `1px solid ${isItemFinal ? iCfg.border : '#F5EDEF'}` }}
             >
               {/* Image */}
               <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#EDD8DC]" style={{ background: '#FDF0F2' }}>
@@ -131,7 +147,7 @@ function OrderDetail({ order, updating, onStatusChange, onArchive, archiving }) 
                     <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: '#6B4E53' }}>
                       <span
                         className="inline-block w-3.5 h-3.5 rounded-full border"
-                        style={{ backgroundColor: item.color, borderColor: '#D9CDD0', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.5)' }}
+                        style={{ backgroundColor: resolveColor(item.color), borderColor: '#D9CDD0', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.5)' }}
                         aria-label={item.color}
                         title={item.color}
                       />
@@ -154,14 +170,51 @@ function OrderDetail({ order, updating, onStatusChange, onArchive, archiving }) 
               </div>
 
               {/* Price */}
-              <div className="shrink-0 text-end min-w-[88px]">
+              <div className="shrink-0 text-end min-w-[80px]">
                 <p className="text-sm font-bold tabular-nums" style={{ color: '#6B1F2A', fontFamily: 'Raleway, sans-serif' }}>
                   {formatPrice(item.subtotal)}
                 </p>
                 <p className="text-[10px]" style={{ color: '#C4A0A6' }}>{formatPrice(item.unitPrice)} {t('cart.perItem')}</p>
               </div>
+
+              {/* Per-item status — locked badge when final, dropdown when still PENDING */}
+              <div className="shrink-0 min-w-[96px] flex flex-col items-end gap-1">
+                {isItemFinal ? (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg whitespace-nowrap"
+                    style={{ background: iCfg.bg, color: iCfg.text, border: `1px solid ${iCfg.border}` }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: iCfg.dot }} />
+                    {iStatus}
+                  </span>
+                ) : (
+                  <select
+                    value={iStatus}
+                    onChange={e => onItemStatusChange(order.id, item.id, e.target.value)}
+                    disabled={updatingItem === item.id || order.isArchived}
+                    className="text-[10px] font-semibold rounded-lg px-2 py-1 outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: iCfg.bg,
+                      color: iCfg.text,
+                      border: `1px solid ${iCfg.border}`,
+                      fontFamily: 'Raleway, sans-serif',
+                    }}
+                  >
+                    {['PENDING', 'CONFIRMED', 'CANCELLED'].map(s => (
+                      <option key={s} value={s} style={{ background: '#fff', color: '#374151' }}>{s}</option>
+                    ))}
+                  </select>
+                )}
+                {updatingItem === item.id && (
+                  <svg className="animate-spin w-3 h-3" style={{ color: '#C4A0A6' }} fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                )}
+              </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -264,6 +317,7 @@ export default function AdminOrders() {
   const [activeTab, setActiveTab]           = useState('ALL')
   const [confirmDelete, setConfirmDelete]   = useState(null)
   const [deleting, setDeleting]             = useState(false)
+  const [updatingItem, setUpdatingItem]     = useState(null)
 
   const isArchivedTab = activeTab === 'ARCHIVED'
 
@@ -328,6 +382,23 @@ export default function AdminOrders() {
     } catch (err) {
       toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
     } finally { setUpdating(null) }
+  }
+
+  const handleItemStatusChange = async (orderId, itemId, status) => {
+    setUpdatingItem(itemId)
+    try {
+      await updateOrderItemStatus(orderId, itemId, status)
+      const updateItems = list => list.map(o =>
+        o.id === orderId
+          ? { ...o, items: o.items.map(i => i.id === itemId ? { ...i, itemStatus: status } : i) }
+          : o
+      )
+      setOrders(updateItems)
+      setArchivedOrders(updateItems)
+      toast(t('admin.statusUpdated') || 'Item status updated')
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.failedSave'), 'error')
+    } finally { setUpdatingItem(null) }
   }
 
   const handleDelete = async () => {
@@ -432,7 +503,6 @@ export default function AdminOrders() {
                   <th>{t('admin.order')} #</th>
                   <th>{t('admin.customer')}</th>
                   <th>{t('admin.phone') || 'Phone'}</th>
-                  <th>{t('admin.status')}</th>
                   <th>{t('admin.total')}</th>
                   <th>{t('admin.date') || 'Date'}</th>
                   <th style={{ minWidth: 280 }}>{t('admin.itemsOrdered') || 'Products'}</th>
@@ -493,41 +563,6 @@ export default function AdminOrders() {
                           ) : <span className="text-sm text-gray-400">—</span>}
                         </td>
 
-                        {/* Status — quick-change select */}
-                        <td>
-                          {order.isArchived ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-gray-100 text-gray-600 border border-gray-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                              {t('admin.archived')}
-                            </span>
-                          ) : (
-                            <div className="relative inline-block">
-                              <select
-                                value={order.status}
-                                onChange={e => handleStatusChange(order.id, e.target.value)}
-                                disabled={isBusy}
-                                className="text-xs font-semibold rounded-xl pl-2.5 pr-7 py-1 outline-none transition-colors disabled:opacity-50 cursor-pointer appearance-none"
-                                style={{
-                                  background: STATUS_CONFIG[order.status]?.bg || '#F9FAFB',
-                                  color:      STATUS_CONFIG[order.status]?.text || '#374151',
-                                  border:     `1px solid ${STATUS_CONFIG[order.status]?.border || '#E5E7EB'}`,
-                                  fontFamily: 'Raleway, sans-serif',
-                                }}
-                                title={t('admin.updateStatus')}
-                              >
-                                {ALL_STATUSES.map(s => (
-                                  <option key={s} value={s} style={{ background: '#fff', color: '#374151' }}>
-                                    {t('status.' + s)}
-                                  </option>
-                                ))}
-                              </select>
-                              <svg className="absolute end-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} style={{ color: STATUS_CONFIG[order.status]?.text || '#374151' }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </div>
-                          )}
-                        </td>
-
                         {/* Total */}
                         <td>
                           <p className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: '#6B1F2A' }}>
@@ -549,56 +584,107 @@ export default function AdminOrders() {
                           ) : <span className="text-sm text-gray-400">—</span>}
                         </td>
 
-                        {/* Products summary — rich variant display */}
-                        <td>
-                          <div className="flex flex-col gap-1.5 max-w-[320px]" title={summary}>
-                            {(order.items || []).slice(0, 2).map(item => (
-                              <div key={item.id} className="flex items-center gap-2.5">
-                                {/* Variant-specific image (backend resolves by color) */}
-                                <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-[#EDD8DC] bg-[#FDF0F2]">
-                                  {item.productImage ? (
-                                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" loading="lazy" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[10px] text-[#C4A0A6]">—</div>
-                                  )}
-                                </div>
-                                {/* Name + color circle + size badge */}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-semibold truncate" style={{ color: '#3D1A1E' }}>
-                                    {item.productName}
-                                    {item.quantity > 1 && (
-                                      <span className="ms-1 text-[10px] font-medium tabular-nums text-[#9B7B80]">×{item.quantity}</span>
-                                    )}
-                                  </p>
-                                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                    {item.color && (
-                                      <span className="inline-flex items-center gap-1 text-[11px] text-[#6B4E53]">
-                                        <span
-                                          className="inline-block w-2.5 h-2.5 rounded-full border border-gray-300 shrink-0"
-                                          style={{ backgroundColor: item.color }}
-                                          aria-label={item.color}
-                                        />
-                                        {item.color}
-                                      </span>
-                                    )}
-                                    {item.size && (
-                                      <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[#FDF0F2] text-[#6B1F2A] border border-[#EDD8DC]">
-                                        {item.size}
-                                      </span>
-                                    )}
+                        {/* Items Ordered — one card per item */}
+                        <td style={{ minWidth: 320 }}>
+                          {(!order.items || order.items.length === 0) ? (
+                            <span className="text-xs" style={{ color: '#C4A0A6' }}>—</span>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {order.items.map((item, idx) => {
+                                const iStatus = item.itemStatus || 'PENDING'
+                                const iCfg   = STATUS_CONFIG[iStatus] || STATUS_CONFIG.PENDING
+                                const isFinal = iStatus === 'CONFIRMED' || iStatus === 'CANCELLED'
+                                return (
+                                  <div
+                                    key={item.id ?? idx}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 10,
+                                      padding: '7px 10px',
+                                      borderRadius: 10,
+                                      background: '#fff',
+                                      border: '1px solid #F0DDE0',
+                                    }}
+                                  >
+                                    {/* Image */}
+                                    <div style={{
+                                      width: 40, height: 40, borderRadius: 8, overflow: 'hidden',
+                                      border: '1px solid #EDD8DC', background: '#FDF0F2', flexShrink: 0,
+                                    }}>
+                                      {item.productImage
+                                        ? <img src={item.productImage} alt={item.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#C4A0A6' }}>—</div>
+                                      }
+                                    </div>
+
+                                    {/* Name + details */}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      {/* Name + qty */}
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <span style={{ fontSize: 11, fontWeight: 600, color: '#3D1A1E', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>
+                                          {item.productName || '—'}
+                                        </span>
+                                        <span style={{ fontSize: 10, fontWeight: 500, color: '#9B7B80', flexShrink: 0 }}>
+                                          ×{item.quantity ?? 1}
+                                        </span>
+                                      </div>
+                                      {/* Size + color */}
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                                        {item.size && (
+                                          <span style={{ fontSize: 10, color: '#9B7B80' }}>Size: <strong style={{ color: '#6B1F2A' }}>{item.size}</strong></span>
+                                        )}
+                                        {item.color && (
+                                          <span
+                                            title={item.color}
+                                            style={{
+                                              display: 'inline-block', width: 13, height: 13,
+                                              borderRadius: '50%', flexShrink: 0,
+                                              backgroundColor: resolveColor(item.color) ?? item.color,
+                                              border: '1.5px solid rgba(0,0,0,0.18)',
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Per-item status */}
+                                    <div style={{ flexShrink: 0 }}>
+                                      {isFinal ? (
+                                        <span style={{
+                                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                                          fontSize: 10, fontWeight: 700, padding: '3px 8px',
+                                          borderRadius: 8, whiteSpace: 'nowrap',
+                                          background: iCfg.bg, color: iCfg.text,
+                                          border: `1px solid ${iCfg.border}`,
+                                        }}>
+                                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: iCfg.dot, flexShrink: 0 }} />
+                                          {iStatus}
+                                        </span>
+                                      ) : (
+                                        <select
+                                          value={iStatus}
+                                          onChange={e => handleItemStatusChange(order.id, item.id, e.target.value)}
+                                          disabled={updatingItem === item.id || order.isArchived}
+                                          style={{
+                                            fontSize: 10, fontWeight: 700, padding: '3px 6px',
+                                            borderRadius: 8, outline: 'none', cursor: 'pointer',
+                                            background: iCfg.bg, color: iCfg.text,
+                                            border: `1px solid ${iCfg.border}`,
+                                            opacity: updatingItem === item.id ? 0.5 : 1,
+                                          }}
+                                        >
+                                          {ALL_STATUSES.map(s => (
+                                            <option key={s} value={s} style={{ background: '#fff', color: '#374151' }}>{s}</option>
+                                          ))}
+                                        </select>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
-                            ))}
-                            {order.items && order.items.length > 2 && (
-                              <p className="text-[10px] text-[#9B7B80] ms-12">
-                                +{order.items.length - 2} {t('admin.items') || 'more'}
-                              </p>
-                            )}
-                            {(!order.items || order.items.length === 0) && (
-                              <span className="text-xs text-gray-400">—</span>
-                            )}
-                          </div>
+                                )
+                              })}
+                            </div>
+                          )}
                         </td>
 
                         {/* Actions */}
@@ -656,6 +742,8 @@ export default function AdminOrders() {
                               onStatusChange={handleStatusChange}
                               onArchive={handleArchive}
                               archiving={archiving}
+                              onItemStatusChange={handleItemStatusChange}
+                              updatingItem={updatingItem}
                             />
                           </td>
                         </tr>

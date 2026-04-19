@@ -224,8 +224,7 @@ export default function ProductCard({ product }) {
 
   return (
     <div
-      className="group bg-white rounded-3xl overflow-hidden flex flex-col transition-all duration-350 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.03] hover:shadow-[0_12px_36px_rgba(107,31,42,0.15)] hover:border-[#DFA3AD]/50 card-hover border border-[#F0D5D8]/60"
-      style={{ boxShadow: '0 4px 18px rgba(107,31,42,0.06)' }}
+      className="group bg-white rounded-3xl overflow-hidden flex flex-col shadow-[0_4px_18px_rgba(107,31,42,0.06)] border border-[#F0D5D8]/60 transition-[transform,box-shadow,border-color] duration-300 ease-out hover:scale-[1.025] hover:shadow-[0_16px_40px_rgba(107,31,42,0.13)] hover:border-[#DFA3AD]/50 card-hover"
     >
       <Link to={`/products/${product.id}`} className="block">
 

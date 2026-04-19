@@ -8,6 +8,8 @@ export const getDashboard = () => api.get('/admin/dashboard')
 export const getAdminOrders = (params) => api.get('/admin/orders', { params })
 export const getAdminOrder = (id) => api.get(`/admin/orders/${id}`)
 export const updateOrderStatus = (id, status) => api.patch(`/admin/orders/${id}/status`, null, { params: { status } })
+export const updateOrderItemStatus = (orderId, itemId, status) =>
+  api.patch(`/admin/orders/${orderId}/items/${itemId}/status`, null, { params: { status } })
 export const archiveOrder = (id) => api.patch(`/admin/orders/${id}/archive`)
 export const deleteOrder = (id) => api.delete(`/admin/orders/${id}`)
 export const getArchivedOrders = (params) => api.get('/admin/orders/archived', { params })

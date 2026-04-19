@@ -36,6 +36,7 @@ com\ecommerce\service\CategoryService.class
 com\ecommerce\dto\response\AdminDashboardResponse$AdminDashboardResponseBuilder.class
 com\ecommerce\dto\response\OrderResponse.class
 com\ecommerce\dto\response\OrderResponse$OrderItemResponse.class
+com\ecommerce\dto\request\ForgotPasswordRequest.class
 com\ecommerce\entity\WishlistItem$WishlistItemBuilder.class
 com\ecommerce\service\UserService.class
 com\ecommerce\dto\request\LoginRequest.class
@@ -46,6 +47,7 @@ com\ecommerce\dto\response\ProductResponse.class
 com\ecommerce\service\WishlistService.class
 com\ecommerce\service\ReviewService.class
 com\ecommerce\repository\OrderRepository.class
+com\ecommerce\util\PageRequestValidator.class
 com\ecommerce\entity\WebsiteSettings$WebsiteSettingsBuilder.class
 com\ecommerce\controller\ProductController.class
 com\ecommerce\dto\response\ProductResponse$ProductResponseBuilder.class
@@ -70,14 +72,17 @@ com\ecommerce\repository\ReviewRepository.class
 com\ecommerce\entity\OrderItem.class
 com\ecommerce\controller\AuthController.class
 com\ecommerce\EcommerceApplication.class
+com\ecommerce\config\DataMigrationRunner.class
 com\ecommerce\dto\response\OrderResponse$OrderItemResponse$OrderItemResponseBuilder.class
 com\ecommerce\config\WebMvcConfig.class
 com\ecommerce\entity\ProductImage$ProductImageBuilder.class
+com\ecommerce\dto\request\DiscountRequest.class
 com\ecommerce\repository\CartItemRepository.class
 com\ecommerce\security\UserDetailsImpl.class
 com\ecommerce\dto\response\ReviewResponse.class
 com\ecommerce\util\PhoneUtils.class
 com\ecommerce\dto\request\ReviewRequest.class
+com\ecommerce\security\AuthRateLimitFilter.class
 com\ecommerce\dto\request\ColorImagesRequest.class
 com\ecommerce\dto\response\ReviewResponse$ReviewResponseBuilder.class
 com\ecommerce\entity\Order$OrderStatus.class
@@ -103,6 +108,7 @@ com\ecommerce\dto\response\OrderResponse$OrderResponseBuilder.class
 com\ecommerce\dto\response\CartResponse$CartItemResponse$CartItemResponseBuilder.class
 com\ecommerce\dto\response\BestSellerItem.class
 com\ecommerce\entity\DiscountType.class
+com\ecommerce\dto\request\ResetPasswordRequest.class
 com\ecommerce\dto\response\ApiResponse$ApiResponseBuilder.class
 com\ecommerce\entity\User.class
 com\ecommerce\entity\User$Role.class

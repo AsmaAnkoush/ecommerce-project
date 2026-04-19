@@ -10,6 +10,7 @@ import com.ecommerce.dto.response.OrderResponse;
 import com.ecommerce.dto.response.ProductResponse;
 import com.ecommerce.dto.response.ReviewResponse;
 import com.ecommerce.dto.response.UserResponse;
+import com.ecommerce.entity.ItemStatus;
 import com.ecommerce.entity.Order;
 import com.ecommerce.entity.User;
 import com.ecommerce.service.AdminService;
@@ -105,6 +106,15 @@ public class AdminController {
             @PathVariable Long id,
             @RequestParam Order.OrderStatus status) {
         return ResponseEntity.ok(ApiResponse.success("Order status updated", orderService.updateStatus(id, status)));
+    }
+
+    @PatchMapping("/orders/{orderId}/items/{itemId}/status")
+    public ResponseEntity<ApiResponse<OrderResponse>> updateOrderItemStatus(
+            @PathVariable Long orderId,
+            @PathVariable Long itemId,
+            @RequestParam ItemStatus status) {
+        return ResponseEntity.ok(ApiResponse.success("Item status updated",
+                orderService.updateItemStatus(orderId, itemId, status)));
     }
 
     @PatchMapping("/orders/{id}/archive")

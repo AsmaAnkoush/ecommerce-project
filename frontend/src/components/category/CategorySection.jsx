@@ -87,12 +87,12 @@ export default function CategorySection({ className = '' }) {
   }, [])
 
   return (
-    <section className={`relative px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl mx-auto ${className}`}>
+    <section className={`relative bg-white rounded-2xl shadow-[0_4px_24px_rgba(107,31,42,0.08)] mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
 
       {/* ── Title ──────────────────────────────────────────── */}
-      <div className="text-center mb-8 sm:mb-10">
+      <div className="text-center mb-10 sm:mb-12">
         <div className="inline-block bg-[#F3E4E7] px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl">
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-medium text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
               style={{ fontFamily: 'Playfair Display, serif' }}>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-[#DFA3AD] opacity-70" />

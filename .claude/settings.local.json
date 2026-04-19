@@ -50,7 +50,8 @@
       "Bash(./mvnw -q -DskipTests compile)",
       "Bash(ls mvnw*)",
       "Bash(npx --no-install eslint src/pages/admin/AdminProductForm.jsx)",
-      "Bash(npx --no-install vite build)"
+      "Bash(npx --no-install vite build)",
+      "Bash(mvn -q exec:java -Dexec.mainClass=com.ecommerce.EcommerceApplication)"
     ]
   }
 }

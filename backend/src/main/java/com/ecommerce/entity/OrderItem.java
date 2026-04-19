@@ -45,4 +45,19 @@ public class OrderItem {
 
     @Column(length = 512)
     private String productImage;
+
+    /** Per-item fulfillment status. Only PENDING items can be confirmed or cancelled.
+     *  Confirming an item deducts stock; this prevents double-deduction if the
+     *  order-level status is also confirmed later. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_status", length = 20, nullable = false)
+    @Builder.Default
+    private ItemStatus itemStatus = ItemStatus.PENDING;
+
+    /** Null-coalesce for rows created before item_status column was added. */
+    @PostLoad
+    @PrePersist
+    public void coalesceDefaults() {
+        if (this.itemStatus == null) this.itemStatus = ItemStatus.PENDING;
+    }
 }

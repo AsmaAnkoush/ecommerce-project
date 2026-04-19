@@ -44,5 +44,6 @@ public class OrderResponse {
         private BigDecimal subtotal;
         private String size;
         private String color;
+        private String itemStatus;
     }
 }

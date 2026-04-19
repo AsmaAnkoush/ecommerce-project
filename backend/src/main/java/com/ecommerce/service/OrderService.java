@@ -10,6 +10,7 @@ import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.repository.*;
 import com.ecommerce.util.PhoneUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,11 +20,13 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
@@ -235,6 +238,8 @@ public class OrderService {
             for (OrderItem item : order.getItems()) {
                 Product product = item.getProduct();
                 if (product == null) continue;
+                // Skip items already confirmed at item level — stock was already deducted then
+                if (item.getItemStatus() == ItemStatus.CONFIRMED) continue;
 
                 deductStock(product, item);
 
@@ -251,29 +256,98 @@ public class OrderService {
         return toResponse(order);
     }
 
+    /** Update a single item's fulfillment status.
+     *  CONFIRMED → deducts stock from the matching variant (or flat stock).
+     *  Once an item is CONFIRMED or CANCELLED it cannot be changed again. */
+    @Transactional
+    public OrderResponse updateItemStatus(Long orderId, Long itemId, ItemStatus newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        OrderItem item = order.getItems().stream()
+                .filter(i -> i.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Order item", itemId));
+
+        log.info("[updateItemStatus] orderId={} itemId={} newStatus={} | size='{}' color='{}' productId={}",
+                orderId, itemId, newStatus,
+                item.getSize(), item.getColor(),
+                item.getProduct() != null ? item.getProduct().getId() : "null");
+
+        ItemStatus current = item.getItemStatus() != null ? item.getItemStatus() : ItemStatus.PENDING;
+
+        if (current == ItemStatus.CONFIRMED) {
+            throw new BadRequestException("Item is already confirmed and cannot be changed");
+        }
+        if (current == ItemStatus.CANCELLED) {
+            throw new BadRequestException("Cancelled items cannot be changed");
+        }
+
+        item.setItemStatus(newStatus);
+        orderItemRepository.save(item);
+
+        if (newStatus == ItemStatus.CONFIRMED) {
+            Product product = item.getProduct();
+            if (product == null) {
+                log.warn("[updateItemStatus] item {} has no linked product — skipping stock deduction", itemId);
+            } else {
+                try {
+                    deductStock(product, item);
+                } catch (Exception ex) {
+                    log.error("[updateItemStatus] stock deduction failed for item {} — skipping. Reason: {}", itemId, ex.getMessage(), ex);
+                }
+                long newCount = (product.getConfirmedOrderCount() != null ? product.getConfirmedOrderCount() : 0L) + 1;
+                product.setConfirmedOrderCount(newCount);
+                if (newCount >= BEST_SELLER_THRESHOLD) product.setIsBestSeller(true);
+                productRepository.save(product);
+            }
+        }
+
+        return toResponse(order);
+    }
+
     private void deductStock(Product product, OrderItem item) {
-        int qty = item.getQuantity();
+        int qty = item.getQuantity() != null ? item.getQuantity() : 0;
+        if (qty <= 0) {
+            log.warn("[deductStock] item {} has qty={} — skipping", item.getId(), qty);
+            return;
+        }
+
         String color = item.getColor();
         String size  = item.getSize();
 
+        log.info("[deductStock] productId={} size='{}' color='{}' qty={}",
+                product.getId(), size, color, qty);
+
         if (color != null && !color.isBlank() && size != null && !size.isBlank()) {
             // Variant-level deduction
-            productVariantRepository
-                    .findByProductIdAndColorIgnoreCaseAndSizeIgnoreCase(product.getId(), color, size)
-                    .ifPresent(variant -> {
-                        int newStock = Math.max(0, variant.getStockQuantity() - qty);
-                        variant.setStockQuantity(newStock);
-                        productVariantRepository.save(variant);
-                    });
+            var variantOpt = productVariantRepository
+                    .findByProductIdAndColorIgnoreCaseAndSizeIgnoreCase(product.getId(), color, size);
 
-            // Recompute flat total from all variants
+            if (variantOpt.isEmpty()) {
+                log.warn("[deductStock] no variant found for productId={} color='{}' size='{}' — falling back to flat stock",
+                        product.getId(), color, size);
+                // Fall back to flat stock deduction so stock is still decremented
+                int flat = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+                product.setStockQuantity(Math.max(0, flat - qty));
+                return;
+            }
+
+            ProductVariant variant = variantOpt.get();
+            int current = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0;
+            variant.setStockQuantity(Math.max(0, current - qty));
+            productVariantRepository.save(variant);
+
+            // Recompute flat total from all variants — guard against null stockQuantity in old rows
             int total = productVariantRepository.findByProductId(product.getId())
-                    .stream().mapToInt(ProductVariant::getStockQuantity).sum();
+                    .stream()
+                    .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                    .sum();
             product.setStockQuantity(total);
         } else {
             // No variant info — deduct from flat stock, floor at 0
-            int newStock = Math.max(0, product.getStockQuantity() - qty);
-            product.setStockQuantity(newStock);
+            int flat = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+            product.setStockQuantity(Math.max(0, flat - qty));
         }
     }
 
@@ -313,6 +387,9 @@ public class OrderService {
                                     item.getQuantity() != null ? item.getQuantity() : 0)))
                             .size(item.getSize())
                             .color(item.getColor())
+                            .itemStatus(item.getItemStatus() != null
+                                    ? item.getItemStatus().name()
+                                    : ItemStatus.PENDING.name())
                             .build();
                 })
                 .toList();

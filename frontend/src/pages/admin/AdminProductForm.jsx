@@ -13,9 +13,8 @@ import { useLanguage } from '../../context/LanguageContext'
 import { useToast } from '../../context/ToastContext'
 
 const SEASONS = [
-  { value: 'SUMMER',     label: 'Summer' },
-  { value: 'WINTER',     label: 'Winter' },
-  { value: 'ALL_SEASON', label: 'All Season' },
+  { value: 'SUMMER', label: 'Summer' },
+  { value: 'WINTER', label: 'Winter' },
 ]
 const MEASUREMENT_FIELDS = [
   { key: 'chest',     tKey: 'product.chest' },
@@ -60,9 +59,9 @@ export default function AdminProductForm() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  // Per-field validation errors. Keys: name, price, categoryId, season,
-  // colors (overall), and `color::<colorName>` for per-color row errors.
-  const [fieldErrors, setFieldErrors] = useState({})
+  // touched tracks which fields the user has interacted with.
+  // Errors and green states only show for touched fields.
+  const [touched, setTouched] = useState({})
   const [categories, setCategories] = useState([])
   const [active, setActive] = useState(true)
   const [togglingVisibility, setTogglingVisibility] = useState(false)
@@ -164,15 +163,58 @@ export default function AdminProductForm() {
       .finally(() => setLoading(false))
   }, [id])
 
+  // ── Centralized validation ─────────────────────────────────────────────────
+  // Computed on every render — no state needed, always reflects current form.
+  const getValidationErrors = () => {
+    const errs = {}
+    if (!form.name?.trim())
+      errs.name = 'Product name is required'
+    else if (form.name.trim().length < 3)
+      errs.name = 'Name must be at least 3 characters'
+    if (!form.description?.trim())
+      errs.description = 'Description is required'
+    if (!form.price || parseFloat(form.price) <= 0)
+      errs.price = 'Price must be greater than 0'
+    if (!form.categoryId)
+      errs.categoryId = 'Please select a category'
+    if (!form.season)
+      errs.season = 'Please select a season'
+    if (!colorEntries.length)
+      errs.colors = 'Please add at least one color with images and sizes'
+    for (const c of colorEntries) {
+      const key = `color::${c.color}`
+      const imgs = (c.imageUrls || []).filter(Boolean)
+      const validSizes = c.sizes.filter(s => s.size?.toString().trim())
+      if (imgs.length === 0)
+        errs[key] = `Please upload at least one image for "${c.color}"`
+      else if (validSizes.length === 0)
+        errs[key] = `Please add at least one size for "${c.color}"`
+      else if (validSizes.some(s => parseInt(s.stockQuantity) < 0))
+        errs[key] = `Stock quantity must be 0 or more for "${c.color}"`
+    }
+    return errs
+  }
+
+  const validationErrors = getValidationErrors()
+  const isFormValid = Object.keys(validationErrors).length === 0
+
   // Refs used to scroll to the first invalid field on submit.
   const fieldRefs = useRef({})
   const setFieldRef = (key) => (el) => { if (el) fieldRefs.current[key] = el }
-  // Tailwind class fragment that adds a red ring/border to invalid fields.
-  const errCls = (key) => fieldErrors[key] ? ' !border-red-400 ring-1 ring-red-300' : ''
+
+  const touchField = (key) => setTouched(prev => ({ ...prev, [key]: true }))
+
+  // Border helpers — only activate after the field has been touched.
+  const errCls  = (key) => touched[key] &&  validationErrors[key] ? ' !border-red-400 ring-1 ring-red-300'   : ''
+  const validCls = (key) => touched[key] && !validationErrors[key] ? ' !border-green-400 ring-1 ring-green-200' : ''
+  const fieldCls = (key) => inputCls + errCls(key) + validCls(key)
+
+  // Returns the error message for a field only if it has been touched.
+  const fieldError = (key) => (touched[key] && validationErrors[key]) ? validationErrors[key] : null
 
   const setField = (k, v) => {
     setForm(f => ({ ...f, [k]: v }))
-    if (fieldErrors[k]) setFieldErrors(prev => { const n = { ...prev }; delete n[k]; return n })
+    setTouched(prev => ({ ...prev, [k]: true }))
   }
 
   // ── General images ──────────────────────────────────────────────────────────
@@ -399,59 +441,26 @@ export default function AdminProductForm() {
     e.preventDefault()
     setError('')
 
-    // Build a per-field error map. Showing all of them at once is friendlier
-    // than the old "first error wins" flow — admins can fix everything in one
-    // pass instead of round-tripping the form.
-    const errs = {}
-    const order = []
-    const flag = (key, msg) => {
-      if (errs[key]) return
-      errs[key] = msg
-      order.push(key)
-    }
+    // Touch every field so all errors become visible at once.
+    const allKeys = ['name', 'description', 'price', 'categoryId', 'season', 'colors',
+      ...colorEntries.map(c => `color::${c.color}`)]
+    setTouched(Object.fromEntries(allKeys.map(k => [k, true])))
 
-    if (!form.name?.trim())                            flag('name',       t('admin.errNoName')     || 'Name is required')
-    if (!form.price || parseFloat(form.price) <= 0)    flag('price',      t('admin.errNoPrice')    || 'Price must be greater than zero')
-    if (!form.categoryId)                              flag('categoryId', t('admin.errNoCategory') || 'Category is required')
-    if (!form.season)                                  flag('season',     t('admin.errNoSeason')   || 'Season is required')
-    if (!colorEntries.length)                          flag('colors',     t('admin.errNoColor')    || 'Please add at least one color')
+    const errs = getValidationErrors()
+    const errorKeys = Object.keys(errs)
 
-    for (const c of colorEntries) {
-      const key = `color::${c.color}`
-      const validSizes = c.sizes.filter(s => s.size && s.size.toString().trim())
-      const imgs = (c.imageUrls || []).filter(Boolean)
-      if (imgs.length === 0) {
-        flag(key, t('admin.errNoImages') || 'Please upload images for every color')
-        continue
-      }
-      if (validSizes.length === 0) {
-        flag(key, t('admin.errNoSize') || 'Each color must have at least one size')
-        continue
-      }
-      const badQty = validSizes.find(s => !parseInt(s.stockQuantity) || parseInt(s.stockQuantity) <= 0)
-      if (badQty) {
-        flag(key, t('admin.errNoQty') || 'Please enter a quantity for all sizes')
-      }
-    }
-
-    if (order.length) {
-      setFieldErrors(errs)
-      setError(errs[order[0]])
-      // Scroll to the first invalid field. requestAnimationFrame waits for the
-      // re-render so the new `border-red-400` class is in the DOM first.
+    if (errorKeys.length) {
+      setError(errs[errorKeys[0]])
+      // Wait one frame so the red borders are painted before scrolling.
       requestAnimationFrame(() => {
-        const first = fieldRefs.current[order[0]]
+        const first = fieldRefs.current[errorKeys[0]]
         if (first?.scrollIntoView) {
           first.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          if (typeof first.focus === 'function') {
-            try { first.focus({ preventScroll: true }) } catch { /* non-focusable */ }
-          }
+          try { first.focus({ preventScroll: true }) } catch { /* non-focusable */ }
         }
       })
       return
     }
-
-    setFieldErrors({})
 
     setSaving(true)
     try {
@@ -579,7 +588,7 @@ export default function AdminProductForm() {
             </>
           )}
           <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>{t('admin.cancel')}</Button>
-          <Button type="submit" loading={saving}>{t('admin.save')}</Button>
+          <Button type="submit" loading={saving} disabled={!isFormValid || saving}>{t('admin.save')}</Button>
         </div>
       </div>
 
@@ -590,22 +599,50 @@ export default function AdminProductForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <Label>{t('admin.name')} *</Label>
-            <input required value={form.name} onChange={e => setField('name', e.target.value)}
+            <input
+              value={form.name}
+              onChange={e => setField('name', e.target.value)}
+              onBlur={() => touchField('name')}
               ref={setFieldRef('name')}
-              className={inputCls + errCls('name')} placeholder="e.g. Classic Linen Shirt" />
-            {fieldErrors.name && <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p>}
+              className={fieldCls('name')}
+              placeholder="e.g. Classic Linen Shirt (min 3 chars)"
+            />
+            {fieldError('name')
+              ? <p className="mt-1 text-xs text-red-600">{fieldError('name')}</p>
+              : touched.name && <p className="mt-1 text-xs text-green-600">Looks good</p>
+            }
           </div>
           <div className="md:col-span-2">
-            <Label>{t('product.description')}</Label>
-            <textarea value={form.description} onChange={e => setField('description', e.target.value)}
-              rows={3} className={`${inputCls} resize-none`} placeholder={t('admin.productDescriptionPlaceholder')} />
+            <Label>{t('product.description')} *</Label>
+            <textarea
+              value={form.description}
+              onChange={e => setField('description', e.target.value)}
+              onBlur={() => touchField('description')}
+              ref={setFieldRef('description')}
+              rows={3}
+              className={`resize-none ` + fieldCls('description')}
+              placeholder={t('admin.productDescriptionPlaceholder')}
+            />
+            {fieldError('description')
+              ? <p className="mt-1 text-xs text-red-600">{fieldError('description')}</p>
+              : touched.description && <p className="mt-1 text-xs text-green-600">Looks good</p>
+            }
           </div>
           <div>
             <Label>{t('admin.price')} *</Label>
-            <input required type="number" min="0" step="0.01" value={form.price}
+            <input
+              type="number" min="0.01" step="0.01"
+              value={form.price}
+              onChange={e => setField('price', e.target.value)}
+              onBlur={() => touchField('price')}
               ref={setFieldRef('price')}
-              onChange={e => setField('price', e.target.value)} className={inputCls + errCls('price')} placeholder="0.00" />
-            {fieldErrors.price && <p className="mt-1 text-xs text-red-600">{fieldErrors.price}</p>}
+              className={fieldCls('price')}
+              placeholder="0.00"
+            />
+            {fieldError('price')
+              ? <p className="mt-1 text-xs text-red-600">{fieldError('price')}</p>
+              : touched.price && <p className="mt-1 text-xs text-green-600">Valid price</p>
+            }
           </div>
           <div>
             <Label>{t('product.quantity')} <span className="text-gray-400 font-normal text-xs">({t('admin.autoCalculated')})</span></Label>
@@ -615,23 +652,37 @@ export default function AdminProductForm() {
           </div>
           <div>
             <Label>{t('admin.categories')} *</Label>
-            <select value={form.categoryId} onChange={e => setField('categoryId', e.target.value)}
+            <select
+              value={form.categoryId}
+              onChange={e => setField('categoryId', e.target.value)}
+              onBlur={() => touchField('categoryId')}
               ref={setFieldRef('categoryId')}
-              className={inputCls + errCls('categoryId')}>
+              className={fieldCls('categoryId')}
+            >
               <option value="">{t('admin.selectNone')}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            {fieldErrors.categoryId && <p className="mt-1 text-xs text-red-600">{fieldErrors.categoryId}</p>}
+            {fieldError('categoryId')
+              ? <p className="mt-1 text-xs text-red-600">{fieldError('categoryId')}</p>
+              : touched.categoryId && <p className="mt-1 text-xs text-green-600">Category selected</p>
+            }
           </div>
           <div>
             <Label>{t('admin.season')} *</Label>
-            <select value={form.season} onChange={e => setField('season', e.target.value)}
+            <select
+              value={form.season}
+              onChange={e => setField('season', e.target.value)}
+              onBlur={() => touchField('season')}
               ref={setFieldRef('season')}
-              className={inputCls + errCls('season')}>
+              className={fieldCls('season')}
+            >
               <option value="">{t('admin.selectNone')}</option>
               {SEASONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
-            {fieldErrors.season && <p className="mt-1 text-xs text-red-600">{fieldErrors.season}</p>}
+            {fieldError('season')
+              ? <p className="mt-1 text-xs text-red-600">{fieldError('season')}</p>
+              : touched.season && <p className="mt-1 text-xs text-green-600">Season selected</p>
+            }
           </div>
         </div>
       </Section>
@@ -659,7 +710,7 @@ export default function AdminProductForm() {
       </Section>
 
       {/* ── Color Entries ── */}
-      <Section title={t('product.color')} sectionRef={setFieldRef('colors')} hasError={!!fieldErrors.colors}>
+      <Section title={t('product.color')} sectionRef={setFieldRef('colors')} hasError={!!fieldError('colors')}>
         <div className="space-y-6">
           {/* Add color UI */}
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
@@ -702,8 +753,8 @@ export default function AdminProductForm() {
 
           {/* Color cards */}
           {colorEntries.length === 0 && (
-            <p className={`text-sm italic text-center py-4 ${fieldErrors.colors ? 'text-red-600' : 'text-gray-400'}`}>
-              {fieldErrors.colors || 'No colors added yet. Use the form above to add colors with images and sizes.'}
+            <p className={`text-sm italic text-center py-4 ${fieldError('colors') ? 'text-red-600' : 'text-gray-400'}`}>
+              {fieldError('colors') || 'No colors added yet. Use the form above to add colors with images and sizes.'}
             </p>
           )}
 
@@ -715,7 +766,7 @@ export default function AdminProductForm() {
             const previews = colorPreviews[color] || []
             const sizeInp = getSizeInput(color)
 
-            const colorErr = fieldErrors[`color::${color}`]
+            const colorErr = fieldError(`color::${color}`)
             return (
               <div key={color}
                 ref={setFieldRef(`color::${color}`)}
@@ -900,7 +951,7 @@ export default function AdminProductForm() {
 
       <div className="flex justify-end gap-3 pb-8">
         <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>{t('admin.cancel')}</Button>
-        <Button type="submit" loading={saving}>{t('admin.save')}</Button>
+        <Button type="submit" loading={saving} disabled={!isFormValid || saving}>{t('admin.save')}</Button>
       </div>
 
       {/* Crop modal */}

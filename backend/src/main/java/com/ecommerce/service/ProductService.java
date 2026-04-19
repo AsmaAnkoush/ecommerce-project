@@ -74,13 +74,13 @@ public class ProductService {
 
     /**
      * Dynamic "new arrivals": active, non-deleted products created within the
-     * last 3 days whose season matches the current season (or ALL_SEASON).
-     * Auto-updating — no admin flag needed.
+     * last 3 days whose season matches the requested season (or ALL_SEASON).
+     * When {@code season} is null, falls back to calendar-based detection.
      */
-    public List<ProductResponse> findNew() {
+    public List<ProductResponse> findNew(Season season) {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(3);
-        Season current = currentSeason();
-        List<Season> seasons = List.of(current, Season.ALL_SEASON);
+        Season resolved = (season != null) ? season : currentSeason();
+        List<Season> seasons = List.of(resolved, Season.ALL_SEASON);
         return toResponses(productRepository
                 .findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(seasons, cutoff));
     }
@@ -249,6 +249,9 @@ public class ProductService {
         if (request.getName() == null || request.getName().isBlank()) {
             throw new BadRequestException("Product name is required");
         }
+        if (request.getDescription() == null || request.getDescription().isBlank()) {
+            throw new BadRequestException("Description is required");
+        }
         if (request.getPrice() == null || request.getPrice().signum() <= 0) {
             throw new BadRequestException("Product price must be greater than zero");
         }
@@ -257,6 +260,10 @@ public class ProductService {
         }
         if (request.getSeason() == null) {
             throw new BadRequestException("Season is required");
+        }
+        if (request.getSeason() != com.ecommerce.entity.Season.SUMMER
+                && request.getSeason() != com.ecommerce.entity.Season.WINTER) {
+            throw new BadRequestException("Season must be SUMMER or WINTER");
         }
         if (request.getColorImages() == null || request.getColorImages().isEmpty()) {
             throw new BadRequestException("At least one color is required");
@@ -279,8 +286,8 @@ public class ProductService {
             if (v.getSize() == null || v.getSize().toString().isBlank()) {
                 throw new BadRequestException("Each size variant must have a size");
             }
-            if (v.getStockQuantity() == null || v.getStockQuantity() <= 0) {
-                throw new BadRequestException("Size \"" + v.getSize() + "\" (" + v.getColor() + ") must have a quantity greater than zero");
+            if (v.getStockQuantity() == null || v.getStockQuantity() < 0) {
+                throw new BadRequestException("Size \"" + v.getSize() + "\" (" + v.getColor() + ") stock quantity must be zero or greater");
             }
         }
     }
@@ -547,7 +554,7 @@ public class ProductService {
                 .active(p.getActive())
                 .isBestSeller(p.getIsBestSeller())
                 .confirmedOrderCount(p.getConfirmedOrderCount())
-                .isNew(p.getIsNew())
+                .isNew(p.getCreatedAt() != null && p.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3)))
                 .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
                 .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
                 .variants(variants)

@@ -64,8 +64,9 @@ public class ProductController {
     }
 
     @GetMapping("/new-arrivals")
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> getNewArrivals() {
-        return ResponseEntity.ok(ApiResponse.success("New arrivals", productService.findNew()));
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getNewArrivals(
+            @RequestParam(required = false) Season season) {
+        return ResponseEntity.ok(ApiResponse.success("New arrivals", productService.findNew(season)));
     }
 
     @GetMapping("/on-sale")

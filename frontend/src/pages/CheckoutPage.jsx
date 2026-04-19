@@ -77,7 +77,12 @@ export default function CheckoutPage() {
     try {
       setLoading(true); setError('')
       if (!isLoggedIn) {
-        const items = cart.items.map(item => ({ productId: item.productId, quantity: item.quantity }))
+        const items = cart.items.map(item => ({
+          productId: item.productId,
+          quantity:  item.quantity,
+          size:      item.size  || null,
+          color:     item.color || null,
+        }))
         const { data } = await placeGuestOrder({ ...form, items })
         clearCart()
         toast(t('orders.placedToast'))

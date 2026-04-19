@@ -23,7 +23,7 @@ const LIMIT = 8
  *
  * Drop-in usage: `<NewArrivalsSection />` — no required props.
  */
-export default function NewArrivalsSection({ className = '' }) {
+export default function NewArrivalsSection({ season = null, className = '' }) {
   const { t } = useLanguage()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -31,22 +31,20 @@ export default function NewArrivalsSection({ className = '' }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    getNewArrivals()
+    getNewArrivals(season)
       .then(res => {
         if (cancelled) return
         const list = res.data?.data ?? []
-        // Defensive newest-first sort
-        const sorted = [...list].sort((a, b) => {
-          const aTime = new Date(a.createdAt || 0).getTime()
-          const bTime = new Date(b.createdAt || 0).getTime()
-          return bTime - aTime
-        })
+        // Backend already filters by createdAt (3-day window) and season — just sort newest-first
+        const sorted = [...list].sort((a, b) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        )
         setProducts(sorted.slice(0, LIMIT))
       })
       .catch(() => { if (!cancelled) setProducts([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [])
+  }, [season])
 
   const ViewAllArrow = () => (
     <svg className="w-3 h-3 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -55,13 +53,13 @@ export default function NewArrivalsSection({ className = '' }) {
   )
 
   return (
-    <section className={`relative px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl mx-auto ${className}`}>
+    <section className={`relative bg-white rounded-2xl shadow-[0_4px_24px_rgba(107,31,42,0.08)] mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
 
       {/* ── Header: title ──────────────────────────────────── */}
-      <div className="text-center mb-8 sm:mb-10">
+      <div className="text-center mb-10 sm:mb-12">
         <div className="inline-block bg-[#F3E4E7] px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl">
           <h2
-            className="text-xl sm:text-2xl lg:text-3xl font-medium text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
             style={{ fontFamily: 'Playfair Display, serif' }}
           >
             <span className="inline-flex items-center gap-1.5">
