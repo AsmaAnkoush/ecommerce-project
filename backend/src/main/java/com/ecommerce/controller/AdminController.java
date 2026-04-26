@@ -17,10 +17,10 @@ import com.ecommerce.service.AdminService;
 import com.ecommerce.service.OrderService;
 import com.ecommerce.service.ProductService;
 import com.ecommerce.service.ReviewService;
+import com.ecommerce.service.S3Service;
 import com.ecommerce.service.UserService;
 import com.ecommerce.util.PageRequestValidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,11 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -50,9 +46,7 @@ public class AdminController {
     private final ReviewService reviewService;
     private final UserService userService;
     private final WebsiteSettingsService settingsService;
-
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    private final S3Service s3Service;
 
     private static final List<String> ALLOWED_IMAGE_TYPES = List.of(
             "image/jpeg", "image/png", "image/webp", "image/gif"
@@ -177,21 +171,7 @@ public class AdminController {
         if (file.getSize() > 5 * 1024 * 1024)
             throw new BadRequestException("Logo file too large. Max size is 5 MB");
 
-        Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
-        Files.createDirectories(uploadPath);
-
-        String ext = (file.getOriginalFilename() != null && file.getOriginalFilename().contains("."))
-                ? file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf('.') + 1).toLowerCase()
-                : switch (contentType) {
-                    case "image/png"  -> "png";
-                    case "image/webp" -> "webp";
-                    default           -> "jpg";
-                };
-
-        String filename = "logo-" + UUID.randomUUID() + "." + ext;
-        Files.copy(file.getInputStream(), uploadPath.resolve(filename));
-
-        String logoUrl = "/uploads/" + filename;
+        String logoUrl = s3Service.upload(file);
         WebsiteSettings updated = settingsService.updateLogoUrl(logoUrl);
         return ResponseEntity.ok(ApiResponse.success("Logo uploaded", updated));
     }

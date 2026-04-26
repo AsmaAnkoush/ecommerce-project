@@ -5,30 +5,21 @@ import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    private final S3Service s3Service;
 
     /** Admin view — every category, including hidden ones. */
     public List<Category> findAll() {
@@ -93,10 +84,6 @@ public class CategoryService {
     }
 
     private String saveImage(MultipartFile image) throws IOException {
-        Path dir = Paths.get(uploadDir, "categories");
-        Files.createDirectories(dir);
-        String filename = UUID.randomUUID() + "_" + StringUtils.cleanPath(image.getOriginalFilename());
-        Files.copy(image.getInputStream(), dir.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
-        return "/uploads/categories/" + filename;
+        return s3Service.upload(image);
     }
 }

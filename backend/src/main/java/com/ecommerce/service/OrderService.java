@@ -293,6 +293,9 @@ public class OrderService {
             } else {
                 try {
                     deductStock(product, item);
+                } catch (BadRequestException ex) {
+                    // Insufficient stock — surface this to the caller so the admin sees a clear error.
+                    throw ex;
                 } catch (Exception ex) {
                     log.error("[updateItemStatus] stock deduction failed for item {} — skipping. Reason: {}", itemId, ex.getMessage(), ex);
                 }
@@ -306,6 +309,20 @@ public class OrderService {
         return toResponse(order);
     }
 
+    /**
+     * Deducts stock for one order item using pessimistic locking.
+     *
+     * Flow:
+     *  1. If the item has colour+size → lock the matching ProductVariant row
+     *     with SELECT FOR UPDATE (blocks any concurrent transaction trying to
+     *     lock the same row), then re-validate stock inside the lock before
+     *     decrementing.
+     *  2. If no variant exists (or no colour+size) → lock the Product row
+     *     instead and deduct from the flat stockQuantity.
+     *
+     * Throwing BadRequestException here rolls back the surrounding
+     * @Transactional, which releases all locks acquired in this transaction.
+     */
     private void deductStock(Product product, OrderItem item) {
         int qty = item.getQuantity() != null ? item.getQuantity() : 0;
         if (qty <= 0) {
@@ -320,35 +337,44 @@ public class OrderService {
                 product.getId(), size, color, qty);
 
         if (color != null && !color.isBlank() && size != null && !size.isBlank()) {
-            // Variant-level deduction
-            var variantOpt = productVariantRepository
-                    .findByProductIdAndColorIgnoreCaseAndSizeIgnoreCase(product.getId(), color, size);
+            // ── Variant path — acquire row-level write lock ────────────────
+            var variantOpt = productVariantRepository.findForUpdate(product.getId(), color, size);
 
-            if (variantOpt.isEmpty()) {
-                log.warn("[deductStock] no variant found for productId={} color='{}' size='{}' — falling back to flat stock",
-                        product.getId(), color, size);
-                // Fall back to flat stock deduction so stock is still decremented
-                int flat = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
-                product.setStockQuantity(Math.max(0, flat - qty));
+            if (variantOpt.isPresent()) {
+                ProductVariant variant = variantOpt.get();
+                // Re-check stock inside the lock — the pre-placement check may now be stale
+                int current = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0;
+                if (current < qty) {
+                    throw new BadRequestException(
+                            "Not enough stock for \"" + product.getName() + "\" (" + color + " / " + size + ")"
+                            + " — available: " + current + ", requested: " + qty);
+                }
+                variant.setStockQuantity(current - qty);
+                productVariantRepository.save(variant);
+
+                // Sync flat total from all variants
+                int total = productVariantRepository.findByProductId(product.getId())
+                        .stream()
+                        .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                        .sum();
+                product.setStockQuantity(total);
                 return;
             }
 
-            ProductVariant variant = variantOpt.get();
-            int current = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0;
-            variant.setStockQuantity(Math.max(0, current - qty));
-            productVariantRepository.save(variant);
-
-            // Recompute flat total from all variants — guard against null stockQuantity in old rows
-            int total = productVariantRepository.findByProductId(product.getId())
-                    .stream()
-                    .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
-                    .sum();
-            product.setStockQuantity(total);
-        } else {
-            // No variant info — deduct from flat stock, floor at 0
-            int flat = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
-            product.setStockQuantity(Math.max(0, flat - qty));
+            log.warn("[deductStock] no variant found for productId={} color='{}' size='{}' — falling back to flat stock",
+                    product.getId(), color, size);
+            // Fall through to flat-stock path
         }
+
+        // ── Flat-stock path — lock the product row ─────────────────────────
+        Product locked = productRepository.findByIdForUpdate(product.getId()).orElse(product);
+        int flat = locked.getStockQuantity() != null ? locked.getStockQuantity() : 0;
+        if (flat < qty) {
+            throw new BadRequestException(
+                    "Not enough stock for \"" + product.getName() + "\""
+                    + " — available: " + flat + ", requested: " + qty);
+        }
+        locked.setStockQuantity(flat - qty);
     }
 
     public OrderResponse toResponse(Order order) {

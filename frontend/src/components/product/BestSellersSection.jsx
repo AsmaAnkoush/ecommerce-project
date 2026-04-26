@@ -35,11 +35,11 @@ export default function BestSellersSection({ season = null, className = '' }) {
   )
 
   return (
-    <section className={`relative bg-white rounded-2xl shadow-[0_4px_24px_rgba(107,31,42,0.08)] mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
+    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
 
       {/* ── Header: title ──────────────────────────────────── */}
       <div className="text-center mb-10 sm:mb-12">
-        <div className="inline-block bg-[#F3E4E7] px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl">
+        <div className="inline-block">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
               style={{ fontFamily: 'Playfair Display, serif' }}>
             <span className="inline-flex items-center gap-1.5">

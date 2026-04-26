@@ -181,23 +181,20 @@ export default function QuickView() {
                 <div className="mb-4">
                   <p className="text-[10px] font-semibold text-[#6B1F2A] uppercase tracking-[0.18em] mb-2.5">{t('product.selectYourSize')}</p>
                   <div className="flex flex-wrap gap-2">
-                    {sizeAvailability.map(({ size, stock, available }) => {
+                    {sizeAvailability.map(({ size, available }) => {
                       const selected = selectedSize === size
-                      const low = available && stock <= 5
                       return (
                         <button key={size} type="button"
                           onClick={() => { if (available) { setSelectedSize(size); setValidationError('') } }}
                           disabled={!available}
                           aria-disabled={!available}
-                          title={!available ? t('admin.variantOutOfStock') : low ? t('admin.variantLowStock') : size}
+                          title={!available ? t('admin.variantOutOfStock') : size}
                           className={[
                             'relative min-w-[44px] h-10 px-3 rounded-full border text-[11px] font-semibold tracking-[0.1em] transition-all duration-200',
                             selected
                               ? 'border-[#6B1F2A] bg-[#6B1F2A] text-white shadow-sm'
                               : !available
                               ? 'border-[#F0D5D8] text-[#C4A0A6] bg-white opacity-50 line-through cursor-not-allowed'
-                              : low
-                              ? 'border-amber-300 text-amber-700 bg-amber-50 hover:border-amber-500'
                               : 'border-[#E2CDD0] text-[#3D1A1E] bg-white hover:border-[#6B1F2A] hover:text-[#6B1F2A]',
                           ].join(' ')}
                         >
@@ -224,13 +221,12 @@ export default function QuickView() {
                     {colorAvailability.map(entry => {
                       const hex = getColorHex(getBaseColor(entry.color))
                       const selected = selectedColor === entry.color
-                      const low = entry.available && entry.stock <= 5
                       return (
                         <button key={entry.color} type="button"
                           onClick={() => { if (entry.available) { setSelectedColor(entry.color); setValidationError('') } }}
                           disabled={!entry.available}
                           aria-disabled={!entry.available}
-                          title={!entry.available ? t('admin.variantOutOfStock') : low ? `${entry.color} — ${t('admin.variantLowStock')}` : entry.color}
+                          title={!entry.available ? t('admin.variantOutOfStock') : entry.color}
                           className={[
                             'relative w-7 h-7 rounded-full ring-1 ring-black/15 ring-offset-1 ring-offset-white transition-all duration-200',
                             entry.available ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-40',
@@ -250,10 +246,10 @@ export default function QuickView() {
                 </div>
               )}
 
-              {/* Stock hint for selected variant */}
-              {selectedVariant && (
-                <p className={`text-[11px] mb-3 ${isOutOfStock ? 'text-red-600 font-semibold' : variantStock <= 5 ? 'text-amber-600 font-semibold' : 'text-[#9B7B80]'}`}>
-                  {isOutOfStock ? `❌ ${t('admin.variantOutOfStock')}` : variantStock <= 5 ? `⚠️ ${t('admin.variantLowStock')}` : null}
+              {/* Stock hint — only shown when the selected variant is fully out of stock */}
+              {selectedVariant && isOutOfStock && (
+                <p className="text-[11px] mb-3 text-red-600 font-semibold">
+                  ❌ {t('admin.variantOutOfStock')}
                 </p>
               )}
 

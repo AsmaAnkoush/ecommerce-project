@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useGalleryNav, useTouchNav } from '../hooks/useGalleryNav'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProduct } from '../api/productApi'
 import { getReviews, addReview, updateReview, deleteReview } from '../api/reviewApi'
@@ -200,6 +201,27 @@ export default function ProductDetailPage() {
     setShowForm(true)
   }
 
+  // ── Image helpers ────────────────────────────────────────────────────────
+  // Computed before early returns so the navigation hooks below can be called
+  // unconditionally (React rules of hooks). Null-guarded for the loading state.
+  const colorSpecificImages = selectedColor && product?.colorImages?.[selectedColor]
+    ? [...new Set(product.colorImages[selectedColor].map(e => e.url))]
+    : null
+  const allImages = colorSpecificImages
+    ? colorSpecificImages
+    : [...new Set([product?.imageUrl, ...(product?.imageUrls || [])].filter(Boolean))]
+  const currentImage = allImages[selectedImg] || null
+
+  const prevImage = () => setSelectedImg(i => (i - 1 + allImages.length) % allImages.length)
+  const nextImage = () => setSelectedImg(i => (i + 1) % allImages.length)
+
+  // ── Navigation hooks (must be before any conditional return) ─────────────
+  // useGalleryNav: keyboard (ArrowLeft/Right, global) + touch on the main image
+  // useTouchNav:   touch-only on the lightbox modal (conditional element)
+  const galleryRef = useGalleryNav({ count: allImages.length, onNext: nextImage, onPrev: prevImage })
+  const [zoomEl, setZoomEl] = useState(null)
+  useTouchNav({ element: zoomEl, count: allImages.length, onNext: nextImage, onPrev: prevImage })
+
   if (loading) return (
     <div className="flex justify-center items-center min-h-[60vh]">
       <Spinner size="lg" />
@@ -230,17 +252,6 @@ export default function ProductDetailPage() {
   const maxStock = selectedColorHasVariants
     ? (selectedVariant ? selectedVariant.stockQuantity : 0)
     : product.stockQuantity
-
-  const colorSpecificImages = selectedColor && product.colorImages?.[selectedColor]
-    ? [...new Set(product.colorImages[selectedColor].map(e => e.url))]
-    : null
-  const allImages = colorSpecificImages
-    ? colorSpecificImages
-    : [...new Set([product.imageUrl, ...(product.imageUrls || [])].filter(Boolean))]
-  const currentImage = allImages[selectedImg] || null
-
-  const prevImage = () => setSelectedImg(i => (i - 1 + allImages.length) % allImages.length)
-  const nextImage = () => setSelectedImg(i => (i + 1) % allImages.length)
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price
   const discountPct = hasDiscount ? Math.round((1 - product.discountPrice / product.price) * 100) : 0
@@ -305,6 +316,7 @@ export default function ProductDetailPage() {
             {/* Main image */}
             <div className="flex-1 relative">
               <div
+                ref={galleryRef}
                 className="relative rounded-3xl overflow-hidden aspect-[3/4] cursor-zoom-in group"
                 style={{
                   background: 'linear-gradient(145deg, #FDF8F9 0%, #F5ECED 50%, #F0E4E6 100%)',
@@ -314,9 +326,10 @@ export default function ProductDetailPage() {
               >
                 {currentImage ? (
                   <img
+                    key={selectedImg}
                     src={currentImage}
                     alt={product.name}
-                    className="w-full h-full object-contain p-5 sm:p-8 transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]"
+                    className="w-full h-full object-contain p-5 sm:p-8 animate-fade-in transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]"
                     style={{ mixBlendMode: 'multiply' }}
                   />
                 ) : (
@@ -854,6 +867,7 @@ export default function ProductDetailPage() {
       {/* ── Zoom / Lightbox Modal ─────────────────────────────── */}
       {zoomOpen && (
         <div
+          ref={setZoomEl}
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
           onClick={() => setZoomOpen(false)}
         >
@@ -867,9 +881,10 @@ export default function ProductDetailPage() {
           </button>
 
           <img
+            key={selectedImg}
             src={currentImage}
             alt={product.name}
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl animate-fade-in"
             onClick={e => e.stopPropagation()}
           />
 

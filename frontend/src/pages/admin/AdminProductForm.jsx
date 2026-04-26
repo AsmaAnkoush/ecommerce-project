@@ -95,8 +95,16 @@ export default function AdminProductForm() {
 
   // Color entries: [{color, imageUrls: string[], sizes: [{size, stockQuantity, chest, waist, shoulders, backWidth, length}]}]
   const [colorEntries, setColorEntries] = useState([])
-  const [newColorInput, setNewColorInput] = useState('')
-  const [newColorHex, setNewColorHex] = useState('#000000')
+  const [newColorInput, setNewColorInput] = useState(() => {
+    if (isEdit) return ''
+    const black = NAMED_COLORS.find(c => c.name.toLowerCase() === 'black')
+    return black ? black.name : (NAMED_COLORS[0]?.name ?? '')
+  })
+  const [newColorHex, setNewColorHex] = useState(() => {
+    if (isEdit) return '#000000'
+    const black = NAMED_COLORS.find(c => c.name.toLowerCase() === 'black')
+    return black ? black.hex : (NAMED_COLORS[0]?.hex ?? '#000000')
+  })
   const [customColors, setCustomColors] = useState(loadCustomColors)
   const [uploadingColor, setUploadingColor] = useState(null)
   const [colorPreviews, setColorPreviews] = useState({})
@@ -171,8 +179,6 @@ export default function AdminProductForm() {
       errs.name = 'Product name is required'
     else if (form.name.trim().length < 3)
       errs.name = 'Name must be at least 3 characters'
-    if (!form.description?.trim())
-      errs.description = 'Description is required'
     if (!form.price || parseFloat(form.price) <= 0)
       errs.price = 'Price must be greater than 0'
     if (!form.categoryId)
@@ -735,13 +741,16 @@ export default function AdminProductForm() {
             <div className="flex flex-wrap gap-1.5">
               {[...NAMED_COLORS, ...customColors].map(c => {
                 const alreadyAdded = colorEntries.some(e => e.color.toLowerCase() === c.name.toLowerCase())
+                const isSelected = !alreadyAdded && newColorInput.toLowerCase() === c.name.toLowerCase()
                 return (
                   <button key={c.name} type="button" disabled={alreadyAdded}
                     onClick={() => { setNewColorInput(c.name); setNewColorHex(c.hex) }}
                     className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs border transition-all ${
                       alreadyAdded
                         ? 'opacity-40 cursor-not-allowed border-gray-200 text-gray-400'
-                        : 'border-gray-200 hover:border-[#6B1F2A] text-gray-600 hover:text-[#6B1F2A] bg-white'
+                        : isSelected
+                          ? 'border-[#6B1F2A] text-[#6B1F2A] bg-[#FDF0F2] ring-1 ring-[#6B1F2A]/30 font-semibold'
+                          : 'border-gray-200 hover:border-[#6B1F2A] text-gray-600 hover:text-[#6B1F2A] bg-white'
                     }`}>
                     <span className="w-3 h-3 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: c.hex }} />
                     {c.name}

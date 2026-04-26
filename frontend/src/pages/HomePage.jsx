@@ -20,20 +20,16 @@ function Hero({ innerRef, inView, t, activeSeason }) {
           {/* ── Text ───────────────────────────────────────── */}
           <div className={`max-w-[260px] sm:max-w-[360px] lg:max-w-[480px] min-w-0 text-left ${inView ? 'animate-fade-in-up' : 'opacity-0'}`}>
 
-            <h1 style={{ fontFamily: 'Playfair Display, Cormorant Garamond, serif' }}>
+            <h1 className="text-center">
               <span
-                className="block text-[50px] sm:text-[68px] lg:text-[96px] font-bold leading-[1] tracking-[0.06em] text-[#5A1520] drop-shadow-[0_2px_4px_rgba(107,31,42,0.12)]"
-                style={{ fontStyle: 'italic' }}
+                className="block text-[42px] sm:text-[58px] lg:text-[74px] leading-[1] tracking-[0.08em] uppercase text-[#5A1520]"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
               >
                 I Wear
               </span>
               <span
-                className="block text-[24px] sm:text-[30px] lg:text-[40px] font-bold leading-[1.1] mt-4 sm:mt-6 lg:mt-7 tracking-[0.12em] text-[#7A2D3A]"
-                style={{
-                  fontStyle: 'italic',
-                  fontFamily: 'Cormorant Garamond, Playfair Display, serif',
-                  textShadow: '0 1px 8px rgba(107,31,42,0.10)',
-                }}
+                className="block text-[18px] sm:text-[20px] lg:text-[24px] leading-[1] mt-2 sm:mt-3 tracking-[0.08em] text-white/90 text-right"
+                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 400 }}
               >
                 by Areej
               </span>
@@ -70,22 +66,13 @@ function Hero({ innerRef, inView, t, activeSeason }) {
             </div>
           </div>
 
-          {/* ── Image in oval ──────────────────────────────── */}
-          <div className={`shrink-0 w-36 sm:w-48 lg:w-72 ${inView ? 'animate-fade-in delay-150' : 'opacity-0'}`}>
-            <div
-              className="w-full aspect-[3/4] overflow-hidden transition-transform duration-500 ease-out hover:scale-[1.03]"
-              style={{
-                borderRadius: '50%',
-                border: '1.5px solid rgba(128,30,45,0.35)',
-                boxShadow: '0 16px 48px rgba(107,31,42,0.14), 0 0 0 3px rgba(128,30,45,0.06), 0 0 60px rgba(107,31,42,0.05)',
-              }}
-            >
-              <img
-                src="/images/hero-model.jpg"
-                alt="I Wear by Areej"
-                className="w-full h-full object-cover object-top transition-transform duration-700 ease-out hover:scale-[1.05]"
-              />
-            </div>
+          {/* ── Image ─────────────────────────────────────── */}
+          <div className={`shrink-0 w-44 sm:w-60 lg:w-80 ${inView ? 'animate-fade-in delay-150' : 'opacity-0'}`}>
+            <img
+              src="/images/hero-dress.png"
+              alt="I Wear by Areej"
+              className="w-full h-auto object-contain drop-shadow-[0_8px_32px_rgba(107,31,42,0.18)] transition-transform duration-500 ease-out hover:scale-[1.03]"
+            />
           </div>
 
         </div>

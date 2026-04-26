@@ -74,7 +74,8 @@
     "phonePlaceholder": "+1 234 567 8900",
     "addressPlaceholder": "Your address",
     "loginToast": "Welcome back 👋",
-    "logoutToast": "See you soon 👋"
+    "logoutToast": "See you soon 👋",
+    "rememberMe": "Remember me"
   },
 
   "home": {

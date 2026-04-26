@@ -4,27 +4,14 @@ import { getCategories } from '../../api/categoryApi'
 import { useLanguage } from '../../context/LanguageContext'
 import Spinner from '../ui/Spinner'
 
-
-/**
- * Reusable "Shop by Category" section.
- *
- *  - Fetches categories from the existing GET /api/categories on mount.
- *  - Displays them as a responsive grid: 2 columns on mobile, scaling up to
- *    5 on large screens. Each card has the category image (or a graceful
- *    placeholder when missing) and the category name.
- *  - Click → /products?category={id} (matches the param ProductsPage already
- *    reads, so the filter applies immediately).
- *  - Empty state with a localized message when the API returns no categories.
- *  - Drop in anywhere via `<CategorySection />`. No props required, but
- *    `className` is forwarded to the outer <section> if you want to tweak
- *    spacing in a specific page.
- */
 function CategoryCard({ cat, index }) {
-
   return (
     <Link
       to={`/products?category=${cat.id}`}
-      className="group flex flex-col items-center text-center animate-fade-in-up w-full max-w-[180px] sm:max-w-[200px] overflow-visible opacity-0"
+      className="group flex flex-col items-center text-center animate-fade-in-up
+                 shrink-0 w-[88px] snap-center
+                 sm:shrink sm:w-full sm:max-w-[200px]
+                 overflow-visible opacity-0"
       style={{ animationDelay: `${Math.min(index * 100, 600)}ms` }}
     >
       <div
@@ -37,7 +24,7 @@ function CategoryCard({ cat, index }) {
         style={{ backgroundColor: '#F2D5DA' }}
       >
         {cat.imageUrl ? (
-          <div className="absolute inset-0 flex items-center justify-center p-4 overflow-hidden rounded-full">
+          <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4 overflow-hidden rounded-full">
             <img
               src={cat.imageUrl}
               alt={cat.name}
@@ -46,7 +33,7 @@ function CategoryCard({ cat, index }) {
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
-            <svg className="w-10 h-10 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
+            <svg className="w-7 h-7 sm:w-10 sm:h-10 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
               <path strokeLinecap="round" strokeLinejoin="round"
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16v12H4z" />
             </svg>
@@ -58,8 +45,10 @@ function CategoryCard({ cat, index }) {
       </div>
 
       <span
-        className="mt-4 text-[13px] sm:text-[15px] font-semibold tracking-[0.10em] text-[#3D1218]
-                   group-hover:text-[#6B1F2A] transition-all duration-200"
+        className="mt-2.5 sm:mt-4 text-[10px] sm:text-[15px] font-semibold
+                   tracking-[0.06em] sm:tracking-[0.10em] text-[#3D1218]
+                   group-hover:text-[#6B1F2A] transition-all duration-200
+                   leading-tight"
         style={{
           fontFamily: 'Playfair Display, serif',
           textShadow: '0 1px 3px rgba(107,31,42,0.15), 0 0 8px rgba(255,255,255,0.5)',
@@ -72,7 +61,7 @@ function CategoryCard({ cat, index }) {
 }
 
 export default function CategorySection({ className = '' }) {
-  const { t, isRTL } = useLanguage()
+  const { t } = useLanguage()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -87,11 +76,11 @@ export default function CategorySection({ className = '' }) {
   }, [])
 
   return (
-    <section className={`relative bg-white rounded-2xl shadow-[0_4px_24px_rgba(107,31,42,0.08)] mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
+    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-4 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
 
       {/* ── Title ──────────────────────────────────────────── */}
-      <div className="text-center mb-10 sm:mb-12">
-        <div className="inline-block bg-[#F3E4E7] px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl">
+      <div className="text-center mb-8 sm:mb-12">
+        <div className="inline-block">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#6B1F2B] leading-none tracking-[0.04em] sm:tracking-[0.06em] inline-flex items-center gap-2.5"
               style={{ fontFamily: 'Playfair Display, serif' }}>
             <span className="inline-flex items-center gap-1.5">
@@ -117,7 +106,14 @@ export default function CategorySection({ className = '' }) {
           {t('home.noCategories')}
         </p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-8 sm:gap-x-8 sm:gap-y-10 lg:gap-x-10 lg:gap-y-12 justify-items-center max-w-4xl mx-auto">
+        /* Mobile: horizontal scroll row  |  sm+: grid */
+        <div
+          className="flex flex-row gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-3 px-1
+                     sm:grid sm:grid-cols-3 sm:overflow-visible sm:snap-none sm:pb-0 sm:px-0 sm:gap-x-8 sm:gap-y-10
+                     lg:grid-cols-4 lg:gap-x-10 lg:gap-y-12
+                     sm:justify-items-center sm:max-w-4xl sm:mx-auto
+                     [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+        >
           {categories.map((cat, i) => (
             <CategoryCard key={cat.id} cat={cat} index={i} />
           ))}

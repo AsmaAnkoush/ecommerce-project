@@ -2,9 +2,11 @@ package com.ecommerce.repository;
 
 import com.ecommerce.entity.Product;
 import com.ecommerce.entity.Season;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Note on soft-delete: every public-facing query filters
@@ -82,4 +85,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     /** Admin "find all" — excludes tombstoned rows. */
     Page<Product> findByIsDeletedFalse(Pageable pageable);
+
+    /**
+     * Row-level write lock on the product row — fallback when an order item
+     * has no colour+size variant. Blocks concurrent stock deductions on the
+     * same product until the transaction commits.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    Optional<Product> findByIdForUpdate(@Param("id") Long id);
 }

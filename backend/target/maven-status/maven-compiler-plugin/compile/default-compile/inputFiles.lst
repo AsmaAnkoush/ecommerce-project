@@ -19,6 +19,7 @@ C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\entity\WishlistItem.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\request\GuestOrderRequest.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\service\UserService.java
+C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\entity\ItemStatus.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\request\ProductRequest.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\repository\UserRepository.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\security\AuthRateLimitFilter.java
@@ -56,6 +57,7 @@ C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\repo
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\util\PhoneUtils.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\entity\User.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\service\ReviewService.java
+C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\repository\OrderItemRepository.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\request\ForgotPasswordRequest.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\request\CartItemRequest.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\dto\response\AdminDashboardResponse.java
@@ -77,6 +79,7 @@ C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\serv
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\config\WebMvcConfig.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\controller\CartController.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\exception\GlobalExceptionHandler.java
+C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\service\S3Service.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\exception\BadRequestException.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\repository\ProductRepository.java
 C:\Users\user\Desktop\ecommerce-project\backend\src\main\java\com\ecommerce\controller\UploadController.java

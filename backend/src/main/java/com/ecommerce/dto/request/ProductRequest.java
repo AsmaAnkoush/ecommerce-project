@@ -22,7 +22,6 @@ public class ProductRequest {
     @Size(min = 3, message = "Name must be at least 3 characters")
     private String name;
 
-    @NotBlank(message = "Description is required")
     private String description;
 
     @NotNull(message = "Price is required")

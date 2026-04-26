@@ -77,10 +77,12 @@ com\ecommerce\dto\response\OrderResponse$OrderItemResponse$OrderItemResponseBuil
 com\ecommerce\config\WebMvcConfig.class
 com\ecommerce\entity\ProductImage$ProductImageBuilder.class
 com\ecommerce\dto\request\DiscountRequest.class
+com\ecommerce\repository\OrderItemRepository.class
 com\ecommerce\repository\CartItemRepository.class
 com\ecommerce\security\UserDetailsImpl.class
 com\ecommerce\dto\response\ReviewResponse.class
 com\ecommerce\util\PhoneUtils.class
+com\ecommerce\entity\ItemStatus.class
 com\ecommerce\dto\request\ReviewRequest.class
 com\ecommerce\security\AuthRateLimitFilter.class
 com\ecommerce\dto\request\ColorImagesRequest.class
@@ -104,6 +106,7 @@ com\ecommerce\security\UserDetailsServiceImpl.class
 com\ecommerce\repository\UserRepository.class
 com\ecommerce\entity\Product$ProductBuilder.class
 com\ecommerce\controller\AdminController.class
+com\ecommerce\service\S3Service.class
 com\ecommerce\dto\response\OrderResponse$OrderResponseBuilder.class
 com\ecommerce\dto\response\CartResponse$CartItemResponse$CartItemResponseBuilder.class
 com\ecommerce\dto\response\BestSellerItem.class

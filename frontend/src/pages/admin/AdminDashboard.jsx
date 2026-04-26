@@ -11,15 +11,18 @@ function StatCard({ label, value, sub, icon, tint, to }) {
   return (
     <Link
       to={to}
-      className="group relative bg-white rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg no-underline"
+      className="group relative bg-white rounded-2xl p-4 sm:p-6
+                 flex flex-col items-center justify-center text-center
+                 gap-2 sm:gap-4
+                 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg no-underline"
       style={{ boxShadow: '0 2px 12px rgba(107,31,42,0.05), 0 0 0 1px #F5EDEF' }}
     >
-      {/* Centered icon */}
+      {/* Icon */}
       <div
-        className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105"
+        className="w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105"
         style={{ background: tint.bg, border: `1px solid ${tint.border}` }}
       >
-        <svg className="w-6 h-6" style={{ color: tint.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: tint.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
           <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
         </svg>
       </div>
@@ -27,16 +30,16 @@ function StatCard({ label, value, sub, icon, tint, to }) {
       {/* Value */}
       <div>
         <p
-          className="leading-none tabular-nums"
-          style={{ color: '#3D1A1E', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600, fontSize: '32px', letterSpacing: '0.01em' }}
+          className="text-[26px] sm:text-[32px] leading-none tabular-nums"
+          style={{ color: '#3D1A1E', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600, letterSpacing: '0.01em' }}
         >
           {value}
         </p>
-        <p className="text-xs font-medium mt-2 tracking-wide uppercase" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif', letterSpacing: '0.08em' }}>
+        <p className="text-[10px] sm:text-xs font-medium mt-1.5 sm:mt-2 tracking-wide uppercase" style={{ color: '#9B7B80', fontFamily: 'Raleway, sans-serif', letterSpacing: '0.08em' }}>
           {label}
         </p>
         {sub && (
-          <p className="text-[11px] mt-1" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>{sub}</p>
+          <p className="text-[10px] sm:text-[11px] mt-1 hidden sm:block" style={{ color: '#C4A0A6', fontFamily: 'Raleway, sans-serif' }}>{sub}</p>
         )}
       </div>
     </Link>
@@ -209,7 +212,7 @@ export default function AdminDashboard() {
   return (
     <div>
       <PageHeader />
-      <div className="p-5 lg:p-7 space-y-6 max-w-[1280px]">
+      <div className="p-4 sm:p-5 lg:p-7 space-y-4 sm:space-y-6 max-w-[1280px]">
 
       {/* ── Welcome strip — compact, light backdrop, single rose accent ── */}
       <div className="rounded-2xl px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between gap-4 overflow-hidden relative bg-white border border-[#F0DDE0] shadow-[0_2px_12px_rgba(107,31,42,0.06)]">
@@ -265,7 +268,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5">
         <StatCard
           label={t('admin.ordersToday')}
           value={stats.ordersToday}
@@ -303,7 +306,9 @@ export default function AdminDashboard() {
       {/* ── Sales analytics ── */}
       <Card>
         <SectionHeader title={t('admin.revenueAnalytics')} linkTo="/admin/orders" linkLabel={t('admin.viewAll')} />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-5 py-5">
+        {/* Mobile: scrollable row so values are never truncated.  sm+: 3-column grid. */}
+        <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 px-4 sm:px-5 py-4 sm:py-5 min-w-[340px]">
           {[
             { key: 'daily',   label: t('admin.revenueDaily'),   value: stats.revenueDaily,   tile: { bg: '#ECFDF5', border: '#A7F3D0', icon: '#059669', valueColor: '#065F46' }, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
             { key: 'weekly',  label: t('admin.revenueWeekly'),  value: stats.revenueWeekly,  tile: { bg: '#FFFBEB', border: '#FCD34D', icon: '#D97706', valueColor: '#92400E' }, icon: 'M3 12h18M3 6h18M3 18h18' },
@@ -311,34 +316,35 @@ export default function AdminDashboard() {
           ].map(c => (
             <div
               key={c.key}
-              className="group rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              className="group rounded-2xl p-3 sm:p-6 flex flex-col items-center justify-center text-center gap-2 sm:gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg"
               style={{ background: c.tile.bg, border: `1px solid ${c.tile.border}` }}
             >
               <div
-                className="flex items-center justify-center w-12 h-12 rounded-full mx-auto mb-1 group-hover:scale-110 transition-transform duration-300"
+                className="flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-full group-hover:scale-110 transition-transform duration-300"
                 style={{ background: '#fff', border: `1px solid ${c.tile.border}` }}
               >
-                <svg className="w-5 h-5" style={{ color: c.tile.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: c.tile.icon }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d={c.icon} />
                 </svg>
               </div>
-              <div className="text-center">
+              <div className="text-center min-w-0">
                 <p
-                  className="tabular-nums truncate"
-                  style={{ color: c.tile.valueColor, fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, fontSize: '28px', lineHeight: 1 }}
+                  className="text-[18px] sm:text-[28px] tabular-nums truncate leading-none"
+                  style={{ color: c.tile.valueColor, fontFamily: 'Cormorant Garamond, serif', fontWeight: 700 }}
                   title={formatPrice(c.value ?? 0)}
                 >
                   {formatPrice(c.value ?? 0)}
                 </p>
-                <p className="text-xs font-medium mt-2 tracking-wide" style={{ color: c.tile.icon, fontFamily: 'Raleway, sans-serif' }}>
+                <p className="text-[9px] sm:text-xs font-medium mt-1 sm:mt-2 tracking-wide" style={{ color: c.tile.icon, fontFamily: 'Raleway, sans-serif' }}>
                   {c.label}
                 </p>
-                <p className="text-[10px] mt-1 tracking-wide" style={{ color: c.tile.icon, fontFamily: 'Raleway, sans-serif', opacity: 0.7 }}>
+                <p className="text-[9px] sm:text-[10px] mt-0.5 sm:mt-1 tracking-wide hidden sm:block" style={{ color: c.tile.icon, fontFamily: 'Raleway, sans-serif', opacity: 0.7 }}>
                   {t('admin.fromConfirmed')}
                 </p>
               </div>
             </div>
           ))}
+        </div>
         </div>
       </Card>
 

@@ -218,22 +218,22 @@ export default function AdminLayout({ children }) {
         <Sidebar />
       </aside>
 
-      {/* Mobile drawer overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0"
-            style={{ background: 'rgba(61,26,30,0.35)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setSidebarOpen(false)}
-          />
-          <aside
-            className="absolute left-0 top-0 h-full w-[228px] z-50 flex flex-col"
-            style={{ boxShadow: '4px 0 24px rgba(107,31,42,0.15)' }}
-          >
-            <Sidebar onClose={() => setSidebarOpen(false)} />
-          </aside>
-        </div>
-      )}
+      {/* Mobile drawer — always in DOM so CSS transitions play on both open and close */}
+      <div className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${sidebarOpen ? 'visible' : 'invisible pointer-events-none'}`}>
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+          style={{ background: 'rgba(61,26,30,0.35)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setSidebarOpen(false)}
+        />
+        {/* Sliding panel */}
+        <aside
+          className={`absolute start-0 top-0 h-full w-[228px] z-50 flex flex-col transition-transform duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'}`}
+          style={{ boxShadow: '4px 0 24px rgba(107,31,42,0.15)' }}
+        >
+          <Sidebar onClose={() => setSidebarOpen(false)} />
+        </aside>
+      </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

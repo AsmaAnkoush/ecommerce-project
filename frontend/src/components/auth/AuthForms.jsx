@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
+import { getRememberedEmail } from '../../utils/storage'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 
@@ -63,18 +64,27 @@ export default function AuthForms({ mode, onSwitchMode, onSuccess }) {
   const { t } = useLanguage()
   const isLogin = mode === 'login'
 
-  const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', password: '', phone: '', address: '',
-  })
-  const [errors, setErrors]     = useState({})
-  const [apiError, setApiError] = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [form, setForm] = useState(() => ({
+    firstName: '', lastName: '',
+    email: mode === 'login' ? getRememberedEmail() : '',
+    password: '', phone: '', address: '',
+  }))
+  const [errors, setErrors]       = useState({})
+  const [apiError, setApiError]   = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
-  /* Reset all form state when the parent flips between login / register */
+  /* Reset all form state when the parent flips between login / register.
+     On login mode, pre-fill the email if the user previously chose "Remember me". */
   useEffect(() => {
-    setForm({ firstName: '', lastName: '', email: '', password: '', phone: '', address: '' })
+    setForm({
+      firstName: '', lastName: '',
+      email: mode === 'login' ? getRememberedEmail() : '',
+      password: '', phone: '', address: '',
+    })
     setErrors({})
     setApiError('')
+    setRememberMe(false)
   }, [mode])
 
   const handleChange = (e) => {
@@ -105,7 +115,7 @@ export default function AuthForms({ mode, onSwitchMode, onSuccess }) {
       setApiError('')
       let userData
       if (isLogin) {
-        userData = await login({ email: form.email, password: form.password })
+        userData = await login({ email: form.email, password: form.password }, rememberMe)
       } else {
         userData = await register(form)
       }
@@ -211,6 +221,33 @@ export default function AuthForms({ mode, onSwitchMode, onSuccess }) {
           error={errors.password}
           autoComplete={isLogin ? 'current-password' : 'new-password'}
         />
+
+        {/* Remember me — login only */}
+        {isLogin && (
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <span className={[
+              'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-150',
+              rememberMe
+                ? 'bg-[#6B1F2A] border-[#6B1F2A]'
+                : 'bg-white border-[#DFA3AD] group-hover:border-[#9B7B80]',
+            ].join(' ')}>
+              {rememberMe && (
+                <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 8" fill="none">
+                  <path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+            />
+            <span className="text-sm text-[#9B7B80] group-hover:text-[#6B1F2A] transition-colors">
+              {t('auth.rememberMe')}
+            </span>
+          </label>
+        )}
 
         {/* Register-only: optional phone + address */}
         {!isLogin && (
