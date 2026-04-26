@@ -5,6 +5,7 @@ import com.ecommerce.dto.response.CartResponse;
 import com.ecommerce.entity.Cart;
 import com.ecommerce.entity.CartItem;
 import com.ecommerce.entity.Product;
+import com.ecommerce.entity.ProductVariant;
 import com.ecommerce.entity.User;
 import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.exception.ResourceNotFoundException;
@@ -43,8 +44,27 @@ public class CartService {
         if (!product.getActive()) {
             throw new BadRequestException("Product is not available");
         }
-        if (product.getStockQuantity() < request.getQuantity()) {
-            throw new BadRequestException("Insufficient stock");
+
+        String reqSize  = request.getSize();
+        String reqColor = request.getColor();
+
+        if (reqSize != null && reqColor != null) {
+            ProductVariant variant = product.getVariants().stream()
+                    .filter(v -> reqSize.equalsIgnoreCase(v.getSize())
+                              && reqColor.equalsIgnoreCase(v.getColor()))
+                    .findFirst()
+                    .orElseThrow(() -> new BadRequestException(
+                            "Selected size/color combination is not available"));
+            int available = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0;
+            if (available < request.getQuantity()) {
+                throw new BadRequestException(available > 0
+                        ? "Insufficient stock for this size and color — only " + available + " left"
+                        : "This size and color combination is out of stock");
+            }
+        } else {
+            if (product.getStockQuantity() < request.getQuantity()) {
+                throw new BadRequestException("Insufficient stock");
+            }
         }
 
         Optional<CartItem> existing = cartItemRepository.findVariant(
