@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getCategories } from '../../api/categoryApi'
+import { getSeasons } from '../../api/seasonApi'
 import { useLanguage } from '../../context/LanguageContext'
 import Spinner from '../ui/Spinner'
 
-function CategoryCard({ cat, index }) {
+function SeasonCircle({ season, index }) {
+  const to = `/products?season=${season.id}`
   return (
     <Link
-      to={`/products?category=${cat.id}`}
+      to={to}
       className="group flex flex-col items-center text-center animate-fade-in-up
                  shrink-0 w-[88px] sm:w-[110px] lg:w-[130px] snap-center
                  overflow-visible opacity-0"
@@ -22,11 +23,11 @@ function CategoryCard({ cat, index }) {
                    group-hover:border-[#C8808C]/45"
         style={{ backgroundColor: '#F2D5DA' }}
       >
-        {cat.imageUrl ? (
+        {season.imageUrl ? (
           <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4 overflow-hidden rounded-full">
             <img
-              src={cat.imageUrl}
-              alt={cat.name}
+              src={season.imageUrl}
+              alt={season.name}
               className="max-w-full max-h-full object-contain"
             />
           </div>
@@ -34,7 +35,7 @@ function CategoryCard({ cat, index }) {
           <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
             <svg className="w-7 h-7 sm:w-10 sm:h-10 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
               <path strokeLinecap="round" strokeLinejoin="round"
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16v12H4z" />
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           </div>
         )}
@@ -53,15 +54,15 @@ function CategoryCard({ cat, index }) {
           textShadow: '0 1px 3px rgba(107,31,42,0.15), 0 0 8px rgba(255,255,255,0.5)',
         }}
       >
-        {cat.name}
+        {season.name}
       </span>
     </Link>
   )
 }
 
-export default function CategorySection({ className = '' }) {
+export default function SeasonalCirclesSection({ className = '' }) {
   const { t } = useLanguage()
-  const [categories, setCategories] = useState([])
+  const [seasons, setSeasons] = useState([])
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef(null)
   const [showLeftArrow,  setShowLeftArrow]  = useState(false)
@@ -70,9 +71,9 @@ export default function CategorySection({ className = '' }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    getCategories()
-      .then(res => { if (!cancelled) setCategories(res.data?.data ?? []) })
-      .catch(() => { if (!cancelled) setCategories([]) })
+    getSeasons()
+      .then(res => { if (!cancelled) setSeasons(res.data?.data ?? []) })
+      .catch(() => { if (!cancelled) setSeasons([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
@@ -86,14 +87,12 @@ export default function CategorySection({ className = '' }) {
     setShowRightArrow(hasOverflow && scrollLeft + clientWidth < scrollWidth - 5)
   }
 
-  // Re-measure after categories load and DOM paints
   useEffect(() => {
     if (loading) return
     const raf = requestAnimationFrame(updateArrowVisibility)
     return () => cancelAnimationFrame(raf)
-  }, [loading, categories])
+  }, [loading, seasons])
 
-  // Keep arrows in sync while scrolling or on resize
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -116,28 +115,26 @@ export default function CategorySection({ className = '' }) {
     <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-4 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
 
       {/* ── Title ──────────────────────────────────────────── */}
-      <div className="mb-10 sm:mb-14">
-        <div>
-          <h2
-            className="text-[24px] sm:text-[28px] lg:text-[42px] xl:text-[46px] leading-[1.2] inline-block"
-            style={{
-              fontFamily: "'Playfair Display', 'Cormorant Garamond', Georgia, serif",
-              fontWeight: 500,
-              letterSpacing: '0.02em',
-              background: 'linear-gradient(135deg, #6B1F2A 0%, #8B2D3A 50%, #6B1F2A 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            {t('home.shopByCategory')}
-          </h2>
+      <div className="mb-8 sm:mb-12">
+        <h2
+          className="text-[24px] sm:text-[28px] lg:text-[42px] xl:text-[46px] leading-[1.2] inline-block"
+          style={{
+            fontFamily: "'Playfair Display', 'Cormorant Garamond', Georgia, serif",
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+            background: 'linear-gradient(135deg, #6B1F2A 0%, #8B2D3A 50%, #6B1F2A 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          {t('home.shopBySeason')}
+        </h2>
 
-          <div className="flex items-center gap-2.5 mt-3 sm:mt-4">
-            <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />
-            <span className="w-1.5 h-1.5 rounded-full bg-[#6B1F2A]/60" />
-            <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />
-          </div>
+        <div className="flex items-center gap-2.5 mt-3 sm:mt-4">
+          <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#6B1F2A]/60" />
+          <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />
         </div>
       </div>
 
@@ -146,9 +143,9 @@ export default function CategorySection({ className = '' }) {
         <div className="flex justify-center py-10">
           <Spinner size="lg" />
         </div>
-      ) : categories.length === 0 ? (
+      ) : seasons.length === 0 ? (
         <p className="text-center py-10 text-sm text-[#9B7B80] tracking-wide">
-          {t('home.noCategories')}
+          {t('home.noSeasons')}
         </p>
       ) : (
         <div className="relative">
@@ -181,8 +178,8 @@ export default function CategorySection({ className = '' }) {
                        [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
           >
             <div className="flex flex-row justify-center gap-5 sm:gap-7 lg:gap-9 snap-x snap-mandatory min-w-min mx-auto w-fit">
-              {categories.map((cat, i) => (
-                <CategoryCard key={cat.id} cat={cat} index={i} />
+              {seasons.map((season, i) => (
+                <SeasonCircle key={season.id} season={season} index={i} />
               ))}
             </div>
           </div>

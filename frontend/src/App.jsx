@@ -53,6 +53,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminCategories from './pages/admin/AdminCategories'
+import AdminSeasons from './pages/admin/AdminSeasons'
 import AdminOrders from './pages/admin/AdminOrders'
 import AdminOffers from './pages/admin/AdminOffers'
 import AdminSettings from './pages/admin/AdminSettings'
@@ -114,6 +115,7 @@ export default function App() {
                   <Route path="/admin/products/new" element={<ProtectedRoute adminOnly><AdminLayout><AdminProductForm /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/products/:id/edit" element={<ProtectedRoute adminOnly><AdminLayout><AdminProductForm /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/categories" element={<ProtectedRoute adminOnly><AdminLayout><AdminCategories /></AdminLayout></ProtectedRoute>} />
+                  <Route path="/admin/seasons" element={<ProtectedRoute adminOnly><AdminLayout><AdminSeasons /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/orders" element={<ProtectedRoute adminOnly><AdminLayout><AdminOrders /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/orders/:id" element={<ProtectedRoute adminOnly><AdminLayout><AdminOrderDetail /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminLayout><AdminUsers /></AdminLayout></ProtectedRoute>} />

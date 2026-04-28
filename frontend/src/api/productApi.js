@@ -9,6 +9,7 @@ export const getNewArrivals = (season) =>
 export const getOnSale = () => api.get('/products/on-sale')
 export const getOffers = () => api.get('/products/offers')
 export const getSeasonProducts = (season) => api.get(`/products/season/${season}`)
+export const getProductsBySeasonId = (seasonId) => api.get(`/products/by-season/${seasonId}`)
 export const searchProducts = (keyword, params) => api.get('/products/search', { params: { keyword, ...params } })
 export const getProductsByCategory = (categoryId, params) => api.get(`/products/category/${categoryId}`, { params })
 

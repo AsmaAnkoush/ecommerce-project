@@ -1,7 +1,7 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.dto.response.AdminDashboardResponse;
-import com.ecommerce.entity.Season;
+import com.ecommerce.entity.ProductSeason;
 import com.ecommerce.entity.WebsiteSettings;
 import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.service.WebsiteSettingsService;
@@ -178,7 +178,7 @@ public class AdminController {
 
     // ── Season ────────────────────────────────────────────────────────────────
     @PutMapping("/settings/season")
-    public ResponseEntity<ApiResponse<WebsiteSettings>> updateSeason(@RequestParam Season season) {
+    public ResponseEntity<ApiResponse<WebsiteSettings>> updateSeason(@RequestParam ProductSeason season) {
         return ResponseEntity.ok(ApiResponse.success("Active season updated", settingsService.updateSeason(season)));
     }
 

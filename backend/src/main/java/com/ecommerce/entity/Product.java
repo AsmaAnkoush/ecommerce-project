@@ -50,7 +50,7 @@ public class Product {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
-    private Season season;
+    private ProductSeason season;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)

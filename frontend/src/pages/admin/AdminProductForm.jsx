@@ -554,7 +554,7 @@ export default function AdminProductForm() {
   return (
     <>
       <PageHeader />
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-8 pt-0 space-y-8">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-4 sm:p-8 pt-0 space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-900">{isEdit ? t('admin.edit') : t('admin.addProduct')}</h1>
         <div className="flex items-center gap-3 flex-wrap">
@@ -907,7 +907,7 @@ export default function AdminProductForm() {
                             </div>
                             {isExpanded && (
                               <div className="px-3 py-3 bg-white border-t border-gray-100">
-                                <div className="grid grid-cols-5 gap-2">
+                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                   {MEASUREMENT_FIELDS.map(f => (
                                     <div key={f.key}>
                                       <p className="text-xs text-gray-400 text-center mb-1">{t(f.tKey)} <span className="text-gray-300">({t('product.cm')})</span></p>

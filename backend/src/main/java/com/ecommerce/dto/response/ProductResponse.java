@@ -1,7 +1,7 @@
 package com.ecommerce.dto.response;
 
 import com.ecommerce.entity.DiscountType;
-import com.ecommerce.entity.Season;
+import com.ecommerce.entity.ProductSeason;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +23,7 @@ public class ProductResponse {
     private String description;
     private BigDecimal price;
     private BigDecimal discountPrice;
-    private Season season;
+    private ProductSeason season;
     private DiscountType discountType;
     private BigDecimal discountValue;
     private Integer stockQuantity;

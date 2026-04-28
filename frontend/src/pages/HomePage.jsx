@@ -2,80 +2,125 @@ import { Link } from 'react-router-dom'
 import CategorySection from '../components/category/CategorySection'
 import NewArrivalsSection from '../components/product/NewArrivalsSection'
 import BestSellersSection from '../components/product/BestSellersSection'
-import SeasonalSection from '../components/product/SeasonalSection'
+import SeasonalCirclesSection from '../components/seasonal/SeasonalCirclesSection'
 import useInView from '../hooks/useInView'
 import { useLanguage } from '../context/LanguageContext'
 import { useSiteSettings } from '../context/SiteSettingsContext'
 
 /* ── Hero ───────────────────────────────────────────────────────────────── */
-function Hero({ innerRef, inView, t, activeSeason }) {
+function Hero({ innerRef, inView, activeSeason }) {
   const shopHref = activeSeason ? `/products?season=${activeSeason}` : '/products'
   return (
-    <section ref={innerRef} className="bg-[#F2E0E4] lg:min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-14 py-10 sm:py-14 lg:py-0 lg:min-h-screen lg:flex lg:items-center lg:pb-24">
+    <section
+      ref={innerRef}
+      dir="ltr"
+      className="relative bg-[#F5DCE2] overflow-hidden w-full"
+      style={{ fontFamily: "'Montserrat', 'Poppins', sans-serif" }}
+    >
+      <div className="grid grid-cols-[48%_52%] sm:grid-cols-[50%_50%] lg:grid-cols-[45%_55%] h-[calc(100vh-140px)] sm:h-[540px] md:h-[600px] lg:h-[calc(100vh-100px)] lg:max-h-[640px] lg:min-h-[500px]">
 
-        {/* Mobile: column (image top, text bottom)
-            Desktop: row (text left, image right) */}
-        <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 lg:gap-55 w-full">
-          {/* ── Text ───────────────────────────────────────── */}
-          <div className={`max-w-[260px] sm:max-w-[360px] lg:max-w-[480px] min-w-0 text-left ${inView ? 'animate-fade-in-up' : 'opacity-0'}`}>
-
-            <h1 className="text-center">
-              <span
-                className="block text-[42px] sm:text-[58px] lg:text-[74px] leading-[1] tracking-[0.08em] uppercase text-[#5A1520]"
-                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 500 }}
-              >
-                I Wear
-              </span>
-              <span
-                className="block text-[18px] sm:text-[20px] lg:text-[24px] leading-[1] mt-2 sm:mt-3 tracking-[0.08em] text-white/90 text-right"
-                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 400 }}
-              >
-                by Areej
-              </span>
+        {/* ── Text Column ──────────────────────────────── */}
+        <div
+          className={`flex flex-col justify-center items-center sm:items-start pl-2 pr-2 sm:pl-10 sm:pr-4 md:pl-14 lg:pl-[10vw] lg:pr-2 xl:pl-[12vw] ${
+            inView ? 'animate-fade-in-up' : 'opacity-0'
+          }`}
+        >
+          {/* I WEAR + by Areej */}
+          <div className="flex flex-col items-stretch w-full sm:max-w-none">
+            <h1
+              className="text-[#6B1F2A] m-0 leading-[1] text-[38px] sm:text-[48px] md:text-[60px] lg:text-[56px] xl:text-[68px] 2xl:text-[78px] text-center sm:text-left"
+              style={{
+                fontFamily: "'Montserrat', 'Poppins', sans-serif",
+                fontWeight: 500,
+                letterSpacing: '0.13em',
+              }}
+            >
+              I WEAR
             </h1>
 
-            <div className="flex items-center gap-3.5 mt-7 mb-4 lg:mt-10 lg:mb-5">
-              <div className="h-px w-8 sm:w-14 bg-[#DFA3AD]/60" />
-              <span className="text-[8px] sm:text-[9px] tracking-[0.4em] uppercase text-[#C4A0A6] font-semibold"
-                    style={{ fontFamily: 'Raleway, sans-serif' }}>
-                Boutique
-              </span>
-              <div className="h-px w-8 sm:w-14 bg-[#DFA3AD]/60" />
-            </div>
-
-            <p className="text-[13px] lg:text-[15px] text-[#9B7B80] leading-[1.8] max-w-[360px] font-light tracking-wide hidden sm:block sm:mx-0 mx-auto">
-              {t('home.newArrivalsDesc')}
-            </p>
-
-            <div className="flex items-center gap-4 sm:gap-6 mt-5 sm:mt-7">
-              <Link to={shopHref}
-                className="hero-cta group relative inline-flex items-center gap-2 sm:gap-2.5 bg-[#6B1F2A] text-white text-[8px] sm:text-[11px] font-semibold tracking-[0.22em] sm:tracking-[0.24em] uppercase px-5 sm:px-10 py-2.5 sm:py-4 rounded-full animate-hero-btn-float hover:[animation-play-state:paused] hover:bg-[#551820] hover:-translate-y-1 hover:scale-[1.06] hover:shadow-[0_14px_40px_rgba(107,31,42,0.45),0_0_32px_6px_rgba(223,163,173,0.6)] active:scale-[0.97] transition-[transform,box-shadow,background-color] duration-300 ease-out">
-                {t('home.shopNow')}
-                <svg className="w-3.5 h-3.5 rtl:rotate-180 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
-              <Link to={shopHref}
-                className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.18em] uppercase text-[#6B1F2A] hover:text-[#3D1A1E] hover:tracking-[0.22em] transition-all duration-300">
-                {t('home.viewAll')}
-                <svg className="w-3 h-3 rtl:rotate-180 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
+            <h2
+              className="leading-[1.1] text-[17px] sm:text-[20px] md:text-[26px] lg:text-[24px] xl:text-[30px] 2xl:text-[34px] self-end mt-2 sm:mt-1.5"
+              style={{
+                fontFamily: "'Montserrat', 'Poppins', sans-serif",
+                fontWeight: 400,
+                letterSpacing: '0.07em',
+                color: '#E8A5B5',
+                textShadow: '0 1px 3px rgba(107, 31, 42, 0.15)',
+                margin: '8px 0 0 0',
+              }}
+            >
+              by Areej
+            </h2>
           </div>
 
-          {/* ── Image ─────────────────────────────────────── */}
-          <div className={`shrink-0 w-44 sm:w-60 lg:w-80 ${inView ? 'animate-fade-in delay-150' : 'opacity-0'}`}>
-            <img
-              src="/images/hero-dress.png"
-              alt="I Wear by Areej"
-              className="w-full h-auto object-contain drop-shadow-[0_8px_32px_rgba(107,31,42,0.18)] transition-transform duration-500 ease-out hover:scale-[1.03]"
-            />
+          {/* Divider with BOUTIQUE */}
+          <div className="flex items-center gap-2 sm:gap-3 mt-3.5 sm:mt-4 lg:mt-3 xl:mt-4 w-[160px] sm:w-[170px] lg:w-[170px] xl:w-[200px]">
+            <div className="flex-1 h-px bg-[#6B1F2A]" />
+            <span
+              className="text-[#6B1F2A] text-[10px] sm:text-[10px] lg:text-[10px] xl:text-[11px] whitespace-nowrap"
+              style={{
+                fontFamily: "'Montserrat', 'Poppins', sans-serif",
+                fontWeight: 500,
+                letterSpacing: '0.35em',
+              }}
+            >
+              BOUTIQUE
+            </span>
+            <div className="flex-1 h-px bg-[#6B1F2A]" />
           </div>
 
+          {/* Tagline */}
+          <p
+            className="text-[#5A2A2F] text-[12px] sm:text-[12px] lg:text-[12px] xl:text-[14px] leading-[1.5] mt-3 sm:mt-3 lg:mt-2.5 xl:mt-3 max-w-[185px] sm:max-w-[210px] lg:max-w-[220px] xl:max-w-[260px] text-center"
+            style={{
+              fontFamily: "'Montserrat', 'Poppins', sans-serif",
+              fontWeight: 400,
+              letterSpacing: '0.02em',
+            }}
+          >
+            Discover our newest collection of dresses, abayas and skirts
+          </p>
+
+          {/* SHOP NOW Button */}
+          <Link
+            to={shopHref}
+            className="hero-cta inline-flex items-center gap-2 sm:gap-3 bg-[#6B1F2A] text-white rounded-full mt-3.5 sm:mt-4 lg:mt-3 xl:mt-4 px-5 py-2.5 sm:px-7 sm:py-3 lg:px-6 lg:py-2.5 xl:px-7 xl:py-3 text-[10px] sm:text-[11px] lg:text-[10px] xl:text-[12px] hover:bg-[#551820] hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(107,31,42,0.35)] transition-all duration-300"
+            style={{
+              fontFamily: "'Montserrat', 'Poppins', sans-serif",
+              fontWeight: 600,
+              letterSpacing: '0.22em',
+            }}
+          >
+            SHOP NOW
+            <svg
+              className="w-3 h-3 sm:w-3.5 sm:h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
+            </svg>
+          </Link>
         </div>
+
+        {/* ── Image Column ─────────────────────────────── */}
+        <div
+          className={`relative h-full w-full overflow-hidden flex items-end justify-center ${
+            inView ? 'animate-fade-in delay-150' : 'opacity-0'
+          }`}
+        >
+          <img
+            src="/images/hero-dress.png"
+            alt="I Wear by Areej"
+            className="h-[102%] sm:h-full w-auto max-w-none object-contain object-bottom"
+          />
+        </div>
+
       </div>
     </section>
   )
@@ -83,20 +128,17 @@ function Hero({ innerRef, inView, t, activeSeason }) {
 
 /* Home Page */
 export default function HomePage() {
-  const { t } = useLanguage()
   const { activeSeason } = useSiteSettings()
-  const secondSeason = activeSeason === 'SUMMER' ? 'WINTER' : 'SUMMER'
-  const [heroRef, heroInView] = useInView()
+const [heroRef, heroInView] = useInView()
 
   return (
     <div className="bg-[#FDF6F7] pb-12 overflow-x-hidden">
-      <Hero innerRef={heroRef} inView={heroInView} t={t} activeSeason={activeSeason} />
+      <Hero innerRef={heroRef} inView={heroInView} activeSeason={activeSeason} />
       <div className="space-y-6 sm:space-y-8 py-6 sm:py-8">
         <CategorySection />
+        <SeasonalCirclesSection />
         <NewArrivalsSection season={activeSeason} />
         <BestSellersSection season={activeSeason} />
-        <SeasonalSection season={activeSeason} />
-        <SeasonalSection season={secondSeason} />
       </div>
     </div>
   )

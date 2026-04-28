@@ -1,6 +1,6 @@
 package com.ecommerce.service;
 
-import com.ecommerce.entity.Season;
+import com.ecommerce.entity.ProductSeason;
 import com.ecommerce.entity.WebsiteSettings;
 import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.repository.WebsiteSettingsRepository;
@@ -57,7 +57,7 @@ public class WebsiteSettingsService {
     }
 
     @Transactional
-    public WebsiteSettings updateSeason(Season season) {
+    public WebsiteSettings updateSeason(ProductSeason season) {
         WebsiteSettings settings = getSettings();
         settings.setActiveSeason(season);
         return repository.save(settings);

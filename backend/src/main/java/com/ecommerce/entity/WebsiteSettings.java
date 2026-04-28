@@ -3,7 +3,7 @@ package com.ecommerce.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import static com.ecommerce.entity.Season.SUMMER;
+import static com.ecommerce.entity.ProductSeason.SUMMER;
 
 @Entity
 @Table(name = "website_settings")
@@ -34,5 +34,5 @@ public class WebsiteSettings {
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     @Builder.Default
-    private Season activeSeason = SUMMER;
+    private ProductSeason activeSeason = SUMMER;
 }

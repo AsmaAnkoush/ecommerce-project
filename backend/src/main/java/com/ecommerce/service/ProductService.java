@@ -7,10 +7,11 @@ import com.ecommerce.dto.response.ProductResponse;
 import com.ecommerce.dto.response.ProductVariantResponse;
 import com.ecommerce.entity.Category;
 import com.ecommerce.entity.DiscountType;
-import com.ecommerce.entity.Season;
+import com.ecommerce.entity.ProductSeason;
 import com.ecommerce.entity.Product;
 import com.ecommerce.entity.ProductImage;
 import com.ecommerce.entity.ProductVariant;
+import com.ecommerce.entity.Season;
 import com.ecommerce.exception.BadRequestException;
 import com.ecommerce.exception.ResourceNotFoundException;
 import com.ecommerce.repository.CartItemRepository;
@@ -20,6 +21,7 @@ import com.ecommerce.repository.ProductImageRepository;
 import com.ecommerce.repository.ProductRepository;
 import com.ecommerce.repository.ProductVariantRepository;
 import com.ecommerce.repository.ReviewRepository;
+import com.ecommerce.repository.SeasonRepository;
 import com.ecommerce.repository.WishlistItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -44,6 +46,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final SeasonRepository seasonRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ReviewRepository reviewRepository;
@@ -77,30 +80,46 @@ public class ProductService {
      * last 3 days whose season matches the requested season (or ALL_SEASON).
      * When {@code season} is null, falls back to calendar-based detection.
      */
-    public List<ProductResponse> findNew(Season season) {
+    public List<ProductResponse> findNew(ProductSeason season) {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(3);
-        Season resolved = (season != null) ? season : currentSeason();
-        List<Season> seasons = List.of(resolved, Season.ALL_SEASON);
+        ProductSeason resolved = (season != null) ? season : currentSeason();
+        List<ProductSeason> seasons = List.of(resolved, ProductSeason.ALL_SEASON);
         return toResponses(productRepository
                 .findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(seasons, cutoff));
     }
 
     /** Northern-hemisphere split: Apr–Sep → SUMMER, Oct–Mar → WINTER. */
-    private Season currentSeason() {
+    private ProductSeason currentSeason() {
         Month m = LocalDateTime.now().getMonth();
         int v = m.getValue();
-        return (v >= 4 && v <= 9) ? Season.SUMMER : Season.WINTER;
+        return (v >= 4 && v <= 9) ? ProductSeason.SUMMER : ProductSeason.WINTER;
     }
 
     public List<ProductResponse> findBestSellers() {
         return toResponses(productRepository.findByActiveTrueAndIsBestSellerTrueAndIsDeletedFalseOrderByConfirmedOrderCountDesc());
     }
 
-    public List<ProductResponse> findBySeason(Season season) {
-        List<Season> seasons = (season == Season.ALL_SEASON)
-                ? List.of(Season.ALL_SEASON)
-                : List.of(season, Season.ALL_SEASON);
+    public List<ProductResponse> findBySeason(ProductSeason season) {
+        List<ProductSeason> seasons = (season == ProductSeason.ALL_SEASON)
+                ? List.of(ProductSeason.ALL_SEASON)
+                : List.of(season, ProductSeason.ALL_SEASON);
         return toResponses(productRepository.findByActiveTrueAndSeasonInAndIsDeletedFalseOrderByCreatedAtDesc(seasons));
+    }
+
+    /** Looks up the Season entity by its PK, then delegates to findBySeason.
+     *  Allows the public homepage to filter by season ID (mirrors category-by-ID). */
+    public List<ProductResponse> findBySeasonId(Long seasonId) {
+        Season season = seasonRepository.findById(seasonId)
+                .orElseThrow(() -> new ResourceNotFoundException("Season", seasonId));
+        String key = season.getSeasonKey();
+        if (key == null || key.isBlank()) {
+            return List.of();
+        }
+        try {
+            return findBySeason(ProductSeason.valueOf(key.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            return List.of();
+        }
     }
 
     public List<ProductResponse> findOnSale() {
@@ -261,8 +280,8 @@ public class ProductService {
         if (request.getSeason() == null) {
             throw new BadRequestException("Season is required");
         }
-        if (request.getSeason() != com.ecommerce.entity.Season.SUMMER
-                && request.getSeason() != com.ecommerce.entity.Season.WINTER) {
+        if (request.getSeason() != ProductSeason.SUMMER
+                && request.getSeason() != ProductSeason.WINTER) {
             throw new BadRequestException("Season must be SUMMER or WINTER");
         }
         if (request.getColorImages() == null || request.getColorImages().isEmpty()) {

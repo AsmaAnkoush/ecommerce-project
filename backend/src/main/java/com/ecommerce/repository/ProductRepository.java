@@ -1,7 +1,7 @@
 package com.ecommerce.repository;
 
 import com.ecommerce.entity.Product;
-import com.ecommerce.entity.Season;
+import com.ecommerce.entity.ProductSeason;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,7 +36,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     /** Dynamic "new arrivals" — products created after a cutoff and whose season
      *  is in the supplied list (typically [currentSeason, ALL_SEASON]). */
     List<Product> findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(
-            List<Season> seasons, LocalDateTime cutoff);
+            List<ProductSeason> seasons, LocalDateTime cutoff);
 
     List<Product> findByActiveTrueAndIsBestSellerTrueAndIsDeletedFalseOrderByConfirmedOrderCountDesc();
 
@@ -75,9 +75,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                   @Param("size") String size,
                                   Pageable pageable);
 
-    List<Product> findByActiveTrueAndSeasonAndIsDeletedFalseOrderByCreatedAtDesc(Season season);
+    List<Product> findByActiveTrueAndSeasonAndIsDeletedFalseOrderByCreatedAtDesc(ProductSeason season);
 
-    List<Product> findByActiveTrueAndSeasonInAndIsDeletedFalseOrderByCreatedAtDesc(List<Season> seasons);
+    List<Product> findByActiveTrueAndSeasonInAndIsDeletedFalseOrderByCreatedAtDesc(List<ProductSeason> seasons);
 
     long countByActiveTrueAndIsDeletedFalse();
 

@@ -4,7 +4,7 @@ import com.ecommerce.dto.request.DiscountRequest;
 import com.ecommerce.dto.request.ProductRequest;
 import com.ecommerce.dto.response.ApiResponse;
 import com.ecommerce.dto.response.ProductResponse;
-import com.ecommerce.entity.Season;
+import com.ecommerce.entity.ProductSeason;
 import com.ecommerce.service.ProductService;
 import com.ecommerce.util.PageRequestValidator;
 import jakarta.validation.Valid;
@@ -65,7 +65,7 @@ public class ProductController {
 
     @GetMapping("/new-arrivals")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getNewArrivals(
-            @RequestParam(required = false) Season season) {
+            @RequestParam(required = false) ProductSeason season) {
         return ResponseEntity.ok(ApiResponse.success("New arrivals", productService.findNew(season)));
     }
 
@@ -82,8 +82,14 @@ public class ProductController {
     }
 
     @GetMapping("/season/{season}")
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> getBySeason(@PathVariable Season season) {
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getBySeason(@PathVariable ProductSeason season) {
         return ResponseEntity.ok(ApiResponse.success(season + " products", productService.findBySeason(season)));
+    }
+
+    /** Filter products by Season entity ID — used by the dynamic SeasonalCirclesSection. */
+    @GetMapping("/by-season/{seasonId}")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getBySeasonId(@PathVariable Long seasonId) {
+        return ResponseEntity.ok(ApiResponse.success("Season products", productService.findBySeasonId(seasonId)));
     }
 
     @GetMapping("/search")

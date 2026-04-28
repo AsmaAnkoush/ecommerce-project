@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getProducts, searchProducts, getSeasonProducts } from '../api/productApi'
+import { getProducts, searchProducts, getSeasonProducts, getProductsBySeasonId } from '../api/productApi'
 import { getCategories } from '../api/categoryApi'
 import ProductCard from '../components/product/ProductCard'
 import ProductRow from '../components/product/ProductRow'
@@ -141,8 +141,15 @@ export default function ProductsPage() {
       const { sortBy, sortDir } = currentSort
       let list = [], pageMeta = { totalPages: 0, totalElements: 0, number: 0 }
       const hasExplicitFilters = !!(categoryId || minPrice || maxPrice || color || size || search)
+      // season param is either a numeric ID (from SeasonCircle) or an enum string (from activeSeason)
+      const isSeasonId = season && /^\d+$/.test(season)
       const effectiveSeason = season || (!hasExplicitFilters ? activeSeason : '')
-      if (effectiveSeason) {
+      if (isSeasonId) {
+        const res = await getProductsBySeasonId(season)
+        list = res.data?.data ?? []
+        pageMeta = { totalPages: 0, totalElements: list.length, number: 0 }
+        list = clientSort(list, sortBy, sortDir)
+      } else if (effectiveSeason) {
         const res = await getSeasonProducts(effectiveSeason)
         list = res.data?.data ?? []
         pageMeta = { totalPages: 0, totalElements: list.length, number: 0 }

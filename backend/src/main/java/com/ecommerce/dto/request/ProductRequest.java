@@ -1,7 +1,7 @@
 package com.ecommerce.dto.request;
 
 import com.ecommerce.entity.DiscountType;
-import com.ecommerce.entity.Season;
+import com.ecommerce.entity.ProductSeason;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -30,7 +30,7 @@ public class ProductRequest {
     private BigDecimal price;
 
     @NotNull(message = "Season is required")
-    private Season season;
+    private ProductSeason season;
 
     private DiscountType discountType;
 
