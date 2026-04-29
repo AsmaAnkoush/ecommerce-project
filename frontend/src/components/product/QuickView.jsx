@@ -264,7 +264,7 @@ export default function QuickView() {
             <div className="space-y-3">
               {!isOutOfStock && (
                 <button type="button" onClick={handleAdd} disabled={!canAdd}
-                  className="w-full flex items-center justify-center gap-2 bg-[#6B1F2A] text-white py-3.5 rounded-xl text-xs font-semibold tracking-[0.15em] uppercase hover:bg-[#7D2432] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-[#6B1F2A]/20">
+                  className="w-full flex items-center justify-center gap-2 bg-[#6B1F2A] text-white py-3.5 min-h-[44px] rounded-xl text-xs font-semibold tracking-[0.1em] uppercase hover:bg-[#7D2432] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-[#6B1F2A]/20">
                   {adding ? (
                     <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                   ) : (

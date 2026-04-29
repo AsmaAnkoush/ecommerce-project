@@ -522,7 +522,7 @@ export default function ProductDetailPage() {
                 : isOutOfStock
                 ? <Badge variant="danger">{t('product.outOfStock')}</Badge>
                 : maxStock > 0 && maxStock < 10
-                ? <Badge variant="warning">كمية محدودة</Badge>
+                ? <Badge variant="warning">{t('product.limitedQty')}</Badge>
                 : <Badge variant="success">{t('product.inStock')}</Badge>
               }
             </div>
@@ -694,7 +694,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={!canAddToCart}
-                className={`w-full h-16 rounded-2xl text-sm font-bold tracking-[0.18em] uppercase transition-all duration-300 ease-out flex items-center justify-center gap-3 relative overflow-hidden group ${
+                className={`w-full h-14 sm:h-16 rounded-2xl text-sm font-bold tracking-[0.1em] sm:tracking-[0.18em] uppercase transition-all duration-300 ease-out flex items-center justify-center gap-2 sm:gap-3 relative overflow-hidden group ${
                   added
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30'
                     : canAddToCart
@@ -716,7 +716,7 @@ export default function ProductDetailPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                 )}
-                {added ? 'تمت الإضافة ✓'
+                {added ? t('product.addedToCart')
                   : allSelectableColors.length > 0 && !selectedColor ? t('product.selectColor')
                   : selectedColorHasVariants && !selectedSize ? t('product.selectSize')
                   : isOutOfStock ? t('product.outOfStock')
@@ -750,7 +750,7 @@ export default function ProductDetailPage() {
           <button
             onClick={handleAddToCart}
             disabled={!canAddToCart}
-            className={`shrink-0 px-6 h-12 rounded-full text-xs font-bold tracking-[0.15em] uppercase flex items-center gap-2 transition-all duration-300 ${
+            className={`shrink-0 px-4 sm:px-6 h-12 rounded-full text-xs font-bold tracking-[0.1em] sm:tracking-[0.15em] uppercase flex items-center gap-1.5 sm:gap-2 transition-all duration-300 ${
               added
                 ? 'bg-green-600 text-white'
                 : canAddToCart
@@ -855,7 +855,7 @@ export default function ProductDetailPage() {
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                {userReview ? 'تعديل تقييمك' : t('product.writeReview')}
+                {userReview ? t('product.editReview') : t('product.writeReview')}
               </button>
             )}
           </div>
@@ -864,11 +864,11 @@ export default function ProductDetailPage() {
           {showForm && isLoggedIn && (
             <div className="bg-[#FDF6F7] rounded-3xl p-6 sm:p-8 mb-10 border border-[#F0D5D8]">
               <h3 className="font-semibold text-[#1A0A0D] mb-6 text-lg" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
-                {userReview ? 'تحديث تقييمك' : t('product.writeReview')}
+                {userReview ? t('product.updateReviewTitle') : t('product.writeReview')}
               </h3>
               <form onSubmit={handleReviewSubmit} className="space-y-5">
                 <div>
-                  <label className="text-xs font-semibold text-[#3D1A1E] uppercase tracking-widest block mb-3">تقييمكِ *</label>
+                  <label className="text-xs font-semibold text-[#3D1A1E] uppercase tracking-widest block mb-3">{t('product.yourRating')}</label>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map(star => (
                       <button
@@ -890,12 +890,12 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-[#3D1A1E] uppercase tracking-widest block mb-2">تعليق (اختياري)</label>
+                  <label className="text-xs font-semibold text-[#3D1A1E] uppercase tracking-widest block mb-2">{t('product.commentOptional')}</label>
                   <textarea
                     value={reviewForm.comment}
                     onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
                     rows={4}
-                    placeholder="شاركينا تجربتك مع هذا المنتج..."
+                    placeholder={t('product.commentPlaceholder')}
                     className="w-full px-4 py-3 border border-[#EDD8DC] rounded-2xl text-sm text-[#3D1A1E] focus:outline-none focus:border-[#6B1F2A] resize-none bg-white placeholder-[#C4A0A6] transition-colors"
                   />
                 </div>
@@ -906,7 +906,7 @@ export default function ProductDetailPage() {
                     disabled={reviewSubmitting}
                     className="px-6 py-2.5 bg-[#6B1F2A] text-white rounded-full text-xs font-semibold tracking-widest uppercase hover:bg-[#8B2535] transition-colors disabled:opacity-60"
                   >
-                    {reviewSubmitting ? 'جاري الإرسال...' : userReview ? 'تحديث التقييم' : 'إرسال التقييم'}
+                    {reviewSubmitting ? t('product.submitting') : userReview ? t('product.updateReview') : t('product.submitReview')}
                   </button>
                   <button
                     type="button"

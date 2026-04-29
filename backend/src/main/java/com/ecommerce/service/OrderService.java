@@ -31,6 +31,7 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderRequest request) {
@@ -85,6 +86,7 @@ public class OrderService {
         orderRepository.save(order);
         cart.getItems().clear();
         cartRepository.save(cart);
+        notificationService.createOrderNotification(order);
 
         return toResponse(order);
     }
@@ -188,7 +190,9 @@ public class OrderService {
         }
 
         order.setTotalAmount(total);
-        return toResponse(orderRepository.save(order));
+        Order savedOrder = orderRepository.save(order);
+        notificationService.createOrderNotification(savedOrder);
+        return toResponse(savedOrder);
     }
 
     @Transactional(readOnly = true)

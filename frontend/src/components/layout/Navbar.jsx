@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
@@ -72,12 +73,25 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  /* Lock body scroll while mobile menu is open */
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [menuOpen])
+
+  /* Escape key closes the mobile menu */
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [menuOpen])
+
 
   const handleLogout = () => {
     logout()
     closeAll()
     navigate('/')
-    openLogin()
   }
 
   const closeAll = () => {
@@ -124,7 +138,8 @@ export default function Navbar() {
           <button
             onClick={() => setMenuOpen(v => !v)}
             className={`${iconBtn} md:hidden shrink-0`}
-            aria-label="Open menu"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
           >
             <span className="flex flex-col gap-[5px] w-5">
               <span className={`block h-px bg-current transition-all duration-300 origin-center ${menuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
@@ -352,8 +367,32 @@ export default function Navbar() {
       </div>
 
       {/* ── Mobile slide-down menu ──────────────────────────────── */}
-      {menuOpen && (
-        <div className="md:hidden border-t border-[#F0D5D8] bg-white animate-slide-down">
+
+      {/* Backdrop — portalled to <body> so it sits below the sticky header
+          (header z-50 > backdrop z-40 > page content z-0).
+          Tapping it closes the menu. */}
+      {menuOpen && createPortal(
+        <div
+          className="fixed inset-0 z-40 bg-black/30 md:hidden"
+          onClick={closeAll}
+          aria-hidden="true"
+        />,
+        document.body,
+      )}
+
+      {/* Menu panel — always in DOM so open/close both animate.
+          max-height + opacity give a smooth slide-down on open and
+          slide-up on close. pointer-events-none hides it from interaction
+          while collapsed. */}
+      <div
+        className={[
+          'md:hidden overflow-hidden bg-white',
+          'transition-[max-height,opacity] duration-300 ease-in-out',
+          menuOpen ? 'max-h-[640px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
+        ].join(' ')}
+      >
+        {/* Border lives inside so it's clipped with the content when max-h-0 */}
+        <div className="border-t border-[#F0D5D8]">
           <nav className="px-6 py-3 max-w-2xl mx-auto">
             {/* Language toggle — top of mobile menu */}
             <div className="flex items-center justify-between py-3.5 border-b border-[#F9E8EB]">
@@ -404,10 +443,9 @@ export default function Navbar() {
                 {t('nav.signOut')}
               </button>
             )}
-
           </nav>
         </div>
-      )}
+      </div>
     </header>
   )
 }

@@ -183,9 +183,9 @@ export default function ProductRow({ product }) {
                 onClick={handleAddToCart}
                 disabled={adding || justAdded}
                 className={[
-                  'inline-flex items-center gap-2 px-4 py-2 rounded-full',
-                  'text-[10px] font-semibold uppercase tracking-[0.15em]',
-                  'transition-all duration-200 active:scale-95',
+                  'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl min-h-[44px]',
+                  'text-xs font-semibold uppercase tracking-[0.1em]',
+                  'transition-all duration-200 active:scale-[0.98]',
                   justAdded
                     ? 'bg-emerald-500 text-white'
                     : 'bg-[#6B1F2A] text-white hover:bg-[#7D2432] shadow-sm shadow-[#6B1F2A]/20',

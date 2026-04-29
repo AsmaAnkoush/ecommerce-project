@@ -176,7 +176,17 @@
     "addToWishlist": "أضف للمفضلة",
     "summerSeason": "☀️ صيف",
     "winterSeason": "❄️ شتاء",
-    "allSeason": "🌸 كل المواسم"
+    "allSeason": "🌸 كل المواسم",
+    "addedToCart": "تمت الإضافة ✓",
+    "limitedQty": "كمية محدودة",
+    "editReview": "تعديل تقييمك",
+    "updateReviewTitle": "تحديث تقييمك",
+    "yourRating": "تقييمكِ *",
+    "commentOptional": "تعليق (اختياري)",
+    "commentPlaceholder": "شاركينا تجربتك مع هذا المنتج...",
+    "submitting": "جاري الإرسال...",
+    "submitReview": "إرسال التقييم",
+    "updateReview": "تحديث التقييم"
   },
 
   "products": {

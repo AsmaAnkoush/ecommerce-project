@@ -176,7 +176,17 @@
     "addToWishlist": "Add to wishlist",
     "summerSeason": "☀️ Summer",
     "winterSeason": "❄️ Winter",
-    "allSeason": "🌸 All Season"
+    "allSeason": "🌸 All Season",
+    "addedToCart": "Added to cart ✓",
+    "limitedQty": "Limited quantity",
+    "editReview": "Edit your review",
+    "updateReviewTitle": "Update your review",
+    "yourRating": "Your Rating *",
+    "commentOptional": "Comment (optional)",
+    "commentPlaceholder": "Share your experience with this product...",
+    "submitting": "Submitting...",
+    "submitReview": "Submit Review",
+    "updateReview": "Update Review"
   },
 
   "products": {

@@ -7,7 +7,6 @@ import ProductRow from '../components/product/ProductRow'
 import Spinner from '../components/ui/Spinner'
 import ProductSkeleton from '../components/ui/ProductSkeleton'
 import { useLanguage } from '../context/LanguageContext'
-import { useSiteSettings } from '../context/SiteSettingsContext'
 
 /* ── Sort options ─────────────────────────────────────────────────────── */
 const SORT_OPTIONS = [
@@ -91,7 +90,6 @@ const NextArrow = () => (
 /* ═══════════════════════════════════════════════════════════════════════ */
 export default function ProductsPage() {
   const { t } = useLanguage()
-  const { activeSeason } = useSiteSettings()
   const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -140,10 +138,9 @@ export default function ProductsPage() {
     try {
       const { sortBy, sortDir } = currentSort
       let list = [], pageMeta = { totalPages: 0, totalElements: 0, number: 0 }
-      const hasExplicitFilters = !!(categoryId || minPrice || maxPrice || color || size || search)
-      // season param is either a numeric ID (from SeasonCircle) or an enum string (from activeSeason)
+      // season param is either a numeric ID (from SeasonCircle) or an enum string
       const isSeasonId = season && /^\d+$/.test(season)
-      const effectiveSeason = season || (!hasExplicitFilters ? activeSeason : '')
+      const effectiveSeason = season
       if (isSeasonId) {
         const res = await getProductsBySeasonId(season)
         list = res.data?.data ?? []
@@ -175,7 +172,7 @@ export default function ProductsPage() {
       setProducts(list)
       setPagination(pageMeta)
     } finally { setLoading(false) }
-  }, [search, categoryId, minPrice, maxPrice, color, size, season, activeSeason, page, currentSort])
+  }, [search, categoryId, minPrice, maxPrice, color, size, season, page, currentSort])
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
   useEffect(() => { getCategories().then(r => setCategories(r.data.data ?? [])).catch(() => {}) }, [])

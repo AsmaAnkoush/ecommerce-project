@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { useSiteSettings } from '../../context/SiteSettingsContext'
 import AdminBottomNav from './AdminBottomNav'
 import LanguageToggle from '../ui/LanguageToggle'
+import NotificationBell from '../admin/NotificationBell'
 
 /* ─── Brand palette (mirrors customer store) ──────────────────────────────
    primary:      #6B1F2A   deep rose
@@ -176,6 +177,10 @@ function Topbar({ onMenuClick }) {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
+        <NotificationBell />
+
+        <div className="w-px h-5 hidden sm:block" style={{ background: '#EDD8DC' }} />
+
         <LanguageToggle />
 
         <div className="w-px h-5 hidden sm:block" style={{ background: '#EDD8DC' }} />

@@ -51,7 +51,12 @@
       "Bash(ls mvnw*)",
       "Bash(npx --no-install eslint src/pages/admin/AdminProductForm.jsx)",
       "Bash(npx --no-install vite build)",
-      "Bash(mvn -q exec:java -Dexec.mainClass=com.ecommerce.EcommerceApplication)"
+      "Bash(mvn -q exec:java -Dexec.mainClass=com.ecommerce.EcommerceApplication)",
+      "Bash(sed -n '54,70p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/product/NewArrivalsSection.jsx)",
+      "Bash(sed -n '36,52p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/product/BestSellersSection.jsx)",
+      "Bash(sed -n '38,54p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/product/SeasonalSection.jsx)",
+      "Bash(sed -n '119,135p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/category/CategorySection.jsx)",
+      "Bash(sed -n '117,133p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/seasonal/SeasonalCirclesSection.jsx)"
     ]
   }
 }

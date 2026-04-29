@@ -405,9 +405,9 @@ export default function ProductCard({ product }) {
             onClick={handleAddToCart}
             disabled={adding || justAdded}
             className={[
-              'w-full inline-flex items-center justify-center gap-2',
-              'px-4 py-2.5 rounded-xl',
-              'text-[11px] font-semibold uppercase tracking-[0.15em]',
+              'w-full flex items-center justify-center gap-2',
+              'px-4 py-3 rounded-xl min-h-[44px]',
+              'text-xs font-semibold uppercase tracking-[0.1em]',
               'transition-all duration-200 active:scale-[0.98]',
               justAdded
                 ? 'bg-emerald-500 text-white'

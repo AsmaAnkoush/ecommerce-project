@@ -38,7 +38,7 @@ export default function SeasonalSection({ season = 'WINTER', className = '' }) {
         <div className="flex-1 min-w-0">
           <div>
             <h2
-              className="text-[24px] sm:text-[28px] lg:text-[42px] xl:text-[46px] leading-[1.2] inline-block"
+              className="text-[24px] sm:text-[28px] lg:text-[42px] xl:text-[46px] leading-[1.4] pb-[0.15em] inline-block"
               style={{
                 fontFamily: "'Playfair Display', 'Cormorant Garamond', Georgia, serif",
                 fontWeight: 500,
