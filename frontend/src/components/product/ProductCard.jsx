@@ -292,7 +292,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* ── Info area ──────────────────────────────────────── */}
-        <div className="px-4 sm:px-5 pt-4 pb-5 pe-14">
+        <div className="ps-14 pe-4 sm:pe-5 pt-4 pb-5">
 
           {/* Color picker — MOBILE ONLY (below image, since no hover) */}
           {colorAvailability.length > 0 && (
@@ -347,8 +347,8 @@ export default function ProductCard({ product }) {
           aria-label={t('product.addToCart')}
           title={t('product.addToCart')}
           className={[
-            'absolute bottom-4 end-4 z-10',
-            'w-11 h-11 rounded-full',
+            'absolute bottom-4 start-4 z-10',
+            'w-10 h-10 sm:w-11 sm:h-11 rounded-full',
             'flex items-center justify-center',
             'transition-all duration-300 ease-out',
             'hover:scale-110 active:scale-95',
@@ -360,19 +360,19 @@ export default function ProductCard({ product }) {
           ].join(' ')}
         >
           {adding ? (
-            <svg className="animate-spin w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
           ) : justAdded ? (
-            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
             </svg>
           ) : (
             <span className="relative flex items-center justify-center">
               {/* Same shopping-cart SVG as the Navbar */}
               <svg
-                className="w-[18px] h-[18px]"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -384,8 +384,8 @@ export default function ProductCard({ product }) {
                   d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
                 />
               </svg>
-              {/* "+" badge — white circle on the top-right of the cart */}
-              <span className="absolute -top-[5px] -right-[5px] w-[13px] h-[13px] bg-white rounded-full flex items-center justify-center pointer-events-none shadow-sm">
+              {/* "+" badge — white circle on the top-right of the cart icon */}
+              <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center pointer-events-none shadow-sm">
                 <svg className="w-[8px] h-[8px] text-[#6B1F2A]" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                   <path d="M5 2v6M2 5h6"/>
                 </svg>

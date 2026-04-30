@@ -115,6 +115,11 @@ export default function AdminProductForm() {
   const [showColorPicker, setShowColorPicker] = useState(false)
   // Maps uploaded URL → original File so images can be re-cropped after upload
   const [originalFiles, setOriginalFiles] = useState(() => new Map())
+  // Color editing
+  const [editingColor, setEditingColor]               = useState(null)
+  const [editColorInput, setEditColorInput]           = useState('')
+  const [editColorHex, setEditColorHex]               = useState('#000000')
+  const [showEditColorPicker, setShowEditColorPicker] = useState(false)
 
   useEffect(() => {
     getCategories().then(r => setCategories(r.data.data ?? []))

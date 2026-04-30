@@ -747,7 +747,14 @@
     "COLOR": "COLOR",
     "items": "items",
     "activeOffer": "active offer",
-    "activeOfferPlural": "active offers"
+    "activeOfferPlural": "active offers",
+    "cropImage": "Crop Image",
+    "applyCrop": "Apply Crop",
+    "processing": "Processing…",
+    "aspectLocked": "Locked",
+    "aspectFree": "Free",
+    "lockedAspect": "3:4 Locked",
+    "freeResize": "Free Resize"
   },
 
   "common": {

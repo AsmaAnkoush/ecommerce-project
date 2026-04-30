@@ -749,7 +749,14 @@
     "COLOR": "COLOR",
     "items": "عناصر",
     "activeOffer": "عرض نشط",
-    "activeOfferPlural": "عروض نشطة"
+    "activeOfferPlural": "عروض نشطة",
+    "cropImage": "قص الصورة",
+    "applyCrop": "تطبيق القص",
+    "processing": "جارٍ المعالجة…",
+    "aspectLocked": "مثبت",
+    "aspectFree": "حر",
+    "lockedAspect": "نسبة 3:4 مثبتة",
+    "freeResize": "حجم حر"
   },
 
   "common": {
