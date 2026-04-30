@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { HexColorPicker } from 'react-colorful'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { createProduct, updateProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProductById } from '../../api/adminApi'
@@ -59,6 +60,7 @@ export default function AdminProductForm() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   // touched tracks which fields the user has interacted with.
   // Errors and green states only show for touched fields.
   const [touched, setTouched] = useState({})
@@ -110,6 +112,9 @@ export default function AdminProductForm() {
   const [colorPreviews, setColorPreviews] = useState({})
   const [sizeInputs, setSizeInputs] = useState({})
   const [expandedSizes, setExpandedSizes] = useState(new Set())
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  // Maps uploaded URL → original File so images can be re-cropped after upload
+  const [originalFiles, setOriginalFiles] = useState(() => new Map())
 
   useEffect(() => {
     getCategories().then(r => setCategories(r.data.data ?? []))
@@ -171,6 +176,13 @@ export default function AdminProductForm() {
       .finally(() => setLoading(false))
   }, [id])
 
+  useEffect(() => {
+    if (!showColorPicker) return
+    const handle = (e) => { if (e.key === 'Escape') setShowColorPicker(false) }
+    document.addEventListener('keydown', handle)
+    return () => document.removeEventListener('keydown', handle)
+  }, [showColorPicker])
+
   // ── Centralized validation ─────────────────────────────────────────────────
   // Computed on every render — no state needed, always reflects current form.
   const getValidationErrors = () => {
@@ -227,13 +239,7 @@ export default function AdminProductForm() {
   const handleGeneralImageFiles = async (files) => {
     const fileArr = Array.from(files)
     if (!fileArr.length) return
-    // Single file → open crop modal
-    if (fileArr.length === 1) {
-      setCropSrc(URL.createObjectURL(fileArr[0]))
-      setCropTarget('general')
-      return
-    }
-    // Multiple files → upload directly (no crop)
+    // All files → upload directly; single file can be re-cropped via the Crop button on the preview
     setUploadingGeneral(true)
     try {
       const urls = await uploadImages(fileArr)
@@ -270,13 +276,31 @@ export default function AdminProductForm() {
   const handleColorImageFiles = async (color, files) => {
     const fileArr = Array.from(files)
     if (!fileArr.length) return
-    // Single file → open crop modal
+    // All files → upload directly; original file is stored so admin can re-crop via the Crop button
     if (fileArr.length === 1) {
-      setCropSrc(URL.createObjectURL(fileArr[0]))
-      setCropTarget({ type: 'color', color })
+      const file = fileArr[0]
+      const preview = URL.createObjectURL(file)
+      setColorPreviews(prev => ({
+        ...prev,
+        [color]: [...(prev[color] || []), { file, previewUrl: preview }],
+      }))
+      setUploadingColor(color)
+      try {
+        const urls = await uploadImages([file])
+        setColorEntries(prev => prev.map(e =>
+          e.color === color ? { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] } : e
+        ))
+        if (urls[0]) setOriginalFiles(prev => { const n = new Map(prev); n.set(urls[0], file); return n })
+      } finally {
+        setUploadingColor(null)
+        setColorPreviews(prev => ({
+          ...prev,
+          [color]: (prev[color] || []).filter(p => p.previewUrl !== preview),
+        }))
+        URL.revokeObjectURL(preview)
+      }
       return
     }
-    // Multiple files → upload directly
     setUploadingColor(color)
     try {
       const urls = await uploadImages(fileArr)
@@ -410,7 +434,8 @@ export default function AdminProductForm() {
       }
 
     } else if (target?.type === 'color') {
-      const color = target.color
+      const { color, replaceUrl, cropBlobSrc } = target
+      if (cropBlobSrc) URL.revokeObjectURL(cropBlobSrc)
       // Show instant preview while uploading
       setColorPreviews(prev => ({
         ...prev,
@@ -420,12 +445,24 @@ export default function AdminProductForm() {
       try {
         const urls = await uploadImages([croppedFile])
         setColorEntries(prev =>
-          prev.map(e =>
-            e.color === color
-              ? { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] }
-              : e
-          )
+          prev.map(e => {
+            if (e.color !== color) return e
+            if (replaceUrl) {
+              return {
+                ...e,
+                imageUrls: e.imageUrls.map(u => u === replaceUrl ? (urls[0] || u) : u),
+                primaryImageUrl: e.primaryImageUrl === replaceUrl ? (urls[0] || e.primaryImageUrl) : e.primaryImageUrl,
+              }
+            }
+            return { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] }
+          })
         )
+        setOriginalFiles(prev => {
+          const n = new Map(prev)
+          if (replaceUrl) n.delete(replaceUrl)
+          if (urls[0]) n.set(urls[0], croppedFile)
+          return n
+        })
       } finally {
         setUploadingColor(null)
         setColorPreviews(prev => ({
@@ -438,8 +475,43 @@ export default function AdminProductForm() {
   }
 
   const handleCropCancel = () => {
+    if (cropTarget?.cropBlobSrc) URL.revokeObjectURL(cropTarget.cropBlobSrc)
     setCropSrc(null)
     setCropTarget(null)
+  }
+
+  const handleCropButton = (url, color) => {
+    const file = originalFiles.get(url)
+    if (!file) return
+    const blobSrc = URL.createObjectURL(file)
+    setCropSrc(blobSrc)
+    setCropTarget({ type: 'color', color, replaceUrl: url, cropBlobSrc: blobSrc })
+  }
+
+  // ── Reset create form ──────────────────────────────────────────────────────
+  const resetCreateForm = () => {
+    const black = NAMED_COLORS.find(c => c.name.toLowerCase() === 'black')
+    setForm({
+      name: '', description: '', price: '', stockQuantity: 0,
+      imageUrl: '', brand: '', size: '', color: '', material: '',
+      isBestSeller: false, isNew: true, season: '', categoryId: presetCategoryId || '',
+      discountType: '', discountValue: '', confirmedOrderCount: 0,
+    })
+    setMainImageFile(null)
+    setMainImagePreview('')
+    if (mainImageRef.current) mainImageRef.current.value = ''
+    setGeneralImages([])
+    setGeneralPreviews([])
+    setColorEntries([])
+    setColorPreviews({})
+    setSizeInputs({})
+    setExpandedSizes(new Set())
+    setTouched({})
+    setError('')
+    setNewColorInput(black ? black.name : (NAMED_COLORS[0]?.name ?? ''))
+    setNewColorHex(black ? black.hex : (NAMED_COLORS[0]?.hex ?? '#000000'))
+    setShowColorPicker(false)
+    setOriginalFiles(new Map())
   }
 
   // ── Submit ──────────────────────────────────────────────────────────────────
@@ -522,8 +594,10 @@ export default function AdminProductForm() {
         toast(t('admin.updatedSuccess'))
       } else {
         await createProduct(payload)
-        toast(t('admin.productCreated') || '🎉 تم إضافة منتجك بنجاح')
-        navigate('/admin/products')
+        toast(t('admin.productAddedSuccess'))
+        resetCreateForm()
+        setSuccessMessage(t('admin.productAddedSuccess'))
+        setTimeout(() => setSuccessMessage(''), 4000)
       }
     } catch (err) {
       const msg = err.response?.data?.message || t('admin.failedSave')
@@ -599,6 +673,19 @@ export default function AdminProductForm() {
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>}
+      {successMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 flex items-center gap-3">
+          <svg className="w-5 h-5 flex-shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="flex-1 text-sm font-semibold">{successMessage}</span>
+          <button type="button" onClick={() => setSuccessMessage('')} className="text-emerald-600 hover:text-emerald-800 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* ── Basic Info ── */}
       <Section title={t('admin.description')}>
@@ -722,11 +809,50 @@ export default function AdminProductForm() {
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
             <p className="text-sm font-semibold text-gray-700">{t('admin.addColor')}</p>
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="w-12 h-12 rounded-xl border-2 border-gray-200 shrink-0 shadow-inner"
-                style={{ backgroundColor: newColorInput.startsWith('#') ? newColorInput : (newColorHex || '#e5e7eb') }} />
-              <input type="color" value={newColorHex}
-                onChange={e => { setNewColorHex(e.target.value); setNewColorInput(e.target.value) }}
-                className="w-10 h-10 rounded-lg cursor-pointer border border-gray-200 p-0.5 shrink-0" />
+              {/* Color picker — replaces native <input type="color"> for consistent cross-device UI */}
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowColorPicker(s => !s)}
+                  className="w-12 h-12 rounded-xl border-2 border-gray-200 shadow-sm cursor-pointer hover:border-[#6B1F2A] transition-colors"
+                  style={{ backgroundColor: newColorHex }}
+                  aria-label="Open color picker"
+                  title="Pick a color"
+                />
+                {showColorPicker && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowColorPicker(false)} />
+                    <div className="absolute top-full start-0 mt-2 z-50 p-3 bg-white border border-gray-200 rounded-2xl shadow-xl">
+                      <HexColorPicker
+                        color={newColorHex}
+                        onChange={hex => { setNewColorHex(hex); setNewColorInput(hex) }}
+                        style={{ width: 'min(220px, 80vw)', height: 'min(220px, 80vw)' }}
+                      />
+                      <div className="mt-2 flex items-center gap-1.5 border border-gray-200 rounded-lg px-2 py-1.5 bg-gray-50">
+                        <span className="text-xs font-mono text-gray-400 select-none">#</span>
+                        <input
+                          type="text"
+                          value={newColorHex.replace('#', '').toUpperCase()}
+                          onChange={e => {
+                            const raw = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
+                            if (raw.length === 6) { setNewColorHex(`#${raw}`); setNewColorInput(`#${raw}`) }
+                          }}
+                          className="flex-1 text-sm font-mono uppercase bg-transparent focus:outline-none min-w-0"
+                          maxLength={6}
+                          placeholder="000000"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowColorPicker(false)}
+                        className="w-full mt-2 py-2.5 bg-[#6B1F2A] text-white rounded-xl font-semibold text-sm hover:bg-[#5A1923] transition-colors min-h-[44px]"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <input
                 value={newColorInput}
                 onChange={e => {
@@ -824,6 +950,15 @@ export default function AdminProductForm() {
                                     <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                   </svg>
                                 </button>
+                                {originalFiles.has(url) && (
+                                  <button type="button" onClick={() => handleCropButton(url, color)}
+                                    title="Crop image"
+                                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-sky-400/80 flex items-center justify-center transition-colors">
+                                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h3m0 0V3m0 3v12a3 3 0 003 3h12m-3 0v-3m0 3H3" />
+                                    </svg>
+                                  </button>
+                                )}
                                 <button type="button" onClick={() => removeColorImage(color, i)}
                                   title={t('admin.delete') || 'Delete'}
                                   className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500/80 flex items-center justify-center transition-colors">

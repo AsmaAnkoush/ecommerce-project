@@ -140,6 +140,7 @@
     "handPicked": "اختيار يدوي",
     "askOnWhatsApp": "اسألنا عبر واتساب",
     "outOfStock": "نفذت الكمية",
+    "soldOut": "نفد المخزون",
     "inStock": "متوفر",
     "size": "المقاس",
     "color": "اللون",
@@ -178,6 +179,7 @@
     "winterSeason": "❄️ شتاء",
     "allSeason": "🌸 كل المواسم",
     "addedToCart": "تمت الإضافة ✓",
+    "added": "أضيف!",
     "limitedQty": "كمية محدودة",
     "editReview": "تعديل تقييمك",
     "updateReviewTitle": "تحديث تقييمك",
@@ -186,7 +188,11 @@
     "commentPlaceholder": "شاركينا تجربتك مع هذا المنتج...",
     "submitting": "جاري الإرسال...",
     "submitReview": "إرسال التقييم",
-    "updateReview": "تحديث التقييم"
+    "updateReview": "تحديث التقييم",
+    "shippingInfo": "معلومات التوصيل",
+    "deliveryTime": "وقت التسليم",
+    "businessDays": "يوم عمل",
+    "addToCartError": "فشل إضافة المنتج إلى السلة"
   },
 
   "products": {
@@ -646,6 +652,9 @@
     "inStockCount": "{count} متوفر",
     "updatedSuccess": "تم التعديل بنجاح",
     "productCreated": "🎉 تم إضافة منتجك بنجاح",
+    "categoryAddedSuccess": "تمت إضافة القسم بنجاح ✓",
+    "seasonAddedSuccess": "تمت إضافة الموسم بنجاح ✓",
+    "productAddedSuccess": "تمت إضافة المنتج بنجاح ✓",
     "errNoColor": "يرجى إضافة لون واحد على الأقل",
     "errNoSize": "كل لون يجب أن يحتوي على مقاس واحد على الأقل",
     "errNoQty": "يرجى إدخال الكمية لجميع المقاسات",

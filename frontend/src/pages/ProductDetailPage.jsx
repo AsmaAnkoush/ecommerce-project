@@ -11,8 +11,48 @@ import { useLanguage } from '../context/LanguageContext'
 import { useToast } from '../context/ToastContext'
 import ProductCard from '../components/product/ProductCard'
 import Spinner from '../components/ui/Spinner'
-import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
+import { SHIPPING_ZONES } from '../constants/shipping'
+
+function ShippingInfoTable() {
+  const { t } = useLanguage()
+  const formatPrice = useFormatPrice()
+
+  return (
+    <div className="rounded-2xl border border-[#F0D5D8] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#FDF8F9] border-b border-[#F0D5D8]">
+        <svg className="w-3.5 h-3.5 text-[#6B1F2A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0121 11.414V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+        </svg>
+        <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#9B7B80]">
+          {t('product.shippingInfo')}
+        </span>
+      </div>
+
+      {/* Horizontal grid: region name row then price row */}
+      <div className="grid grid-cols-3 bg-white">
+        {SHIPPING_ZONES.map(({ key, icon }, i) => (
+          <div
+            key={`r-${key}`}
+            className={`flex items-center justify-center gap-1.5 px-3 pt-3 pb-1.5 border-b border-[#F5E8EA] text-xs text-[#6B4E53]${i < 2 ? ' border-e border-[#F5E8EA]' : ''}`}
+          >
+            <span className="text-sm leading-none">{icon}</span>
+            <span>{t(`checkout.${key}`)}</span>
+          </div>
+        ))}
+        {SHIPPING_ZONES.map(({ key, price }, i) => (
+          <div
+            key={`p-${key}`}
+            className={`flex items-center justify-center px-3 pt-1.5 pb-3${i < 2 ? ' border-e border-[#F5E8EA]' : ''}`}
+          >
+            <span className="text-sm font-bold text-[#6B1F2A] nums-normal">{formatPrice(price)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function ShareSection({ productName }) {
   const { t } = useLanguage()
@@ -87,7 +127,7 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart()
   const { isLoggedIn } = useAuth()
   const { openLogin } = useUI()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const formatPrice = useFormatPrice()
   const { toast } = useToast()
   const [product, setProduct] = useState(null)
@@ -157,7 +197,7 @@ export default function ProductDetailPage() {
       setAdded(true)
       setTimeout(() => setAdded(false), 2500)
     } catch (err) {
-      setError(err.response?.data?.message || 'Could not add to cart')
+      setError(err.response?.data?.message || t('product.addToCartError'))
     } finally { setAdding(false) }
   }
 
@@ -239,6 +279,13 @@ export default function ProductDetailPage() {
   const colorsForSelectedSize = hasVariants && selectedSize
     ? new Set(product.variants.filter(v => v.size === selectedSize && (v.stockQuantity ?? 0) > 0).map(v => v.color))
     : null
+  // Colors that have at least one in-stock variant (any size).
+  const colorsWithAnyStock = hasVariants
+    ? new Set(product.variants.filter(v => (v.stockQuantity ?? 0) > 0).map(v => v.color))
+    : null
+  const allSoldOut = hasVariants
+    ? product.variants.every(v => (v.stockQuantity ?? 0) === 0)
+    : product.stockQuantity === 0
   const selectedVariant = selectedColorHasVariants && selectedSize
     ? product.variants.find(v => v.color === selectedColor && v.size === selectedSize)
     : null
@@ -257,6 +304,7 @@ export default function ProductDetailPage() {
     : null
 
   const canAddToCart = !(
+    allSoldOut ||
     (allSelectableColors.length > 0 && !selectedColor) ||
     (selectedColorHasVariants && !selectedSize) ||
     isOutOfStock || adding
@@ -283,8 +331,8 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ── Main Grid ──────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-8 lg:py-14 animate-fade-in">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-10 xl:gap-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6 lg:gap-10">
 
           {/* ══ LEFT: Image Gallery ══════════════════════════════ */}
           <div className="flex gap-3 sm:gap-5 animate-fade-in-up">
@@ -313,7 +361,7 @@ export default function ProductDetailPage() {
             <div className="flex-1 relative">
               <div
                 ref={galleryRef}
-                className="relative rounded-3xl overflow-hidden aspect-[3/4] cursor-zoom-in group"
+                className="relative rounded-3xl overflow-hidden h-[360px] sm:h-[440px] lg:h-[480px] cursor-zoom-in group"
                 style={{
                   background: 'linear-gradient(145deg, #FDF8F9 0%, #F5ECED 50%, #F0E4E6 100%)',
                   boxShadow: '0 16px 60px rgba(107,31,42,0.12), 0 4px 16px rgba(107,31,42,0.06)',
@@ -325,7 +373,7 @@ export default function ProductDetailPage() {
                     key={selectedImg}
                     src={currentImage}
                     alt={product.name}
-                    className="w-full h-full object-contain p-5 sm:p-8 animate-fade-in transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]"
+                    className="w-full h-full object-contain p-3 sm:p-5 animate-fade-in transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]"
                     style={{ mixBlendMode: 'multiply' }}
                   />
                 ) : (
@@ -399,7 +447,7 @@ export default function ProductDetailPage() {
 
               {/* Mobile thumbnail strip */}
               {allImages.length > 1 && (
-                <div className="flex sm:hidden gap-2 mt-3 overflow-x-auto pb-1">
+                <div className="flex sm:hidden justify-center gap-2 mt-3 overflow-x-auto pb-1">
                   {allImages.map((img, i) => (
                     <button
                       key={i}
@@ -417,19 +465,21 @@ export default function ProductDetailPage() {
 
               {/* Color circles — below image */}
               {allSelectableColors.length > 0 && (
-                <div className="flex flex-wrap gap-2.5 mt-4">
+                <div className="flex flex-wrap justify-center sm:justify-start gap-2.5 mt-4">
                   {allSelectableColors.map(color => {
                     const isSelected = selectedColor === color
                     const unavailableForSize = colorsForSelectedSize && !colorsForSelectedSize.has(color)
+                    const noStockAtAll = colorsWithAnyStock && !colorsWithAnyStock.has(color)
+                    const isColorDisabled = !!(unavailableForSize || noStockAtAll)
                     return (
                       <button
                         key={color}
                         type="button"
-                        title={unavailableForSize ? t('admin.variantOutOfStock') : color}
-                        onClick={() => { if (!unavailableForSize) { setSelectedColor(color); setSelectedImg(0) } }}
-                        disabled={!!unavailableForSize}
-                        aria-disabled={!!unavailableForSize}
-                        className={`relative group transition-transform duration-150 ${unavailableForSize ? 'opacity-40 cursor-not-allowed' : 'hover:scale-110 active:scale-95'}`}
+                        title={isColorDisabled ? t('product.outOfStock') : color}
+                        onClick={() => { if (!isColorDisabled) { setSelectedColor(color); setSelectedImg(0) } }}
+                        disabled={isColorDisabled}
+                        aria-disabled={isColorDisabled}
+                        className={`relative group transition-transform duration-150 ${isColorDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:scale-110 active:scale-95'}`}
                       >
                         <span className={`absolute inset-[-4px] rounded-full border-2 transition-all duration-200 ${
                           isSelected
@@ -440,7 +490,7 @@ export default function ProductDetailPage() {
                           className="block w-6 h-6 rounded-full shadow-sm ring-1 ring-black/10"
                           style={{ backgroundColor: color.toLowerCase() }}
                         />
-                        {unavailableForSize && (
+                        {isColorDisabled && (
                           <svg aria-hidden="true" className="absolute inset-0 w-6 h-6 pointer-events-none" viewBox="0 0 24 24" fill="none">
                             <line x1="3" y1="21" x2="21" y2="3" stroke="#8B3A44" strokeWidth="1.5" strokeLinecap="round" />
                           </svg>
@@ -454,21 +504,12 @@ export default function ProductDetailPage() {
           </div>
 
           {/* ══ RIGHT: Product Info ══════════════════════════════ */}
-          <div className="lg:sticky lg:top-24 lg:self-start space-y-8 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+          <div className="lg:sticky lg:top-24 lg:self-start space-y-5 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
 
-            {/* Category + Name */}
+            {/* Name */}
             <div>
-              {product.categoryName && (
-                <Link
-                  to={`/products?category=${product.categoryId}`}
-                  className="inline-flex items-center gap-2 text-[10px] tracking-[0.28em] text-[#B08A90] uppercase hover:text-[#6B1F2A] transition-colors mb-4"
-                >
-                  <span className="w-6 h-px bg-[#DEB8BE]" />
-                  {product.categoryName}
-                </Link>
-              )}
               <h1
-                className="text-[24px] sm:text-[30px] lg:text-[34px] font-medium text-[#2A1418] leading-[1.25] tracking-[0.015em]"
+                className="text-[20px] sm:text-[24px] lg:text-[26px] font-medium text-[#2A1418] leading-[1.25] tracking-[0.015em]"
                 style={{ fontFamily: 'Playfair Display, serif' }}
               >
                 {product.name}
@@ -477,7 +518,7 @@ export default function ProductDetailPage() {
 
             {/* Rating */}
             {avgRating && (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center sm:justify-start gap-2.5">
                 <Stars rating={parseFloat(avgRating)} size="sm" />
                 <span className="text-sm font-semibold text-[#3D1A1E]">{avgRating}</span>
                 <span className="text-xs text-[#B08A90]">({reviews.length} {t('product.reviews')})</span>
@@ -485,12 +526,12 @@ export default function ProductDetailPage() {
             )}
 
             {/* Price — premium card */}
-            <div className="bg-gradient-to-br from-[#FDF6F7] to-[#F9EEF0] rounded-2xl p-5 border border-[#F5E0E3]">
+            <div className="bg-gradient-to-br from-[#FDF6F7] to-[#F9EEF0] rounded-2xl p-3 sm:p-4 border border-[#F5E0E3]">
               <div className="flex items-end gap-3 flex-wrap">
                 {hasDiscount ? (
                   <>
                     <span
-                      className="text-[26px] sm:text-[28px] font-medium text-[#8B2F3A] leading-none nums-normal"
+                      className="text-[20px] sm:text-[22px] font-medium text-[#8B2F3A] leading-none nums-normal"
                       style={{ fontFamily: 'Cormorant Garamond, serif' }}
                     >
                       {formatPrice(product.discountPrice)}
@@ -504,7 +545,7 @@ export default function ProductDetailPage() {
                   </>
                 ) : (
                   <span
-                    className="text-[26px] sm:text-[28px] font-medium text-[#8B2F3A] leading-none nums-normal"
+                    className="text-[20px] sm:text-[22px] font-medium text-[#8B2F3A] leading-none nums-normal"
                     style={{ fontFamily: 'Cormorant Garamond, serif' }}
                   >
                     {formatPrice(product.price)}
@@ -513,17 +554,17 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Status */}
+            {/* Status — only negative states shown; "in stock" is implied by selectable variants */}
             <div>
-              {allSelectableColors.length > 0 && !selectedColor
+              {allSoldOut
+                ? <Badge variant="danger">{t('product.soldOut')}</Badge>
+                : allSelectableColors.length > 0 && !selectedColor
                 ? <Badge variant="secondary">{t('product.selectColor')}</Badge>
                 : selectedColorHasVariants && !selectedSize
                 ? null
                 : isOutOfStock
                 ? <Badge variant="danger">{t('product.outOfStock')}</Badge>
-                : maxStock > 0 && maxStock < 10
-                ? <Badge variant="warning">{t('product.limitedQty')}</Badge>
-                : <Badge variant="success">{t('product.inStock')}</Badge>
+                : null
               }
             </div>
 
@@ -552,7 +593,7 @@ export default function ProductDetailPage() {
                     <label className="block text-xs font-medium tracking-[0.04em] text-[#6B1F2B] mb-2.5" style={{ fontFamily: 'Playfair Display, serif' }}>
                       {t('product.selectYourSize')}
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2">
                       {sizesForColor.map(size => {
                         const variant = product.variants.find(v => v.color === selectedColor && v.size === size)
                         const stock = variant ? variant.stockQuantity : 0
@@ -565,7 +606,7 @@ export default function ProductDetailPage() {
                             onClick={() => !isOutOfStock && setSelectedSize(size)}
                             disabled={isOutOfStock}
                             aria-disabled={isOutOfStock}
-                            title={isOutOfStock ? t('admin.variantOutOfStock') : size}
+                            title={isOutOfStock ? t('product.outOfStock') : size}
                             className={`relative min-w-[52px] h-12 px-3 rounded-full border-2 transition-all duration-300 ease-out text-xs font-semibold tracking-[0.1em] ${
                               isSelected
                                 ? 'border-[#6B1F2A] bg-[#6B1F2A] text-white shadow-md shadow-[#6B1F2A]/25 scale-105'
@@ -665,7 +706,7 @@ export default function ProductDetailPage() {
 
             {/* Quantity */}
             {(!allSelectableColors.length || (selectedColor && (!selectedColorHasVariants || selectedVariant))) && !isOutOfStock && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center sm:justify-start gap-4">
                 <p className="text-xs font-semibold text-[#3D1A1E] uppercase tracking-widest">{t('product.quantity')}</p>
                 <div className="flex items-center rounded-full border border-[#EDD8DC] overflow-hidden bg-white">
                   <button
@@ -694,7 +735,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={!canAddToCart}
-                className={`w-full h-14 sm:h-16 rounded-2xl text-sm font-bold tracking-[0.1em] sm:tracking-[0.18em] uppercase transition-all duration-300 ease-out flex items-center justify-center gap-2 sm:gap-3 relative overflow-hidden group ${
+                className={`w-full h-12 rounded-2xl text-sm font-bold tracking-[0.1em] sm:tracking-[0.18em] uppercase transition-all duration-300 ease-out flex items-center justify-center gap-2 sm:gap-3 relative overflow-hidden group ${
                   added
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30'
                     : canAddToCart
@@ -717,6 +758,7 @@ export default function ProductDetailPage() {
                   </svg>
                 )}
                 {added ? t('product.addedToCart')
+                  : allSoldOut ? t('product.soldOut')
                   : allSelectableColors.length > 0 && !selectedColor ? t('product.selectColor')
                   : selectedColorHasVariants && !selectedSize ? t('product.selectSize')
                   : isOutOfStock ? t('product.outOfStock')
@@ -725,11 +767,14 @@ export default function ProductDetailPage() {
 
               <button
                 onClick={() => navigate('/cart')}
-                className="w-full h-12 rounded-2xl text-xs font-medium tracking-widest uppercase border-2 border-[#EDD8DC] text-[#6B1F2A] hover:border-[#6B1F2A] hover:bg-[#FDF6F7] active:scale-[0.98] transition-all duration-200"
+                className="w-full h-10 rounded-2xl text-xs font-medium tracking-widest uppercase border-2 border-[#EDD8DC] text-[#6B1F2A] hover:border-[#6B1F2A] hover:bg-[#FDF6F7] active:scale-[0.98] transition-all duration-200"
               >
                 {t('nav.cart')}
               </button>
             </div>
+
+            {/* ── Shipping Info ──────────────────────────────── */}
+            <ShippingInfoTable />
 
             {/* ── Share ─────────────────────────────────────── */}
             <ShareSection productName={product.name} />
@@ -763,7 +808,7 @@ export default function ProductDetailPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
             )}
-            {added ? '' : t('product.addToCart')}
+            {added ? '' : allSoldOut ? t('product.soldOut') : t('product.addToCart')}
           </button>
         </div>
       </div>
@@ -959,7 +1004,7 @@ export default function ProductDetailPage() {
                       <div>
                         <p className="font-semibold text-[#1A0A0D] text-sm">{review.userName}</p>
                         <p className="text-[11px] text-[#B08A90]">
-                          {new Date(review.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {new Date(review.createdAt).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                     </div>

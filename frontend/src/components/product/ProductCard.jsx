@@ -17,14 +17,6 @@ const COLOR_MAP = {
 const getColorHex = name => COLOR_MAP[name.toLowerCase()] ?? name.toLowerCase()
 const getBaseColor = name => name.split(' ')[0]
 
-/* Reusable shopping-cart glyph (Heroicons outline) */
-const CartGlyph = ({ className = 'w-4 h-4' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-    <path strokeLinecap="round" strokeLinejoin="round"
-      d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-  </svg>
-)
-
 /**
  * Color-variant picker dot.
  *
@@ -73,9 +65,7 @@ function ColorDot({ entry, selected, onSelect, dark = false }) {
     >
       {!entry.available && (
         <svg className="w-full h-full" viewBox="0 0 20 20" fill="none">
-          {/* White outline path so the X is visible on dark fills */}
           <path d="M5 5l10 10M15 5L5 15" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-          {/* Dark stroke on top so it's visible on light fills */}
           <path d="M5 5l10 10M15 5L5 15" stroke="#1A1A1A" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       )}
@@ -93,24 +83,13 @@ export default function ProductCard({ product }) {
   const [adding, setAdding] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
-  /* Bump animation key — bumped each time the product is added to wishlist */
   const [wishBumpKey, setWishBumpKey] = useState(0)
-  /* Currently selected color for cart-add. null = not yet picked. */
   const [selectedColor, setSelectedColor] = useState(null)
 
   const inWishlist = isInWishlist(product.id)
   const isOutOfStock = product.stockQuantity === 0
   const hasDiscount = product.discountPrice && product.discountPrice < product.price
 
-  /**
-   * Build a `[ { color, stock, available } ]` list from the product variants.
-   * Stock is summed across sizes for each color, so a color is "available"
-   * iff at least one size of that color has stock left.
-   *
-   * Falls back to a single decorative entry from `product.color` when the
-   * product has no per-color variants (so older single-color products still
-   * show a swatch and can be added without forcing variant data).
-   */
   const colorAvailability = useMemo(() => {
     if (product.variants?.length) {
       const map = new Map()
@@ -137,8 +116,6 @@ export default function ProductCard({ product }) {
     e.stopPropagation()
     if (adding || justAdded || isOutOfStock) return
 
-    /* If the product has multiple variants (size + color combos), we can't
-       silently pick one — open QuickView so the user makes a choice. */
     const hasMultipleVariants = (product.variants?.length ?? 0) > 1
     if (hasMultipleVariants) {
       openQuickView(product)
@@ -175,7 +152,7 @@ export default function ProductCard({ product }) {
       } else {
         await addToWishlist(product.id, product)
         toast(t('wishlist.addedToast'))
-        setWishBumpKey(k => k + 1) // play heartbeat once
+        setWishBumpKey(k => k + 1)
       }
     } catch {
       toast(t('common.error'), 'error')
@@ -190,21 +167,6 @@ export default function ProductCard({ product }) {
 
   const handleSelectColor = (color) => setSelectedColor(color)
 
-  /* Inline status icon for cart buttons (shared by desktop overlay + mobile button) */
-  const cartButtonIcon = adding ? (
-    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-    </svg>
-  ) : justAdded ? (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-    </svg>
-  ) : (
-    <CartGlyph className="w-4 h-4" />
-  )
-
-  /* Reusable color-row factory — same data, different positioning per breakpoint */
   const renderColorRow = (dark) => (
     <div
       className="flex items-center justify-center gap-2.5 pointer-events-auto"
@@ -224,12 +186,12 @@ export default function ProductCard({ product }) {
 
   return (
     <div
-      className="group bg-white rounded-3xl overflow-hidden flex flex-col shadow-[0_4px_18px_rgba(107,31,42,0.06)] border border-[#F0D5D8]/60 transition-[transform,box-shadow,border-color] duration-300 ease-out hover:scale-[1.025] hover:shadow-[0_16px_40px_rgba(107,31,42,0.13)] hover:border-[#DFA3AD]/50 card-hover"
+      className="group relative bg-[#FDF6F7] rounded-3xl flex flex-col border border-[#6B1F2A]/10 shadow-[0_2px_8px_rgba(107,31,42,0.04)] transition-all duration-300 ease-out hover:shadow-[0_12px_32px_rgba(107,31,42,0.11)] hover:border-[#6B1F2A]/25 card-hover"
     >
       <Link to={`/products/${product.id}`} className="block">
 
         {/* ── Image area ─────────────────────────────────────── */}
-        <div className="relative overflow-hidden aspect-[3/4]"
+        <div className="relative overflow-hidden aspect-[3/4] rounded-t-3xl"
              style={{ background: 'linear-gradient(145deg, #FDF8F9 0%, #F5ECED 50%, #F0E4E6 100%)' }}>
 
           <img
@@ -299,51 +261,30 @@ export default function ProductCard({ product }) {
             )}
           </div>
 
-          {/* ── Hover overlay — DESKTOP ONLY (md+) ──────────── */}
+          {/* ── Hover overlay — DESKTOP ONLY (md+): Quick View ── */}
           {!isOutOfStock && (
             <div
               className={[
                 'hidden md:flex absolute inset-0 z-10',
-                'bg-gradient-to-t from-[#1A0A0D]/65 via-[#1A0A0D]/20 to-transparent',
+                'bg-gradient-to-t from-[#1A0A0D]/55 via-[#1A0A0D]/15 to-transparent',
                 'opacity-0 group-hover:opacity-100',
                 'transition-opacity duration-300',
-                'flex-col items-center justify-end pb-5 gap-3',
+                'items-end justify-center pb-5',
                 'pointer-events-none',
               ].join(' ')}
             >
-              {/* Color picker — above the cart button */}
-              {colorAvailability.length > 0 && renderColorRow(true)}
-
-              <div className="flex items-center gap-2 pointer-events-auto translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  disabled={adding || justAdded}
-                  className={[
-                    'inline-flex items-center gap-2 px-5 py-2.5 rounded-full',
-                    'text-[11px] font-semibold uppercase tracking-[0.15em]',
-                    'shadow-[0_8px_24px_rgba(0,0,0,0.25)] active:scale-95',
-                    'transition-all duration-300',
-                    justAdded
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-white text-[#6B1F2A] hover:bg-[#FDF0F2]',
-                  ].join(' ')}
-                >
-                  {cartButtonIcon}
-                  {t('product.addToCart')}
-                </button>
-
-                {/* Quick View */}
+              <div className="pointer-events-auto translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                 <button
                   type="button"
                   onClick={handleQuickView}
                   title={t('product.viewDetails')}
-                  className="w-10 h-10 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.2)] active:scale-95 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/92 hover:bg-white text-[#6B1F2A] text-[10px] font-semibold uppercase tracking-[0.12em] shadow-lg transition-all active:scale-95"
                 >
-                  <svg className="w-4 h-4 text-[#6B1F2A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
+                  {t('product.viewDetails')}
                 </button>
               </div>
             </div>
@@ -351,7 +292,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* ── Info area ──────────────────────────────────────── */}
-        <div className="px-4 sm:px-5 pt-4 pb-4">
+        <div className="px-4 sm:px-5 pt-4 pb-5 pe-14">
 
           {/* Color picker — MOBILE ONLY (below image, since no hover) */}
           {colorAvailability.length > 0 && (
@@ -397,27 +338,61 @@ export default function ProductCard({ product }) {
         </div>
       </Link>
 
-      {/* ── Mobile-only "Add to Cart" — sibling of Link, below the card ── */}
+      {/* ── Floating Add-to-Cart button — icon-only circle ── */}
       {!isOutOfStock && (
-        <div className="md:hidden px-4 sm:px-5 pb-5">
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={adding || justAdded}
-            className={[
-              'w-full flex items-center justify-center gap-2',
-              'px-4 py-3 rounded-xl min-h-[44px]',
-              'text-xs font-semibold uppercase tracking-[0.1em]',
-              'transition-all duration-200 active:scale-[0.98]',
-              justAdded
-                ? 'bg-emerald-500 text-white'
-                : 'bg-[#6B1F2A] text-white hover:bg-[#7D2432] shadow-sm shadow-[#6B1F2A]/20',
-            ].join(' ')}
-          >
-            {cartButtonIcon}
-            {t('product.addToCart')}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={adding || justAdded}
+          aria-label={t('product.addToCart')}
+          title={t('product.addToCart')}
+          className={[
+            'absolute bottom-4 end-4 z-10',
+            'w-11 h-11 rounded-full',
+            'flex items-center justify-center',
+            'transition-all duration-300 ease-out',
+            'hover:scale-110 active:scale-95',
+            justAdded
+              ? 'bg-emerald-500 text-white shadow-[0_4px_16px_rgba(16,185,129,0.4)]'
+              : adding
+              ? 'bg-[#6B1F2A]/80 text-white shadow-[0_4px_8px_rgba(107,31,42,0.2)]'
+              : 'bg-[#6B1F2A] text-white shadow-[0_4px_14px_rgba(107,31,42,0.35)] hover:shadow-[0_8px_24px_rgba(107,31,42,0.45)]',
+          ].join(' ')}
+        >
+          {adding ? (
+            <svg className="animate-spin w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          ) : justAdded ? (
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+          ) : (
+            <span className="relative flex items-center justify-center">
+              {/* Same shopping-cart SVG as the Navbar */}
+              <svg
+                className="w-[18px] h-[18px]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.7}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
+                />
+              </svg>
+              {/* "+" badge — white circle on the top-right of the cart */}
+              <span className="absolute -top-[5px] -right-[5px] w-[13px] h-[13px] bg-white rounded-full flex items-center justify-center pointer-events-none shadow-sm">
+                <svg className="w-[8px] h-[8px] text-[#6B1F2A]" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                  <path d="M5 2v6M2 5h6"/>
+                </svg>
+              </span>
+            </span>
+          )}
+        </button>
       )}
     </div>
   )

@@ -140,6 +140,7 @@
     "handPicked": "Hand Picked",
     "askOnWhatsApp": "Ask us on WhatsApp",
     "outOfStock": "Out of Stock",
+    "soldOut": "Sold Out",
     "inStock": "In Stock",
     "size": "Size",
     "color": "Color",
@@ -178,6 +179,7 @@
     "winterSeason": "❄️ Winter",
     "allSeason": "🌸 All Season",
     "addedToCart": "Added to cart ✓",
+    "added": "Added!",
     "limitedQty": "Limited quantity",
     "editReview": "Edit your review",
     "updateReviewTitle": "Update your review",
@@ -186,7 +188,11 @@
     "commentPlaceholder": "Share your experience with this product...",
     "submitting": "Submitting...",
     "submitReview": "Submit Review",
-    "updateReview": "Update Review"
+    "updateReview": "Update Review",
+    "shippingInfo": "Shipping Information",
+    "deliveryTime": "Est. Delivery",
+    "businessDays": "business days",
+    "addToCartError": "Could not add to cart"
   },
 
   "products": {
@@ -644,6 +650,9 @@
     "inStockCount": "{count} in stock",
     "updatedSuccess": "Updated successfully",
     "productCreated": "🎉 Product added successfully",
+    "categoryAddedSuccess": "Category added successfully ✓",
+    "seasonAddedSuccess": "Season added successfully ✓",
+    "productAddedSuccess": "Product added successfully ✓",
     "errNoColor": "Please add at least one color",
     "errNoSize": "Each color must have at least one size",
     "errNoQty": "Please enter a quantity for all sizes",

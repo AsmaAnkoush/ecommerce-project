@@ -17,19 +17,18 @@ function Hero({ innerRef, inView, activeSeason }) {
       className="relative bg-[#F5DCE2] overflow-hidden w-full"
       style={{ fontFamily: "'Montserrat', 'Poppins', sans-serif" }}
     >
-      {/* MOBILE: ارتفاع 420px فقط لتقليل الفراغ | DESKTOP: نفس النسب القديمة */}
-      <div className="grid grid-cols-[50%_50%] sm:grid-cols-[50%_50%] lg:grid-cols-[45%_55%] h-[420px] sm:h-[540px] md:h-[600px] lg:h-[calc(100vh-100px)] lg:max-h-[640px] lg:min-h-[500px]">
+      <div className="grid grid-cols-[50%_50%] lg:grid-cols-[45%_55%] h-[440px] sm:h-[540px] md:h-[600px] lg:h-[calc(100vh-100px)] lg:max-h-[640px] lg:min-h-[500px]">
 
         {/* ── Text Column ──────────────────────────────── */}
         <div
-          className={`flex flex-col justify-center items-start pl-4 pr-2 sm:pl-10 sm:pr-4 md:pl-14 lg:pl-[10vw] lg:pr-2 xl:pl-[12vw] ${
+          className={`flex flex-col justify-center items-start pl-5 pr-2 sm:pl-10 sm:pr-4 md:pl-14 lg:pl-[10vw] lg:pr-2 xl:pl-[12vw] ${
             inView ? 'animate-fade-in-up' : 'opacity-0'
           }`}
         >
           {/* I WEAR + by Areej */}
           <div className="flex flex-col items-stretch w-full sm:max-w-none">
             <h1
-              className="text-[#6B1F2A] m-0 leading-[1] whitespace-nowrap text-[30px] sm:text-[48px] md:text-[60px] lg:text-[56px] xl:text-[68px] 2xl:text-[78px] text-left"
+              className="text-[#6B1F2A] m-0 leading-[1] whitespace-nowrap text-[32px] sm:text-[48px] md:text-[60px] lg:text-[56px] xl:text-[68px] 2xl:text-[78px] text-left"
               style={{
                 fontFamily: "'Montserrat', 'Poppins', sans-serif",
                 fontWeight: 500,
@@ -40,14 +39,14 @@ function Hero({ innerRef, inView, activeSeason }) {
             </h1>
 
             <h2
-              className="leading-[1.1] text-[15px] sm:text-[20px] md:text-[26px] lg:text-[24px] xl:text-[30px] 2xl:text-[34px] self-end mt-1 sm:mt-1.5"
+              className="leading-[1.1] text-[16px] sm:text-[20px] md:text-[26px] lg:text-[24px] xl:text-[30px] 2xl:text-[34px] self-end mt-2 sm:mt-1.5"
               style={{
                 fontFamily: "'Montserrat', 'Poppins', sans-serif",
                 fontWeight: 400,
                 letterSpacing: '0.07em',
                 color: '#E8A5B5',
                 textShadow: '0 1px 3px rgba(107, 31, 42, 0.15)',
-                margin: '4px 0 0 0',
+                margin: '8px 0 0 0',
               }}
             >
               by Areej
@@ -55,10 +54,10 @@ function Hero({ innerRef, inView, activeSeason }) {
           </div>
 
           {/* Divider with BOUTIQUE */}
-          <div className="flex items-center gap-2 sm:gap-3 mt-2.5 sm:mt-4 lg:mt-3 xl:mt-4 w-[140px] sm:w-[170px] lg:w-[170px] xl:w-[200px]">
+          <div className="flex items-center gap-2 sm:gap-3 mt-3.5 sm:mt-4 lg:mt-3 xl:mt-4 w-[150px] sm:w-[170px] lg:w-[170px] xl:w-[200px]">
             <div className="flex-1 h-px bg-[#6B1F2A]" />
             <span
-              className="text-[#6B1F2A] text-[9px] sm:text-[10px] lg:text-[10px] xl:text-[11px] whitespace-nowrap"
+              className="text-[#6B1F2A] text-[10px] sm:text-[10px] lg:text-[10px] xl:text-[11px] whitespace-nowrap"
               style={{
                 fontFamily: "'Montserrat', 'Poppins', sans-serif",
                 fontWeight: 500,
@@ -72,7 +71,7 @@ function Hero({ innerRef, inView, activeSeason }) {
 
           {/* Tagline */}
           <p
-            className="text-[#5A2A2F] text-[11px] sm:text-[12px] lg:text-[12px] xl:text-[14px] leading-[1.5] mt-2.5 sm:mt-3 lg:mt-2.5 xl:mt-3 max-w-[160px] sm:max-w-[210px] lg:max-w-[220px] xl:max-w-[260px] text-left"
+            className="text-[#5A2A2F] text-[11px] sm:text-[12px] lg:text-[12px] xl:text-[14px] leading-[1.5] mt-3 sm:mt-3 lg:mt-2.5 xl:mt-3 max-w-[180px] sm:max-w-[210px] lg:max-w-[220px] xl:max-w-[260px] text-left"
             style={{
               fontFamily: "'Montserrat', 'Poppins', sans-serif",
               fontWeight: 400,
@@ -85,7 +84,7 @@ function Hero({ innerRef, inView, activeSeason }) {
           {/* SHOP NOW Button */}
           <Link
             to={shopHref}
-            className="hero-cta inline-flex items-center gap-2 sm:gap-3 bg-[#6B1F2A] text-white rounded-full mt-3 sm:mt-4 lg:mt-3 xl:mt-4 px-4 py-2 sm:px-7 sm:py-3 lg:px-6 lg:py-2.5 xl:px-7 xl:py-3 text-[9px] sm:text-[11px] lg:text-[10px] xl:text-[12px] hover:bg-[#551820] hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(107,31,42,0.35)] transition-all duration-300"
+            className="hero-cta group inline-flex items-center gap-2 sm:gap-3 bg-[#6B1F2A] text-white rounded-full mt-3.5 sm:mt-4 lg:mt-3 xl:mt-4 px-4 py-2 sm:px-7 sm:py-3 lg:px-6 lg:py-2.5 xl:px-7 xl:py-3 text-[9px] sm:text-[11px] lg:text-[10px] xl:text-[12px] hover:bg-[#551820] hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(107,31,42,0.35)] transition-all duration-300"
             style={{
               fontFamily: "'Montserrat', 'Poppins', sans-serif",
               fontWeight: 600,
@@ -94,7 +93,7 @@ function Hero({ innerRef, inView, activeSeason }) {
           >
             SHOP NOW
             <svg
-              className="w-3 h-3 sm:w-3.5 sm:h-3.5"
+              className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-300 group-hover:translate-x-1"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -111,14 +110,19 @@ function Hero({ innerRef, inView, activeSeason }) {
 
         {/* ── Image Column ─────────────────────────────── */}
         <div
-          className={`relative h-full w-full overflow-hidden ${
+          className={`relative h-full w-full overflow-hidden flex items-end justify-center ${
             inView ? 'animate-fade-in delay-150' : 'opacity-0'
           }`}
         >
           <img
             src="/images/hero-dress.png"
-            alt="I Wear by Areej"
-            className="absolute inset-0 h-full w-full object-cover object-top sm:object-contain sm:object-bottom"
+            alt="فستان برغندي أنيق من مجموعة I Wear by Areej"
+            loading="eager"
+            fetchpriority="high"
+            className="h-full w-auto max-w-none object-contain object-bottom"
+            style={{
+              filter: 'drop-shadow(0 8px 20px rgba(107, 31, 42, 0.12))',
+            }}
           />
         </div>
 
