@@ -30,7 +30,7 @@ export default function NotificationBell() {
     try {
       const res = await notificationApi.getUnreadCount()
       setUnreadCount(res.data.data ?? 0)
-    } catch { /* silent — don't break the UI */ }
+    } catch { /* silent */ }
   }, [])
 
   /* ── Fetch full list (only when panel opens) ── */
@@ -61,7 +61,7 @@ export default function NotificationBell() {
     if (open) fetchNotifications()
   }, [open, fetchNotifications])
 
-  /* Close on outside click */
+  /* Close on outside click (desktop) */
   useEffect(() => {
     if (!open) return
     const handler = (e) => {
@@ -71,6 +71,21 @@ export default function NotificationBell() {
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  /* Close on Escape */
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [open])
+
+  /* Body scroll lock on mobile */
+  useEffect(() => {
+    if (!open || window.innerWidth >= 640) return
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
   }, [open])
 
   /* ── Actions ── */
@@ -126,107 +141,129 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* ── Dropdown panel ── */}
+      {/* ── Panel ── */}
       {open && (
-        <div
-          className="absolute end-0 top-[calc(100%+8px)] w-80 bg-white rounded-2xl z-50 overflow-hidden"
-          style={{
-            boxShadow: '0 8px 32px rgba(107,31,42,0.13), 0 1px 0 rgba(107,31,42,0.06)',
-            border: '1px solid #F0DDE0',
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3.5" style={{ borderBottom: '1px solid #F5EDEF' }}>
-            <h3
-              className="text-[#3D1A1E] font-semibold"
-              style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '17px' }}
-            >
-              Notifications
-            </h3>
-            <div className="flex items-center gap-3">
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleMarkAllRead}
-                  className="text-[11px] font-medium text-[#6B1F2A] hover:underline transition-all"
-                >
-                  Mark all read
-                </button>
-              )}
+        <>
+          {/* Mobile backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+            onClick={() => setOpen(false)}
+          />
+
+          <div
+            className={[
+              // Mobile: fixed bottom sheet
+              'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-white rounded-t-3xl overflow-hidden',
+              // Desktop: absolute dropdown
+              'sm:absolute sm:inset-auto sm:bottom-auto sm:end-0 sm:top-[calc(100%+8px)] sm:w-80 sm:rounded-2xl sm:max-h-[460px]',
+            ].join(' ')}
+            style={{
+              maxHeight: 'min(85vh, 85svh)',
+              boxShadow: '0 8px 32px rgba(107,31,42,0.13), 0 1px 0 rgba(107,31,42,0.06)',
+              border: '1px solid #F0DDE0',
+            }}
+          >
+            {/* Drag handle (mobile only) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
+              <div className="w-9 h-1 rounded-full bg-gray-300" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3.5 shrink-0" style={{ borderBottom: '1px solid #F5EDEF' }}>
+              <h3
+                className="text-[#3D1A1E] font-semibold"
+                style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '17px' }}
+              >
+                Notifications
+              </h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="w-6 h-6 rounded-lg flex items-center justify-center text-[#C4A0A6] hover:bg-[#FDF0F2] hover:text-[#6B1F2A] transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#C4A0A6] hover:bg-[#FDF0F2] hover:text-[#6B1F2A] transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-          </div>
 
-          {/* Body */}
-          <div className="max-h-[360px] overflow-y-auto overscroll-contain">
-            {loading ? (
-              <div className="py-10 flex justify-center">
-                <svg className="animate-spin w-5 h-5 text-[#DFA3AD]" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="py-10 flex flex-col items-center gap-3">
-                <svg className="w-10 h-10 text-[#EDD8DC]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <p className="text-xs text-[#C4A0A6] font-medium">No notifications yet</p>
-              </div>
-            ) : (
-              notifications.slice(0, 20).map((notif, i) => (
-                <button
-                  key={notif.id}
-                  type="button"
-                  onClick={() => handleItemClick(notif)}
-                  className={[
-                    'w-full flex items-start gap-3 px-4 py-3 text-start transition-colors',
-                    !notif.isRead ? 'bg-[#FDF8F9] hover:bg-[#FDF0F2]' : 'hover:bg-[#FDF6F7]',
-                  ].join(' ')}
-                  style={i < notifications.slice(0, 20).length - 1 ? { borderBottom: '1px solid #F5EDEF' } : {}}
-                >
-                  {/* Type icon */}
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    style={{
-                      background: !notif.isRead ? '#FDF0F2' : '#F5EDEF',
-                      color: !notif.isRead ? '#6B1F2A' : '#C4A0A6',
-                    }}
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {loading ? (
+                <div className="py-12 flex justify-center">
+                  <svg className="animate-spin w-5 h-5 text-[#DFA3AD]" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="py-12 flex flex-col items-center gap-3">
+                  <svg className="w-10 h-10 text-[#EDD8DC]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <p className="text-xs text-[#C4A0A6] font-medium">No notifications yet</p>
+                </div>
+              ) : (
+                notifications.slice(0, 20).map((notif, i) => (
+                  <button
+                    key={notif.id}
+                    type="button"
+                    onClick={() => handleItemClick(notif)}
+                    className={[
+                      'w-full flex items-start gap-3 px-4 py-3.5 text-start transition-colors min-h-[56px]',
+                      !notif.isRead ? 'bg-[#FDF8F9] hover:bg-[#FDF0F2]' : 'hover:bg-[#FDF6F7]',
+                    ].join(' ')}
+                    style={i < notifications.slice(0, 20).length - 1 ? { borderBottom: '1px solid #F5EDEF' } : {}}
                   >
-                    {ORDER_ICON}
-                  </div>
-
-                  {/* Text */}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-[12px] leading-snug"
-                      style={{ color: !notif.isRead ? '#3D1A1E' : '#9B7B80', fontWeight: !notif.isRead ? 600 : 400 }}
+                    {/* Type icon */}
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                      style={{
+                        background: !notif.isRead ? '#FDF0F2' : '#F5EDEF',
+                        color: !notif.isRead ? '#6B1F2A' : '#C4A0A6',
+                      }}
                     >
-                      {notif.message}
-                    </p>
-                    <p className="text-[10px] mt-0.5" style={{ color: '#C4A0A6' }}>
-                      {timeAgo(notif.createdAt)}
-                    </p>
-                  </div>
+                      {ORDER_ICON}
+                    </div>
 
-                  {/* Unread dot */}
-                  {!notif.isRead && (
-                    <span className="w-2 h-2 rounded-full bg-[#6B1F2A] shrink-0 mt-2" />
-                  )}
+                    {/* Text */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-[13px] leading-snug"
+                        style={{ color: !notif.isRead ? '#3D1A1E' : '#9B7B80', fontWeight: !notif.isRead ? 600 : 400 }}
+                      >
+                        {notif.message}
+                      </p>
+                      <p className="text-[11px] mt-0.5" style={{ color: '#C4A0A6' }}>
+                        {timeAgo(notif.createdAt)}
+                      </p>
+                    </div>
+
+                    {/* Unread dot */}
+                    {!notif.isRead && (
+                      <span className="w-2 h-2 rounded-full bg-[#6B1F2A] shrink-0 mt-2.5" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Sticky footer — mark all read */}
+            {unreadCount > 0 && (
+              <div className="shrink-0 px-4 py-3 border-t border-[#F5EDEF] bg-white">
+                <button
+                  type="button"
+                  onClick={handleMarkAllRead}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#6B1F2A] hover:bg-[#FDF0F2] transition-colors min-h-[44px]"
+                  style={{ border: '1px solid #EDD8DC' }}
+                >
+                  Mark all as read
                 </button>
-              ))
+              </div>
             )}
           </div>
-        </div>
+        </>
       )}
     </div>
   )

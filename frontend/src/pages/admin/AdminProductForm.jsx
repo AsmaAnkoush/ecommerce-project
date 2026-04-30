@@ -178,9 +178,13 @@ export default function AdminProductForm() {
 
   useEffect(() => {
     if (!showColorPicker) return
+    document.body.style.overflow = 'hidden'
     const handle = (e) => { if (e.key === 'Escape') setShowColorPicker(false) }
     document.addEventListener('keydown', handle)
-    return () => document.removeEventListener('keydown', handle)
+    return () => {
+      document.removeEventListener('keydown', handle)
+      document.body.style.overflow = ''
+    }
   }, [showColorPicker])
 
   // ── Centralized validation ─────────────────────────────────────────────────
@@ -375,7 +379,7 @@ export default function AdminProductForm() {
         sizes: e.sizes.map(s => {
           if (s.size !== size) return s
           const parsed = field === 'stockQuantity'
-            ? (parseInt(value) || 0)
+            ? value  // keep as raw string; parsed to int at submit time
             : (value === '' ? null : parseFloat(value))
           return { ...s, [field]: parsed }
         }),
@@ -809,8 +813,8 @@ export default function AdminProductForm() {
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
             <p className="text-sm font-semibold text-gray-700">{t('admin.addColor')}</p>
             <div className="flex items-center gap-3 flex-wrap">
-              {/* Color picker — replaces native <input type="color"> for consistent cross-device UI */}
-              <div className="relative shrink-0">
+              {/* Color swatch button — opens fixed bottom-sheet picker */}
+              <div className="shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowColorPicker(s => !s)}
@@ -819,39 +823,6 @@ export default function AdminProductForm() {
                   aria-label="Open color picker"
                   title="Pick a color"
                 />
-                {showColorPicker && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowColorPicker(false)} />
-                    <div className="absolute top-full start-0 mt-2 z-50 p-3 bg-white border border-gray-200 rounded-2xl shadow-xl">
-                      <HexColorPicker
-                        color={newColorHex}
-                        onChange={hex => { setNewColorHex(hex); setNewColorInput(hex) }}
-                        style={{ width: 'min(220px, 80vw)', height: 'min(220px, 80vw)' }}
-                      />
-                      <div className="mt-2 flex items-center gap-1.5 border border-gray-200 rounded-lg px-2 py-1.5 bg-gray-50">
-                        <span className="text-xs font-mono text-gray-400 select-none">#</span>
-                        <input
-                          type="text"
-                          value={newColorHex.replace('#', '').toUpperCase()}
-                          onChange={e => {
-                            const raw = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
-                            if (raw.length === 6) { setNewColorHex(`#${raw}`); setNewColorInput(`#${raw}`) }
-                          }}
-                          className="flex-1 text-sm font-mono uppercase bg-transparent focus:outline-none min-w-0"
-                          maxLength={6}
-                          placeholder="000000"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowColorPicker(false)}
-                        className="w-full mt-2 py-2.5 bg-[#6B1F2A] text-white rounded-xl font-semibold text-sm hover:bg-[#5A1923] transition-colors min-h-[44px]"
-                      >
-                        Done
-                      </button>
-                    </div>
-                  </>
-                )}
               </div>
               <input
                 value={newColorInput}
@@ -1023,9 +994,14 @@ export default function AdminProductForm() {
                           <div key={`${s.size}-${idx}`} className="border border-gray-200 rounded-xl overflow-hidden">
                             <div className="flex items-center gap-2 px-3 py-2 bg-gray-50">
                               <span className="text-sm font-bold text-gray-800 w-10 shrink-0">{s.size}</span>
-                              <input type="number" min="0" value={s.stockQuantity}
+                              <input
+                                type="number"
+                                min="0"
+                                value={s.stockQuantity ?? ''}
+                                placeholder="0"
                                 onChange={e => updateSizeField(color, s.size, 'stockQuantity', e.target.value)}
-                                className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#6B1F2A]" />
+                                className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#6B1F2A]"
+                              />
                               <span className="text-xs text-gray-400 shrink-0">{t('admin.pieces')}</span>
                               <button type="button" onClick={() => toggleSizeExpand(color, s.size)}
                                 className={`ml-auto text-xs px-2 py-1 rounded-lg border transition-all ${
@@ -1116,6 +1092,74 @@ export default function AdminProductForm() {
           onClose={() => setPreviewImages(null)}
           onChange={setPreviewIndex}
         />
+      )}
+
+      {/* Color picker — fixed bottom-sheet modal (mobile) / centered dialog (desktop) */}
+      {showColorPicker && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 sm:p-4"
+          onClick={() => setShowColorPicker(false)}
+        >
+          <div
+            className="w-full sm:w-80 bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: 'min(92vh, 520px)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drag handle (mobile only) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
+              <div className="w-9 h-1 rounded-full bg-gray-300" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+              <h3 className="font-semibold text-gray-900 text-sm">Pick a Color</h3>
+              <button
+                type="button"
+                onClick={() => setShowColorPicker(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 flex flex-col items-center gap-4">
+              <HexColorPicker
+                color={newColorHex}
+                onChange={hex => { setNewColorHex(hex); setNewColorInput(hex) }}
+                style={{ width: '100%', maxWidth: '280px', height: 'min(240px, 60vw)' }}
+              />
+              <div className="w-full max-w-[280px] flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50">
+                <div className="w-5 h-5 rounded-md border border-gray-200 shrink-0" style={{ backgroundColor: newColorHex }} />
+                <span className="text-sm font-mono text-gray-400 select-none">#</span>
+                <input
+                  type="text"
+                  value={newColorHex.replace('#', '').toUpperCase()}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
+                    if (raw.length === 6) { setNewColorHex(`#${raw}`); setNewColorInput(`#${raw}`) }
+                  }}
+                  className="flex-1 text-sm font-mono uppercase bg-transparent focus:outline-none min-w-0"
+                  maxLength={6}
+                  placeholder="000000"
+                />
+              </div>
+            </div>
+
+            {/* Sticky Done footer */}
+            <div className="shrink-0 px-4 py-3 border-t border-gray-100 bg-white">
+              <button
+                type="button"
+                onClick={() => setShowColorPicker(false)}
+                className="w-full py-3 bg-[#6B1F2A] text-white rounded-xl font-semibold text-sm hover:bg-[#5A1923] transition-colors min-h-[48px]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       </form>
     </>
