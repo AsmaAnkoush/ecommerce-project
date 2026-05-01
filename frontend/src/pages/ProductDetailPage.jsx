@@ -122,6 +122,17 @@ function ShareSection({ productName }) {
   )
 }
 
+function getMeasurementLabel(key) {
+  switch (key) {
+    case 'chest':     return 'الصدر'
+    case 'waist':     return 'الخصر'
+    case 'length':    return 'الطول'
+    case 'shoulders': return 'الكتف'
+    case 'backWidth': return 'الظهر'
+    default:          return key
+  }
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -639,33 +650,43 @@ export default function ProductDetailPage() {
                     {/* Measurements — auto-shown when selected variant has measurement data */}
                     {(() => {
                       if (!selectedVariant) return null
-                      const fields = [
-                        { key: 'chest',     label: t('product.chest') },
-                        { key: 'waist',     label: t('product.waist') },
-                        { key: 'shoulders', label: t('product.shoulders') },
-                        { key: 'backWidth', label: t('product.backWidth') },
-                        { key: 'length',    label: t('product.length') },
-                      ].filter(f => selectedVariant[f.key] != null)
+                      const KEYS = ['chest', 'waist', 'shoulders', 'backWidth', 'length']
+                      const fields = KEYS.filter(k => selectedVariant[k] != null).map(k => [k, selectedVariant[k]])
                       if (fields.length === 0) return null
+                      const half = Math.ceil(fields.length / 2)
+                      const row1 = fields.slice(0, half)
+                      const row2 = fields.slice(half)
+                      while (row2.length < row1.length) row2.push(null)
+                      const cellStyle = { padding: '6px 12px', textAlign: 'center', whiteSpace: 'nowrap', minWidth: '72px' }
+                      const labelStyle = { color: '#9B7B80', fontSize: '12px' }
+                      const valueStyle = { fontWeight: 700, color: '#6B1F2A', fontSize: '12px', direction: 'ltr', display: 'inline-block' }
                       return (
-                        <div className="mt-4 rounded-xl border border-[#F0D5D8] bg-[#FDFAFB] p-4 animate-fade-in">
-                          <div className="flex items-baseline justify-between mb-3">
-                            <p className="text-[11px] font-semibold tracking-[0.12em] text-[#6B1F2A]">
-                              {t('product.measurements')}
-                            </p>
-                            <span className="text-[10px] text-[#B08A90]">{t('product.cm')}</span>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {fields.map(f => (
-                              <div
-                                key={f.key}
-                                className="flex flex-col items-center gap-1 bg-white rounded-lg border border-[#F5E0E3] px-3 py-2.5"
-                              >
-                                <span className="text-[10px] text-[#9B7B80] tracking-wide text-center">{f.label}</span>
-                                <span className="text-sm font-semibold text-[#3D1A1E] nums-normal">{selectedVariant[f.key]}</span>
-                              </div>
-                            ))}
-                          </div>
+                        <div dir="rtl" style={{ display: 'flex', justifyContent: 'center', marginTop: '14px', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#6B1F2A', fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em' }}>
+                            {t('product.measurements')}
+                          </span>
+                          <table style={{ borderCollapse: 'collapse' }}>
+                            <tbody>
+                              <tr>
+                                {row1.map(([k, v]) => (
+                                  <td key={k} style={cellStyle}>
+                                    <span style={labelStyle}>{getMeasurementLabel(k)} </span>
+                                    <span style={valueStyle}>{v}</span>
+                                  </td>
+                                ))}
+                              </tr>
+                              <tr>
+                                {row2.map((f, i) => (
+                                  <td key={f ? f[0] : `pad-${i}`} style={cellStyle}>
+                                    {f && <>
+                                      <span style={labelStyle}>{getMeasurementLabel(f[0])} </span>
+                                      <span style={valueStyle}>{f[1]}</span>
+                                    </>}
+                                  </td>
+                                ))}
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       )
                     })()}
