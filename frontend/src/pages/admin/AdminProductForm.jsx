@@ -1310,21 +1310,28 @@ export default function AdminProductForm() {
                                 value={s.stockQuantity ?? ''}
                                 placeholder="0"
                                 onChange={e => updateSizeField(color, s.size, 'stockQuantity', e.target.value)}
-                                className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#6B1F2A]"
+                                className="w-14 sm:w-20 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#6B1F2A]"
                               />
-                              <span className="text-xs text-gray-400 shrink-0">{t('admin.pieces')}</span>
-                              <button type="button" onClick={() => toggleSizeExpand(color, s.size)}
-                                className={`ml-auto text-xs px-2 py-1 rounded-lg border transition-all ${
-                                  isExpanded || hasMeasurements
-                                    ? 'border-indigo-300 text-indigo-700 bg-indigo-50'
-                                    : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-white'
-                                }`}>
-                                {hasMeasurements ? t('admin.measurementsSetLabel') : t('admin.measurementsLabel')}
-                              </button>
-                              <button type="button" onClick={() => removeSizeFromColor(color, s.size)}
-                                className="text-red-400 hover:text-red-600 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 text-lg font-bold shrink-0 transition-colors">
-                                ×
-                              </button>
+                              <span className="text-xs text-gray-400 shrink-0 hidden sm:inline">{t('admin.pieces')}</span>
+                              <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                                <button type="button" onClick={() => toggleSizeExpand(color, s.size)}
+                                  className={`text-xs px-2 py-1 rounded-lg border transition-all ${
+                                    isExpanded || hasMeasurements
+                                      ? 'border-indigo-300 text-indigo-700 bg-indigo-50'
+                                      : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-white'
+                                  }`}>
+                                  <svg className="w-3.5 h-3.5 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 12h10M4 16h6" />
+                                  </svg>
+                                  <span className="hidden sm:inline">
+                                    {hasMeasurements ? t('admin.measurementsSetLabel') : t('admin.measurementsLabel')}
+                                  </span>
+                                </button>
+                                <button type="button" onClick={() => removeSizeFromColor(color, s.size)}
+                                  className="text-red-400 hover:text-red-600 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 text-lg font-bold shrink-0 transition-colors">
+                                  ×
+                                </button>
+                              </div>
                             </div>
                             {isExpanded && (
                               <div className="px-3 py-3 bg-white border-t border-gray-100">

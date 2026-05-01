@@ -79,12 +79,12 @@ export default function AdminUsers() {
   return (
     <div>
       <PageHeader />
-      <div className="p-8 pt-0">
+      <div className="px-4 sm:px-8 pt-0 pb-8">
       {/* Toolbar — count + search */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
         <p className="text-sm text-gray-500">{total} {t('admin.totalUsers')} {total === 1 ? t('admin.user') : t('admin.userPlural')}</p>
-        <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <div className="relative">
+        <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
             <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
             </svg>
@@ -92,14 +92,14 @@ export default function AdminUsers() {
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               placeholder={t('admin.searchNameEmail')}
-              className="pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#DFA3AD] focus:border-[#DFA3AD] w-72 transition-all"
+              className="pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#DFA3AD] focus:border-[#DFA3AD] w-full sm:w-72 transition-all"
             />
           </div>
-          <button type="submit" className="px-5 py-2.5 text-sm font-medium rounded-full text-white transition-colors hover:opacity-90" style={{ background: '#6B1F2A' }}>
+          <button type="submit" className="shrink-0 px-5 py-2.5 text-sm font-medium rounded-full text-white transition-colors hover:opacity-90" style={{ background: '#6B1F2A' }}>
             {t('admin.search')}
           </button>
           {search && (
-            <button type="button" onClick={handleClearSearch} className="px-4 py-2.5 text-sm rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+            <button type="button" onClick={handleClearSearch} className="shrink-0 px-4 py-2.5 text-sm rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
               {t('admin.clear')}
             </button>
           )}
