@@ -15,7 +15,7 @@ export default function ProductSkeleton() {
   return (
     <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 2px 16px rgba(107,31,42,0.06)' }}>
       {/* Image placeholder */}
-      <div className="aspect-[3/4] bg-[#F5E8EA] animate-shimmer-pulse" />
+      <div className="aspect-[4/5] bg-[#F5E8EA] animate-shimmer-pulse" />
 
       {/* Info placeholder */}
       <div className="px-4 pt-4 pb-4 space-y-3">

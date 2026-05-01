@@ -752,6 +752,7 @@
     "cropImage": "Crop Image",
     "applyCrop": "Apply Crop",
     "processing": "Processing…",
+    "zoom": "Zoom",
     "aspectLocked": "Locked",
     "aspectFree": "Free",
     "lockedAspect": "3:4 Locked",

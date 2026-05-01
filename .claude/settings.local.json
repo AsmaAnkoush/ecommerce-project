@@ -63,7 +63,10 @@
       "Bash(git diff *)",
       "Bash(wmic logicaldisk *)",
       "Bash(mkdir -p /d/temp)",
-      "Read(//d//**)"
+      "Read(//d//**)",
+      "Bash(findstr /i \"crop\\\\|zoom\\\\|applyCrop\\\\|processing\\\\|aspect\")",
+      "Bash(npx vite *)",
+      "Bash(npx rimraf *)"
     ]
   }
 }

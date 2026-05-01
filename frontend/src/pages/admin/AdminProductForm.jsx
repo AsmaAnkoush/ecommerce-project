@@ -41,6 +41,7 @@ const NAMED_COLORS = [
   { name: 'Cream', hex: '#FFFDD0' },
 ]
 const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '38', '40', '42', '44', '46']
+const MAX_COLOR_IMAGES = 10
 const EMPTY_SIZE_INPUT = { size: '', stockQuantity: 0, chest: '', waist: '', shoulders: '', backWidth: '', length: '' }
 const inputCls = 'w-full px-3 py-2.5 border border-[#EDD8DC] rounded-xl text-sm focus:outline-none focus:border-[#DFA3AD] input-focus-glow bg-white'
 
@@ -115,6 +116,8 @@ export default function AdminProductForm() {
   const [showColorPicker, setShowColorPicker] = useState(false)
   // Maps uploaded URL → original File so images can be re-cropped after upload
   const [originalFiles, setOriginalFiles] = useState(() => new Map())
+  // Staged (selected but not yet uploaded) files per color
+  const [stagedFiles, setStagedFiles] = useState({})
   // Color editing
   const [editingColor, setEditingColor]               = useState(null)
   const [editColorInput, setEditColorInput]           = useState('')
@@ -278,6 +281,11 @@ export default function AdminProductForm() {
   }
 
   const removeColorEntry = (color) => {
+    setStagedFiles(prev => {
+      if (!prev[color]) return prev
+      prev[color].forEach(s => URL.revokeObjectURL(s.previewUrl))
+      const n = { ...prev }; delete n[color]; return n
+    })
     setColorEntries(prev => prev.filter(e => e.color !== color))
     setColorPreviews(prev => { const n = { ...prev }; delete n[color]; return n })
     setSizeInputs(prev => { const n = { ...prev }; delete n[color]; return n })
@@ -303,6 +311,7 @@ export default function AdminProductForm() {
     setColorEntries(prev => prev.map(e => e.color === oldColor ? { ...e, color: newName } : e))
     setColorPreviews(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
     setSizeInputs(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
+    setStagedFiles(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
     setExpandedSizes(prev => {
       const n = new Set()
       for (const key of prev) {
@@ -313,7 +322,7 @@ export default function AdminProductForm() {
   }
 
   // ── Per-color images ────────────────────────────────────────────────────────
-  const handleColorImageFiles = async (color, files) => {
+  const handleColorImageFiles = (color, files) => {
     const fileArr = Array.from(files).filter(file => {
       if (!file.type.startsWith('image/')) {
         toast(`"${file.name}" is not an image`, 'error'); return false
@@ -324,38 +333,64 @@ export default function AdminProductForm() {
       return true
     })
     if (!fileArr.length) return
-    // All files → upload directly; original file is stored so admin can re-crop via the Crop button
-    if (fileArr.length === 1) {
-      const file = fileArr[0]
-      const preview = URL.createObjectURL(file)
-      setColorPreviews(prev => ({
-        ...prev,
-        [color]: [...(prev[color] || []), { file, previewUrl: preview }],
-      }))
-      setUploadingColor(color)
-      try {
-        const urls = await uploadImages([file])
-        setColorEntries(prev => prev.map(e =>
-          e.color === color ? { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] } : e
-        ))
-        if (urls[0]) setOriginalFiles(prev => { const n = new Map(prev); n.set(urls[0], file); return n })
-      } finally {
-        setUploadingColor(null)
-        setColorPreviews(prev => ({
-          ...prev,
-          [color]: (prev[color] || []).filter(p => p.previewUrl !== preview),
-        }))
-        URL.revokeObjectURL(preview)
-      }
-      return
-    }
+    const existing = colorEntries.find(e => e.color === color)?.imageUrls?.length ?? 0
+    const currentStaged = stagedFiles[color]?.length ?? 0
+    const available = MAX_COLOR_IMAGES - existing - currentStaged
+    if (available <= 0) { toast(`Maximum ${MAX_COLOR_IMAGES} images per color`, 'error'); return }
+    const toAdd = fileArr.slice(0, available)
+    if (toAdd.length < fileArr.length)
+      toast(`Only ${toAdd.length} image${toAdd.length !== 1 ? 's' : ''} added — max ${MAX_COLOR_IMAGES} per color`, 'warning')
+    const newStaged = toAdd.map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }))
+    setStagedFiles(prev => ({ ...prev, [color]: [...(prev[color] || []), ...newStaged] }))
+  }
+
+  const uploadStagedFiles = async (color) => {
+    const staged = stagedFiles[color] || []
+    if (!staged.length || uploadingColor) return
     setUploadingColor(color)
     try {
-      const urls = await uploadImages(fileArr)
+      const urls = await uploadImages(staged.map(s => s.file))
       setColorEntries(prev => prev.map(e =>
         e.color === color ? { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] } : e
       ))
-    } finally { setUploadingColor(null) }
+      setOriginalFiles(prev => {
+        const n = new Map(prev)
+        staged.forEach((s, i) => { if (urls[i]) n.set(urls[i], s.file) })
+        return n
+      })
+      setStagedFiles(prev => {
+        const n = { ...prev }
+        ;(n[color] || []).forEach(s => URL.revokeObjectURL(s.previewUrl))
+        delete n[color]
+        return n
+      })
+    } catch {
+      toast(t('common.error'), 'error')
+    } finally {
+      setUploadingColor(null)
+    }
+  }
+
+  const removeStagedFile = (color, id) => {
+    setStagedFiles(prev => {
+      const current = prev[color] || []
+      const item = current.find(s => s.id === id)
+      if (item) URL.revokeObjectURL(item.previewUrl)
+      const updated = current.filter(s => s.id !== id)
+      if (!updated.length) { const n = { ...prev }; delete n[color]; return n }
+      return { ...prev, [color]: updated }
+    })
+  }
+
+  const handleCropStagedFile = (color, id) => {
+    const item = (stagedFiles[color] || []).find(s => s.id === id)
+    if (!item) return
+    setCropSrc(item.previewUrl)
+    setCropTarget({ type: 'color-staged', color, id })
   }
 
   const setPrimaryColorImage = (color, url) => setColorEntries(prev => prev.map(e =>
@@ -391,22 +426,58 @@ export default function AdminProductForm() {
     if (!file) return
     if (!file.type.startsWith('image/')) { toast(`"${file.name}" is not an image`, 'error'); return }
     if (file.size > 5 * 1024 * 1024) { toast(`"${file.name}" exceeds 5 MB`, 'error'); return }
+
+    // Snapshot the URL being replaced before any state mutation
     const replaceUrl = colorEntries.find(e => e.color === color)?.imageUrls[idx]
     if (!replaceUrl) return
+
+    // Optimistic update: show local blob URL immediately so the UI responds instantly
+    const preview = URL.createObjectURL(file)
+    setColorEntries(prev => prev.map(e => {
+      if (e.color !== color) return e
+      return {
+        ...e,
+        imageUrls: e.imageUrls.map(u => u === replaceUrl ? preview : u),
+        primaryImageUrl: e.primaryImageUrl === replaceUrl ? preview : e.primaryImageUrl,
+      }
+    }))
+
     setUploadingColor(color)
     try {
       const urls = await uploadImages([file])
-      if (!urls[0]) return
+      if (!urls[0]) throw new Error('Upload returned no URL')
+
+      // Settle: swap the temporary blob URL for the real S3 URL
       setColorEntries(prev => prev.map(e => {
         if (e.color !== color) return e
         return {
           ...e,
-          imageUrls: e.imageUrls.map((u, i) => i === idx ? urls[0] : u),
-          primaryImageUrl: e.primaryImageUrl === replaceUrl ? urls[0] : e.primaryImageUrl,
+          imageUrls: e.imageUrls.map(u => u === preview ? urls[0] : u),
+          primaryImageUrl: e.primaryImageUrl === preview ? urls[0] : e.primaryImageUrl,
         }
       }))
-      setOriginalFiles(prev => { const n = new Map(prev); n.delete(replaceUrl); n.set(urls[0], file); return n })
-    } finally { setUploadingColor(null) }
+      setOriginalFiles(prev => {
+        const n = new Map(prev)
+        n.delete(replaceUrl)
+        n.set(urls[0], file)
+        return n
+      })
+      URL.revokeObjectURL(preview)
+    } catch {
+      // Rollback: restore original URL and notify the user
+      setColorEntries(prev => prev.map(e => {
+        if (e.color !== color) return e
+        return {
+          ...e,
+          imageUrls: e.imageUrls.map(u => u === preview ? replaceUrl : u),
+          primaryImageUrl: e.primaryImageUrl === preview ? replaceUrl : e.primaryImageUrl,
+        }
+      }))
+      URL.revokeObjectURL(preview)
+      toast(t('common.error'), 'error')
+    } finally {
+      setUploadingColor(null)
+    }
   }
 
   // ── Sizes ───────────────────────────────────────────────────────────────────
@@ -547,6 +618,19 @@ export default function AdminProductForm() {
         }))
         URL.revokeObjectURL(preview)
       }
+
+    } else if (target?.type === 'color-staged') {
+      const { color, id } = target
+      setStagedFiles(prev => {
+        const current = prev[color] || []
+        const idx = current.findIndex(s => s.id === id)
+        if (idx === -1) { URL.revokeObjectURL(preview); return prev }
+        const old = current[idx]
+        URL.revokeObjectURL(old.previewUrl)
+        const updated = [...current]
+        updated[idx] = { ...old, file: croppedFile, previewUrl: preview }
+        return { ...prev, [color]: updated }
+      })
     }
   }
 
@@ -587,6 +671,8 @@ export default function AdminProductForm() {
     setNewColorHex(black ? black.hex : (NAMED_COLORS[0]?.hex ?? '#000000'))
     setShowColorPicker(false)
     setOriginalFiles(new Map())
+    Object.values(stagedFiles).forEach(items => items.forEach(s => URL.revokeObjectURL(s.previewUrl)))
+    setStagedFiles({})
   }
 
   // ── Submit ──────────────────────────────────────────────────────────────────
@@ -1096,6 +1182,39 @@ export default function AdminProductForm() {
                           </div>
                         )
                       })}
+                      {/* Staged thumbnails — selected but not yet uploaded */}
+                      {(stagedFiles[color] || []).map(staged => (
+                        <div key={staged.id} className="flex flex-col items-center gap-1">
+                          <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-dashed border-[#6B1F2A]/50">
+                            <img src={staged.previewUrl} alt="" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeStagedFile(color, staged.id)}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                            >
+                              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                            <div className="absolute bottom-0 inset-x-0 bg-[#6B1F2A]/70 text-white text-[7px] text-center py-[2px] font-semibold tracking-widest uppercase">
+                              Pending
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCropStagedFile(color, staged.id)}
+                            title={t('admin.cropImage')}
+                            className="flex items-center gap-0.5 text-[10px] text-amber-600 hover:text-amber-800 transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4H8M16 4H20V8M4 16V20H8M20 16V20H16" />
+                            </svg>
+                            Crop
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* In-progress upload spinners (replace/crop flows) */}
                       {previews.map((p, i) => (
                         <div key={`cp-${i}`} className="flex flex-col items-center gap-1">
                           <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
@@ -1110,11 +1229,12 @@ export default function AdminProductForm() {
                           <span className="text-[10px] text-gray-400">Uploading…</span>
                         </div>
                       ))}
+
                       <label htmlFor={`color-img-${color}`} className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#6B1F2A] transition-colors text-gray-400 hover:text-[#6B1F2A]">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
                         </svg>
-                        <span className="text-xs mt-1">{uploadingColor === color ? '...' : 'Add'}</span>
+                        <span className="text-xs mt-1">Add</span>
                       </label>
                       <input
                         id={`color-img-${color}`}
@@ -1125,6 +1245,46 @@ export default function AdminProductForm() {
                         onChange={e => { handleColorImageFiles(color, e.target.files); e.target.value = '' }}
                       />
                     </div>
+
+                    {/* Upload staged button */}
+                    {(stagedFiles[color] || []).length > 0 && (
+                      <div className="mt-2.5 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => uploadStagedFiles(color)}
+                          disabled={!!uploadingColor}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#6B1F2A] rounded-xl hover:bg-[#5A1923] transition-colors disabled:opacity-50"
+                        >
+                          {uploadingColor === color ? (
+                            <>
+                              <svg className="animate-spin w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                              </svg>
+                              Uploading…
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                              Upload {stagedFiles[color].length} image{stagedFiles[color].length !== 1 ? 's' : ''}
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ;(stagedFiles[color] || []).forEach(s => URL.revokeObjectURL(s.previewUrl))
+                            setStagedFiles(prev => { const n = { ...prev }; delete n[color]; return n })
+                          }}
+                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          Discard all
+                        </button>
+                      </div>
+                    )}
+
                     <p className="text-xs text-gray-400 mt-1.5">
                       {t('admin.multiImageHint') || 'Tap + to add · Select multiple images at once from your gallery'}
                     </p>

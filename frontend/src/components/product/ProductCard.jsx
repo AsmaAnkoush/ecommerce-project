@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, ShoppingCart, Shuffle } from 'lucide-react'
+import { Heart, Shuffle } from 'lucide-react'
+import CartIcon from '../ui/CartIcon'
 import { useCart } from '../../context/CartContext'
 import { useWishlist } from '../../context/WishlistContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -53,6 +54,10 @@ export default function ProductCard({ product }) {
     }
     return result
   }, [product.variants])
+
+  const SIZES_LIMIT = 5
+  const visibleSizes = uniqueSizes.slice(0, SIZES_LIMIT)
+  const hiddenSizesCount = uniqueSizes.length - visibleSizes.length
 
   // Resolve display image: color-specific primary → product primary
   const displayImage = useMemo(() => {
@@ -112,11 +117,11 @@ export default function ProductCard({ product }) {
       <Link to={`/products/${product.id}`} className="block">
 
         {/* ── Image box ───────────────────────────────────── */}
-        <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-[#F5F0EC] flex items-center justify-center">
+        <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#F5F0EC] flex items-center justify-center">
           <img
             src={displayImage}
             alt={product.name}
-            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
             onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg' }}
           />
 
@@ -189,7 +194,7 @@ export default function ProductCard({ product }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
+                <CartIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
             </button>
           )}
@@ -217,12 +222,44 @@ export default function ProductCard({ product }) {
 
           {/* Sizes — between name and price */}
           {uniqueSizes.length > 0 && (
-            <div className="flex items-center justify-center gap-2 mb-1.5">
-              <div className="h-px w-3 bg-[#5A2A2F]/30" />
-              <p className="text-[10px] sm:text-[11px] text-[#5A2A2F]/70 tracking-[0.2em] uppercase">
-                {uniqueSizes.join(' · ')}
-              </p>
-              <div className="h-px w-3 bg-[#5A2A2F]/30" />
+            <div className="flex items-center justify-center gap-1 flex-wrap mb-1.5 px-1 min-h-[22px]">
+              {visibleSizes.map(sz => (
+                <span
+                  key={sz}
+                  className="inline-flex items-center justify-center min-w-[22px] h-[21px] px-1.5 text-[9px] font-medium text-[#5A2A2F]/75 bg-[#F5E8EA] rounded border border-[#EDD8DC] leading-none"
+                >
+                  {sz}
+                </span>
+              ))}
+
+              {hiddenSizesCount > 0 && (
+                <div className="relative group/moresizes">
+                  <span className="inline-flex items-center justify-center min-w-[22px] h-[21px] px-1.5 text-[9px] font-semibold text-[#6B1F2A] bg-[#FDF0F2] rounded border border-[#DFA3AD] leading-none cursor-default select-none">
+                    +{hiddenSizesCount}
+                  </span>
+
+                  {/* All-sizes tooltip — shown on hover */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none opacity-0 invisible group-hover/moresizes:opacity-100 group-hover/moresizes:visible transition-all duration-150">
+                    <div className="relative bg-white border border-[#EDD8DC] rounded-xl shadow-xl p-2.5">
+                      <p className="text-[8px] text-[#9B7B80] font-semibold uppercase tracking-[0.15em] mb-1.5 text-center whitespace-nowrap">
+                        All sizes
+                      </p>
+                      <div className="flex flex-wrap gap-1 justify-center" style={{ maxWidth: '160px' }}>
+                        {uniqueSizes.map(sz => (
+                          <span
+                            key={sz}
+                            className="inline-flex items-center justify-center min-w-[24px] h-[22px] px-1.5 text-[9px] font-medium text-[#5A2A2F] bg-[#F5E8EA] rounded border border-[#EDD8DC] leading-none"
+                          >
+                            {sz}
+                          </span>
+                        ))}
+                      </div>
+                      {/* Arrow pointing down */}
+                      <div className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-b border-r border-[#EDD8DC] rotate-45" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -232,12 +269,12 @@ export default function ProductCard({ product }) {
             style={{ fontFamily: "'Montserrat', 'Poppins', sans-serif", letterSpacing: '0.02em' }}
           >
             {hasDiscount ? (
-              <>
-                <span>{formatPrice(product.discountPrice)}</span>
-                <span className="text-xs text-gray-400 line-through ms-1.5">
-                  {formatPrice(product.price)}
+              <span className="flex items-center justify-center gap-1.5">
+                <span className="text-xs text-[#9B7B80] line-through">
+                  {formatPrice(product.price, { showSymbol: false })}
                 </span>
-              </>
+                <span>{formatPrice(product.discountPrice)}</span>
+              </span>
             ) : (
               formatPrice(product.price)
             )}

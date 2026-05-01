@@ -42,7 +42,7 @@ export function formatPrice(amount, { showSymbol = true, decimals = 2, fallback 
  */
 export function useFormatPrice() {
   const { lang } = useLanguage()
-  return useCallback((value) => formatPrice(value), [lang])
+  return useCallback((value, options) => formatPrice(value, options), [lang])
 }
 
 export default formatPrice

@@ -345,14 +345,14 @@ export default function ProductDetailPage() {
                   <button
                     key={i}
                     onClick={() => setSelectedImg(i)}
-                    className={`w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 transition-all duration-300 ease-out ${
+                    className={`w-full aspect-[4/5] rounded-2xl overflow-hidden border-2 transition-all duration-300 ease-out ${
                       selectedImg === i
                         ? 'border-[#6B1F2A] shadow-[0_6px_20px_rgba(107,31,42,0.18)] scale-[1.02]'
                         : 'border-[#F5E0E3] hover:border-[#DEB8BE] hover:scale-[1.02] opacity-70 hover:opacity-100'
                     }`}
                     style={{ background: 'linear-gradient(145deg, #FDF8F9, #F0E4E6)' }}
                   >
-                    <img src={img} alt={`${i + 1}`} className="w-full h-full object-contain p-1.5" style={{ mixBlendMode: 'multiply' }} />
+                    <img src={img} alt={`${i + 1}`} className="w-full h-full object-contain object-center" style={{ mixBlendMode: 'multiply' }} />
                   </button>
                 ))}
               </div>
@@ -362,7 +362,7 @@ export default function ProductDetailPage() {
             <div className="flex-1 relative">
               <div
                 ref={galleryRef}
-                className="relative rounded-3xl overflow-hidden h-[360px] sm:h-[440px] lg:h-[480px] cursor-zoom-in group"
+                className="relative rounded-3xl overflow-hidden aspect-[4/5] cursor-zoom-in group"
                 style={{
                   background: 'linear-gradient(145deg, #FDF8F9 0%, #F5ECED 50%, #F0E4E6 100%)',
                   boxShadow: '0 16px 60px rgba(107,31,42,0.12), 0 4px 16px rgba(107,31,42,0.06)',
@@ -374,7 +374,7 @@ export default function ProductDetailPage() {
                     key={selectedImg}
                     src={currentImage}
                     alt={product.name}
-                    className="w-full h-full object-contain p-3 sm:p-5 animate-fade-in transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]"
+                    className="w-full h-full object-contain object-center animate-fade-in transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]"
                     style={{ mixBlendMode: 'multiply' }}
                   />
                 ) : (
@@ -458,7 +458,7 @@ export default function ProductDetailPage() {
                       }`}
                       style={{ background: 'linear-gradient(145deg, #FDF8F9, #F0E4E6)' }}
                     >
-                      <img src={img} alt={`${i + 1}`} className="w-full h-full object-contain p-0.5" style={{ mixBlendMode: 'multiply' }} />
+                      <img src={img} alt={`${i + 1}`} className="w-full h-full object-contain object-center" style={{ mixBlendMode: 'multiply' }} />
                     </button>
                   ))}
                 </div>
