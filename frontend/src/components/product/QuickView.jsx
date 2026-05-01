@@ -167,19 +167,27 @@ export default function QuickView() {
            */}
           <div className="bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh]">
 
-            {/* ── Product image ────────────────────────────────────────
-                object-contain shows the FULL image without cropping.
-                h-auto + max-h-[260px] keeps it compact but unclipped.
-                pt-10 gives clearance so the image doesn't hide under the
-                close button that overlays the top-right corner.
-            */}
-            <div className="w-full bg-[#F5F0EC] flex items-center justify-center px-4 pt-10 pb-4 relative">
-              <img
-                src={displayImage}
-                alt={product.name}
-                className="w-full h-auto max-h-[260px] object-contain transition-opacity duration-300"
-                onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg' }}
+            {/* ── Product image ──────────────────────────────────────── */}
+            <div className="relative w-full h-72 rounded-t-3xl overflow-hidden bg-[#F5F0EC]">
+
+              {/* Blurred fill layer — div with background-size:cover, NOT an <img> with object-fit:cover */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 scale-110 blur-xl opacity-35 pointer-events-none"
+                style={{ backgroundImage: `url(${displayImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               />
+              {/* Overlay tones down the blur and preserves brand palette */}
+              <div className="absolute inset-0 bg-[#F5F0EC]/50 pointer-events-none" />
+
+              {/* Main image — max-w/max-h let it breathe naturally; no forced w-full h-full */}
+              <div className="absolute inset-0 flex items-center justify-center pt-10 px-6 pb-3">
+                <img
+                  src={displayImage}
+                  alt={product.name}
+                  className="max-w-full max-h-full block transition-opacity duration-300"
+                  onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg' }}
+                />
+              </div>
 
               {isOutOfStock && (
                 <div className="absolute inset-0 bg-white/55 flex items-center justify-center">
