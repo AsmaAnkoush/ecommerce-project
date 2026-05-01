@@ -26,7 +26,7 @@ export default function BestSellersSection({ season = null, className = '' }) {
   if (!loading && products.length === 0) return null
 
   return (
-    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 max-w-6xl ${className}`}>
+    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-3 sm:px-4 lg:px-6 max-w-6xl ${className}`}>
 
       {/* ── Header: title + inline View All ────────────────── */}
       <div className="flex items-end justify-between mb-6 sm:mb-8 gap-3">

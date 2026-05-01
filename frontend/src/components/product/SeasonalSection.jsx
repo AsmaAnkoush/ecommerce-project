@@ -31,7 +31,7 @@ export default function SeasonalSection({ season = 'WINTER', className = '' }) {
   const viewAllHref = `/products?season=${season}`
 
   return (
-    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
+    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-3 sm:px-4 lg:px-6 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
 
       {/* ── Header: title + inline View All ────────────────── */}
       <div className="flex items-end justify-between mb-10 sm:mb-14 gap-3">

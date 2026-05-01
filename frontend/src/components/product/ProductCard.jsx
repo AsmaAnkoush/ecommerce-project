@@ -112,11 +112,11 @@ export default function ProductCard({ product }) {
       <Link to={`/products/${product.id}`} className="block">
 
         {/* ── Image box ───────────────────────────────────── */}
-        <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-[#F5F0EC]">
+        <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-[#F5F0EC] flex items-center justify-center">
           <img
             src={displayImage}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
             onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg' }}
           />
 
