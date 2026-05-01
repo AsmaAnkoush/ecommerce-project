@@ -5,6 +5,7 @@ import { createProduct, updateProduct, toggleProductVisibility } from '../../api
 import { getAdminProductById } from '../../api/adminApi'
 import { getCategories } from '../../api/categoryApi'
 import { uploadImages } from '../../api/uploadApi'
+import { compressImage } from '../../utils/compressImage'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import PageHeader from '../../components/layout/PageHeader'
@@ -327,8 +328,8 @@ export default function AdminProductForm() {
       if (!file.type.startsWith('image/')) {
         toast(`"${file.name}" is not an image`, 'error'); return false
       }
-      if (file.size > 5 * 1024 * 1024) {
-        toast(`"${file.name}" exceeds 5 MB`, 'error'); return false
+      if (file.size > 20 * 1024 * 1024) {
+        toast(`"${file.name}" exceeds 20 MB`, 'error'); return false
       }
       return true
     })
@@ -353,7 +354,8 @@ export default function AdminProductForm() {
     if (!staged.length || uploadingColor) return
     setUploadingColor(color)
     try {
-      const urls = await uploadImages(staged.map(s => s.file))
+      const compressed = await Promise.all(staged.map(s => compressImage(s.file)))
+      const urls = await uploadImages(compressed)
       setColorEntries(prev => prev.map(e =>
         e.color === color ? { ...e, imageUrls: [...new Set([...e.imageUrls, ...urls])] } : e
       ))

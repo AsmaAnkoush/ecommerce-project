@@ -24,6 +24,8 @@ public class GuestOrderRequest {
 
     private String paymentMethod;
 
+    private Long shippingZoneId;
+
     @NotEmpty
     @Valid
     private List<GuestOrderItemRequest> items;

@@ -341,7 +341,11 @@
     "confirmGuestOrder": "تأكيد الطلب كضيف",
     "shipping": "الشحن",
     "uponConfirmation": "عند التأكيد",
-    "failedOrder": "فشل في تقديم الطلب. حاولي مرة أخرى."
+    "failedOrder": "فشل في تقديم الطلب. حاولي مرة أخرى.",
+    "selectShippingZone": "منطقة التوصيل *",
+    "shippingZoneRequired": "يرجى اختيار منطقة التوصيل",
+    "selectToSee": "اختاري المنطقة",
+    "days": "أيام"
   },
 
   "offers": {

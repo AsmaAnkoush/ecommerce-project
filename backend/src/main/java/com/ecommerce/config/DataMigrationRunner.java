@@ -41,6 +41,29 @@ public class DataMigrationRunner implements CommandLineRunner {
 
         backfill("product_images", "sort_order",       "0",     "INT");
         backfill("product_images", "is_primary",       "false", "BOOLEAN");
+
+        seedShippingZones();
+    }
+
+    private void seedShippingZones() {
+        try {
+            Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM shipping_zones", Integer.class);
+            if (count == null || count == 0) {
+                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)",
+                        "West Bank", "الضفة الغربية", "20.00", "1-2", "📦", 1);
+                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)",
+                        "Jerusalem", "القدس", "30.00", "1-2", "🏛️", 2);
+                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)",
+                        "Inside 48", "داخل الـ 48", "70.00", "1-2", "🚚", 3);
+                log.info("Seeded 3 shipping zones");
+            } else {
+                // Normalize any rows that still carry the old value
+                int updated = jdbc.update("UPDATE shipping_zones SET delivery_days = '1-2' WHERE delivery_days != '1-2'");
+                if (updated > 0) log.info("Normalized {} shipping zone(s) delivery_days → 1-2", updated);
+            }
+        } catch (Exception ex) {
+            log.debug("Could not seed/normalize shipping_zones: {}", ex.getMessage());
+        }
     }
 
     /**

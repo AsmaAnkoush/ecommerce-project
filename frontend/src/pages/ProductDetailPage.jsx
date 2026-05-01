@@ -509,33 +509,31 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Price — premium card */}
-            <div className="bg-gradient-to-br from-[#FDF6F7] to-[#F9EEF0] rounded-2xl p-3 sm:p-4 border border-[#F5E0E3]">
-              <div className="flex items-end gap-3 flex-wrap">
-                {hasDiscount ? (
-                  <>
-                    <span
-                      className="text-[20px] sm:text-[22px] font-medium text-[#8B2F3A] leading-none nums-normal"
-                      style={{ fontFamily: 'Cormorant Garamond, serif' }}
-                    >
-                      {formatPrice(product.discountPrice)}
-                    </span>
-                    <span className="text-base text-[#C4A0A6] line-through leading-none mb-1 nums-normal">
-                      {formatPrice(product.price)}
-                    </span>
-                    <span className="ms-auto text-[10px] font-semibold tracking-[0.15em] uppercase bg-[#8B2F3A] text-white px-3 py-1.5 rounded-full mb-1 shadow-sm shadow-[#8B2F3A]/15">
-                      {t('product.off')} {discountPct}%
-                    </span>
-                  </>
-                ) : (
+            {/* Price */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {hasDiscount ? (
+                <>
                   <span
-                    className="text-[20px] sm:text-[22px] font-medium text-[#8B2F3A] leading-none nums-normal"
+                    className="text-base sm:text-lg font-semibold text-[#8B2F3A] leading-none nums-normal"
                     style={{ fontFamily: 'Cormorant Garamond, serif' }}
                   >
+                    {formatPrice(product.discountPrice)}
+                  </span>
+                  <span className="text-xs text-[#C4A0A6] line-through leading-none nums-normal">
                     {formatPrice(product.price)}
                   </span>
-                )}
-              </div>
+                  <span className="text-[9px] font-semibold tracking-[0.12em] uppercase bg-[#8B2F3A]/10 text-[#8B2F3A] px-2 py-0.5 rounded-full">
+                    {t('product.off')} {discountPct}%
+                  </span>
+                </>
+              ) : (
+                <span
+                  className="text-base sm:text-lg font-semibold text-[#8B2F3A] leading-none nums-normal"
+                  style={{ fontFamily: 'Cormorant Garamond, serif' }}
+                >
+                  {formatPrice(product.price)}
+                </span>
+              )}
             </div>
 
             {/* Status — only negative states shown; "in stock" is implied by selectable variants */}

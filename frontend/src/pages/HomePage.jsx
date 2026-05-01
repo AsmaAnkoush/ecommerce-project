@@ -25,32 +25,46 @@ function Hero({ innerRef, inView, activeSeason }) {
             inView ? 'animate-fade-in-up' : 'opacity-0'
           }`}
         >
-          {/* I WEAR + by Areej */}
+          {/* I WEAR + by Areej (SVG) */}
           <div className="flex flex-col items-stretch w-full sm:max-w-none">
-            <h1
-              className="text-[#6B1F2A] m-0 leading-[1] whitespace-nowrap text-[32px] sm:text-[48px] md:text-[60px] lg:text-[56px] xl:text-[68px] 2xl:text-[78px] text-left"
-              style={{
-                fontFamily: "'Montserrat', 'Poppins', sans-serif",
-                fontWeight: 500,
-                letterSpacing: '0.13em',
-              }}
+            <svg
+              viewBox="0 0 640 140"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-full max-w-[320px] sm:max-w-[440px] md:max-w-[540px] lg:max-w-[520px] xl:max-w-[620px] 2xl:max-w-[700px] h-auto block"
+              role="img"
+              aria-label="I WEAR by Areej"
             >
-              I WEAR
-            </h1>
+              {/* I WEAR */}
+              <text
+                x="0"
+                y="90"
+                fill="#6B1F2A"
+                style={{
+                  fontFamily: "'Montserrat', 'Poppins', sans-serif",
+                  fontWeight: 500,
+                  fontSize: '90px',
+                  letterSpacing: '0.13em',
+                }}
+              >
+                I WEAR
+              </text>
 
-            <h2
-              className="leading-[1.1] text-[16px] sm:text-[20px] md:text-[26px] lg:text-[24px] xl:text-[30px] 2xl:text-[34px] self-end mt-2 sm:mt-1.5"
-              style={{
-                fontFamily: "'Montserrat', 'Poppins', sans-serif",
-                fontWeight: 400,
-                letterSpacing: '0.07em',
-                color: '#E8A5B5',
-                textShadow: '0 1px 3px rgba(107, 31, 42, 0.15)',
-                margin: '8px 0 0 0',
-              }}
-            >
-              by Areej
-            </h2>
+              {/* By Areej - متداخل عند نهاية A */}
+              <text
+                x="305"
+                y="115"
+                fill="#C97A8A"
+                style={{
+                  fontFamily: "'Playfair Display', 'Georgia', serif",
+                  fontStyle: 'italic',
+                  fontWeight: 400,
+                  fontSize: '46px',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                By Areej
+              </text>
+            </svg>
           </div>
 
           {/* Divider with BOUTIQUE */}

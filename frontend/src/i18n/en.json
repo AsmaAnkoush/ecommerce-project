@@ -339,7 +339,11 @@
     "confirmGuestOrder": "Confirm Order as Guest",
     "shipping": "Shipping",
     "uponConfirmation": "Upon confirmation",
-    "failedOrder": "Failed to place order. Please try again."
+    "failedOrder": "Failed to place order. Please try again.",
+    "selectShippingZone": "Shipping Destination *",
+    "shippingZoneRequired": "Please select a shipping destination",
+    "selectToSee": "Select destination",
+    "days": "days"
   },
 
   "offers": {

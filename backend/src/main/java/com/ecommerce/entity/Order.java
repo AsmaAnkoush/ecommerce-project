@@ -59,6 +59,13 @@ public class Order {
 
     private String trackingNumber;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shipping_zone_id")
+    private ShippingZone shippingZone;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal shippingCost;
+
     @Column(name = "is_archived", nullable = false)
     @Builder.Default
     private boolean isArchived = false;

@@ -29,6 +29,9 @@ public class OrderResponse {
     private Boolean isGuest;
     private Boolean isArchived;
     private LocalDateTime createdAt;
+    private String shippingZoneNameEn;
+    private String shippingZoneNameAr;
+    private BigDecimal shippingCost;
 
     @Data
     @Builder

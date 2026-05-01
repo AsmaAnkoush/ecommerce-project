@@ -31,6 +31,7 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
+    private final ShippingZoneRepository shippingZoneRepository;
     private final NotificationService notificationService;
 
     @Transactional
@@ -82,6 +83,13 @@ public class OrderService {
             total = total.add(unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
+        if (request.getShippingZoneId() != null) {
+            ShippingZone zone = shippingZoneRepository.findById(request.getShippingZoneId())
+                    .orElseThrow(() -> new BadRequestException("Invalid shipping zone"));
+            order.setShippingZone(zone);
+            order.setShippingCost(zone.getPrice());
+            total = total.add(zone.getPrice());
+        }
         order.setTotalAmount(total);
         orderRepository.save(order);
         cart.getItems().clear();
@@ -192,6 +200,13 @@ public class OrderService {
             total = total.add(unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity())));
         }
 
+        if (request.getShippingZoneId() != null) {
+            ShippingZone zone = shippingZoneRepository.findById(request.getShippingZoneId())
+                    .orElseThrow(() -> new BadRequestException("Invalid shipping zone"));
+            order.setShippingZone(zone);
+            order.setShippingCost(zone.getPrice());
+            total = total.add(zone.getPrice());
+        }
         order.setTotalAmount(total);
         Order savedOrder = orderRepository.save(order);
         notificationService.createOrderNotification(savedOrder);
@@ -482,6 +497,9 @@ public class OrderService {
                 .isGuest(order.getUser() == null)
                 .isArchived(order.isArchived())
                 .createdAt(order.getCreatedAt())
+                .shippingZoneNameEn(order.getShippingZone() != null ? order.getShippingZone().getNameEn() : null)
+                .shippingZoneNameAr(order.getShippingZone() != null ? order.getShippingZone().getNameAr() : null)
+                .shippingCost(order.getShippingCost())
                 .build();
     }
 }

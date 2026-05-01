@@ -19,4 +19,6 @@ public class OrderRequest {
     private String notes;
 
     private String paymentMethod;
+
+    private Long shippingZoneId;
 }
