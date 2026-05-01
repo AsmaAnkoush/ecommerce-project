@@ -60,6 +60,7 @@ import AdminSettings from './pages/admin/AdminSettings'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
+import AdminStock from './pages/admin/AdminStock'
 
 function StoreLayout({ children }) {
   return (
@@ -121,6 +122,7 @@ export default function App() {
                   <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminLayout><AdminUsers /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/reviews" element={<ProtectedRoute adminOnly><AdminLayout><AdminReviews /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/offers" element={<ProtectedRoute adminOnly><AdminLayout><AdminOffers /></AdminLayout></ProtectedRoute>} />
+                  <Route path="/admin/stock" element={<ProtectedRoute adminOnly><AdminLayout><AdminStock /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminLayout><AdminSettings /></AdminLayout></ProtectedRoute>} />
 
                   <Route path="*" element={<Navigate to="/" replace />} />

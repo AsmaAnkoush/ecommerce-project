@@ -25,6 +25,7 @@ import com.ecommerce.repository.ReviewRepository;
 import com.ecommerce.repository.SeasonRepository;
 import com.ecommerce.repository.WishlistItemRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -206,6 +208,32 @@ public class ProductService {
 
     public Page<ProductResponse> findAllAdmin(Pageable pageable) {
         return mapPageWithStats(productRepository.findByIsDeletedFalse(pageable));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> findOutOfStockAdmin(Pageable pageable) {
+        log.debug("[Stock] fetching out-of-stock products, pageable={}", pageable);
+        try {
+            Page<Product> page = productRepository.findOutOfStock(0, pageable);
+            log.debug("[Stock] out-of-stock query returned {} items", page.getTotalElements());
+            return mapPageWithStats(page);
+        } catch (Exception e) {
+            log.error("[Stock] findOutOfStockAdmin failed: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> findLowStockAdmin(Pageable pageable, int threshold) {
+        log.debug("[Stock] fetching low-stock products (0 < qty < {}), pageable={}", threshold, pageable);
+        try {
+            Page<Product> page = productRepository.findLowStock(0, threshold, pageable);
+            log.debug("[Stock] low-stock query returned {} items", page.getTotalElements());
+            return mapPageWithStats(page);
+        } catch (Exception e) {
+            log.error("[Stock] findLowStockAdmin failed: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     /** Admin-side offers list — returns every product (active or hidden) that has a discount. */
@@ -537,7 +565,17 @@ public class ProductService {
     }
 
     private ProductResponse toResponse(Product p, double[] stats) {
-        List<String> imageUrls = p.getImages().stream()
+        List<ProductImage> images   = p.getImages()   != null ? p.getImages()   : List.of();
+        List<ProductVariant> variantList = p.getVariants() != null ? p.getVariants() : List.of();
+
+        if (p.getImages() == null) {
+            log.warn("[toResponse] product id={} has null images collection", p.getId());
+        }
+        if (p.getVariants() == null) {
+            log.warn("[toResponse] product id={} has null variants collection", p.getId());
+        }
+
+        List<String> imageUrls = images.stream()
                 .filter(img -> img.getColor() == null)
                 .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                 .map(ProductImage::getImageUrl)
@@ -546,14 +584,14 @@ public class ProductService {
         // Resolve the main display image: explicit primary > snapshotted Product.imageUrl >
         // first available ProductImage. This keeps admin's ⭐ choice consistent with the
         // image rendered on customer-facing product cards.
-        String mainImageUrl = p.getImages().stream()
+        String mainImageUrl = images.stream()
                 .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
                 .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                 .map(ProductImage::getImageUrl)
                 .findFirst()
                 .orElse(p.getImageUrl() != null
                         ? p.getImageUrl()
-                        : p.getImages().stream()
+                        : images.stream()
                                 .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                                 .map(ProductImage::getImageUrl)
                                 .findFirst()
@@ -561,7 +599,7 @@ public class ProductService {
 
         // Build color → images map (preserving insertion order)
         Map<String, List<ProductResponse.ColorImageEntry>> colorImages = new LinkedHashMap<>();
-        p.getImages().stream()
+        images.stream()
                 .filter(img -> img.getColor() != null)
                 .sorted(Comparator.comparingInt((ProductImage img) -> img.getSortOrder() == null ? 0 : img.getSortOrder()))
                 .forEach(img -> colorImages
@@ -571,12 +609,12 @@ public class ProductService {
                                 .isPrimary(img.getIsPrimary())
                                 .build()));
 
-        List<ProductVariantResponse> variants = p.getVariants().stream()
+        List<ProductVariantResponse> variants = variantList.stream()
                 .map(v -> ProductVariantResponse.builder()
                         .id(v.getId())
                         .color(v.getColor())
                         .size(v.getSize())
-                        .stockQuantity(v.getStockQuantity())
+                        .stockQuantity(v.getStockQuantity() != null ? v.getStockQuantity() : 0)
                         .chest(v.getChest())
                         .waist(v.getWaist())
                         .shoulders(v.getShoulders())
@@ -597,16 +635,16 @@ public class ProductService {
                 .season(p.getSeason())
                 .discountType(p.getDiscountType())
                 .discountValue(p.getDiscountValue())
-                .stockQuantity(p.getStockQuantity())
+                .stockQuantity(p.getStockQuantity() != null ? p.getStockQuantity() : 0)
                 .imageUrl(mainImageUrl)
                 .imageUrls(imageUrls)
                 .brand(p.getBrand())
                 .size(p.getSize())
                 .color(p.getColor())
                 .material(p.getMaterial())
-                .active(p.getActive())
-                .isBestSeller(p.getIsBestSeller())
-                .confirmedOrderCount(p.getConfirmedOrderCount())
+                .active(p.getActive() != null ? p.getActive() : true)
+                .isBestSeller(p.getIsBestSeller() != null ? p.getIsBestSeller() : false)
+                .confirmedOrderCount(p.getConfirmedOrderCount() != null ? p.getConfirmedOrderCount() : 0L)
                 .isNew(p.getCreatedAt() != null && p.getCreatedAt().isAfter(LocalDateTime.now().minusDays(3)))
                 .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
                 .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)

@@ -22,6 +22,9 @@ export const deleteAdminUser = (id) => api.delete(`/admin/users/${id}`)
 
 export const updateActiveSeason = (season) => api.put('/admin/settings/season', null, { params: { season } })
 
+export const getOutOfStockProducts = (params) => api.get('/admin/stock/out-of-stock', { params })
+export const getLowStockProducts   = (params) => api.get('/admin/stock/low-stock',    { params })
+
 export const uploadLogo = (file) => {
   const formData = new FormData()
   formData.append('file', file)

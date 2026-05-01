@@ -122,75 +122,57 @@ export default function QuickView() {
   }
 
   return (
-    /*
-     * Overlay: full-screen backdrop, click-outside closes, overflow-y-auto
-     * gives the whole overlay a scroll track so very-tall content on very-short
-     * screens is always reachable.
-     */
+    /* Overlay — pure backdrop + flex centering, no scroll of its own */
     <div
-      className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
       onClick={closeQuickView}
       role="dialog"
       aria-modal="true"
     >
-      {/* Flex centering wrapper — min-h-full keeps vertical centering intact
-          while still allowing the outer div to scroll when content overflows */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      {/* Modal wrapper — relative anchor for the close button */}
+      <div
+        className="relative w-full max-w-[90%] sm:max-w-md animate-fade-in-scale"
+        onClick={e => e.stopPropagation()}
+      >
 
-        {/*
-         * Modal wrapper — relative so the close button can be positioned
-         * absolutely and stay visible even when the inner card scrolls.
-         * Stops click propagation so tapping the card doesn't close the modal.
-         */}
+        {/* Close button — outside the scrollable card so it never scrolls away */}
+        <button
+          type="button"
+          onClick={closeQuickView}
+          aria-label={t('common.close')}
+          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#5A2A2F] hover:text-[#6B1F2A] hover:rotate-90 transition-all duration-300"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Card — the ONE and only scroll container */}
         <div
-          className="relative w-full max-w-[90%] sm:max-w-md my-auto animate-fade-in-scale"
-          onClick={e => e.stopPropagation()}
+          className="bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#EDD8DC] [&::-webkit-scrollbar-track]:bg-transparent"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#EDD8DC transparent' }}
         >
 
-          {/*
-           * Close button — sits OUTSIDE the scrollable card so it never
-           * scrolls out of view. z-20 keeps it above the card content.
-           */}
-          <button
-            type="button"
-            onClick={closeQuickView}
-            aria-label={t('common.close')}
-            className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#5A2A2F] hover:text-[#6B1F2A] hover:rotate-90 transition-all duration-300"
-          >
-            <X className="w-4 h-4" />
-          </button>
-
-          {/*
-           * Scrollable card — max-h-[90vh] + overflow-y-auto is the primary
-           * scroll container for the modal content. The close button above is
-           * NOT inside here, so it is always accessible.
-           */}
-          <div className="bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh]">
-
             {/* ── Product image ──────────────────────────────────────── */}
-            <div className="relative w-full h-72 rounded-t-3xl overflow-hidden bg-[#F5F0EC]">
+            {/* min-h prevents collapse on error; max-h caps at 60 % of viewport */}
+            <div className="relative w-full rounded-t-3xl overflow-hidden bg-[#F5F0EC] flex items-center justify-center min-h-[180px] max-h-[60vh]">
 
-              {/* Blurred fill layer — div with background-size:cover, NOT an <img> with object-fit:cover */}
+              {/* Blurred fill layer — CSS background, not object-fit:cover on an img */}
               <div
                 aria-hidden="true"
                 className="absolute inset-0 scale-110 blur-xl opacity-35 pointer-events-none"
                 style={{ backgroundImage: `url(${displayImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
               />
-              {/* Overlay tones down the blur and preserves brand palette */}
               <div className="absolute inset-0 bg-[#F5F0EC]/50 pointer-events-none" />
 
-              {/* Main image — max-w/max-h let it breathe naturally; no forced w-full h-full */}
-              <div className="absolute inset-0 flex items-center justify-center pt-10 px-6 pb-3">
-                <img
-                  src={displayImage}
-                  alt={product.name}
-                  className="max-w-full max-h-full block transition-opacity duration-300"
-                  onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg' }}
-                />
-              </div>
+              {/* Main image — inline flow child drives container height; z-10 sits above blur */}
+              <img
+                src={displayImage}
+                alt={product.name}
+                className="relative z-10 w-auto max-w-full max-h-[60vh] block transition-opacity duration-300"
+                onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg' }}
+              />
 
               {isOutOfStock && (
-                <div className="absolute inset-0 bg-white/55 flex items-center justify-center">
+                <div className="absolute inset-0 z-20 bg-white/55 flex items-center justify-center">
                   <span className="bg-[#3D1A1E]/75 text-white text-xs px-4 py-2 rounded-full tracking-wider backdrop-blur-sm">
                     {t('product.outOfStock')}
                   </span>
@@ -198,14 +180,14 @@ export default function QuickView() {
               )}
 
               {hasDiscount && (
-                <span className="absolute top-3 left-3 bg-[#6B1F2A]/85 text-white text-[9px] font-medium px-2.5 py-1 rounded-full tracking-wider backdrop-blur-sm">
+                <span className="absolute top-3 left-3 z-20 bg-[#6B1F2A]/85 text-white text-[9px] font-medium px-2.5 py-1 rounded-full tracking-wider backdrop-blur-sm">
                   {t('product.sale')}
                 </span>
               )}
             </div>
 
             {/* ── Content ────────────────────────────────────────────── */}
-            <div className="px-6 pt-5 pb-8 sm:px-7 text-center">
+            <div className="px-5 pt-4 pb-6 sm:px-6 text-center">
 
               {/* Product name */}
               <p className="text-[#5A2A2F] text-lg sm:text-xl font-medium tracking-wide mb-1 leading-snug">
@@ -383,7 +365,6 @@ export default function QuickView() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   )
 }

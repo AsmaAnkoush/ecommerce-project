@@ -55,10 +55,6 @@ export default function ProductCard({ product }) {
     return result
   }, [product.variants])
 
-  const SIZES_LIMIT = 5
-  const visibleSizes = uniqueSizes.slice(0, SIZES_LIMIT)
-  const hiddenSizesCount = uniqueSizes.length - visibleSizes.length
-
   // Resolve display image: color-specific primary → product primary
   const displayImage = useMemo(() => {
     if (selectedColor && product.colorImages?.[selectedColor]) {
@@ -222,45 +218,16 @@ export default function ProductCard({ product }) {
 
           {/* Sizes — between name and price */}
           {uniqueSizes.length > 0 && (
-            <div className="flex items-center justify-center gap-1 flex-wrap mb-1.5 px-1 min-h-[22px]">
-              {visibleSizes.map(sz => (
-                <span
-                  key={sz}
-                  className="inline-flex items-center justify-center min-w-[22px] h-[21px] px-1.5 text-[9px] font-medium text-[#5A2A2F]/75 bg-[#F5E8EA] rounded border border-[#EDD8DC] leading-none"
-                >
+            <p className="text-[11px] font-medium text-[#5A1420] text-center px-2 mb-1.5 leading-5">
+              {uniqueSizes.map((sz, i) => (
+                <span key={sz} className="whitespace-nowrap">
                   {sz}
+                  {i < uniqueSizes.length - 1 && (
+                    <span className="mx-1 text-[#C4A0A6]" aria-hidden="true">•</span>
+                  )}
                 </span>
               ))}
-
-              {hiddenSizesCount > 0 && (
-                <div className="relative group/moresizes">
-                  <span className="inline-flex items-center justify-center min-w-[22px] h-[21px] px-1.5 text-[9px] font-semibold text-[#6B1F2A] bg-[#FDF0F2] rounded border border-[#DFA3AD] leading-none cursor-default select-none">
-                    +{hiddenSizesCount}
-                  </span>
-
-                  {/* All-sizes tooltip — shown on hover */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none opacity-0 invisible group-hover/moresizes:opacity-100 group-hover/moresizes:visible transition-all duration-150">
-                    <div className="relative bg-white border border-[#EDD8DC] rounded-xl shadow-xl p-2.5">
-                      <p className="text-[8px] text-[#9B7B80] font-semibold uppercase tracking-[0.15em] mb-1.5 text-center whitespace-nowrap">
-                        All sizes
-                      </p>
-                      <div className="flex flex-wrap gap-1 justify-center" style={{ maxWidth: '160px' }}>
-                        {uniqueSizes.map(sz => (
-                          <span
-                            key={sz}
-                            className="inline-flex items-center justify-center min-w-[24px] h-[22px] px-1.5 text-[9px] font-medium text-[#5A2A2F] bg-[#F5E8EA] rounded border border-[#EDD8DC] leading-none"
-                          >
-                            {sz}
-                          </span>
-                        ))}
-                      </div>
-                      {/* Arrow pointing down */}
-                      <div className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-b border-r border-[#EDD8DC] rotate-45" />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            </p>
           )}
 
           {/* Price */}

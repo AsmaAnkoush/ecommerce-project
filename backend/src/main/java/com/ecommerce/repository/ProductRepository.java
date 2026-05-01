@@ -115,6 +115,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     /** Admin "find all" — excludes tombstoned rows. */
     Page<Product> findByIsDeletedFalse(Pageable pageable);
 
+    /** Out-of-stock: total stock == 0, not deleted. */
+    @Query("SELECT p FROM Product p WHERE p.isDeleted = false AND p.stockQuantity = :qty")
+    Page<Product> findOutOfStock(@Param("qty") int qty, Pageable pageable);
+
+    /** Low-stock: 0 < total stock < threshold, not deleted. */
+    @Query("SELECT p FROM Product p WHERE p.isDeleted = false AND p.stockQuantity > :minQty AND p.stockQuantity < :maxQty")
+    Page<Product> findLowStock(@Param("minQty") int minQty, @Param("maxQty") int maxQty, Pageable pageable);
+
     /**
      * Row-level write lock on the product row — fallback when an order item
      * has no colour+size variant. Blocks concurrent stock deductions on the

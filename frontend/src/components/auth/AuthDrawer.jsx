@@ -37,6 +37,24 @@ export default function AuthDrawer() {
     return () => { document.body.style.overflow = prev }
   }, [open])
 
+  /* Mobile back button — push a dummy history entry so the back button closes
+     the drawer instead of leaving the page. On unmount/close via button we pop
+     the dummy entry so the real history stays clean. */
+  useEffect(() => {
+    if (!open) return
+    const closedByBack = { flag: false }
+    window.history.pushState({ overlay: 'auth' }, '', window.location.href)
+    const onPopState = () => {
+      closedByBack.flag = true
+      closeAuth()
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => {
+      window.removeEventListener('popstate', onPopState)
+      if (!closedByBack.flag) window.history.back()
+    }
+  }, [open, closeAuth])
+
   if (!open) return null
 
   /* RTL → drawer comes from the right; LTR → from the left.

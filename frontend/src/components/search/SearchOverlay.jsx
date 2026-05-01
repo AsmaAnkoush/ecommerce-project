@@ -16,6 +16,7 @@ export default function SearchOverlay() {
   const [searched, setSearched] = useState(false)
   const inputRef = useRef(null)
   const debounceRef = useRef(null)
+  const queryRef = useRef('')
 
   // Focus input when overlay opens
   useEffect(() => {
@@ -31,12 +32,45 @@ export default function SearchOverlay() {
     return () => { document.body.style.overflow = '' }
   }, [searchOpen])
 
+  // Keep queryRef in sync so the popstate handler never reads a stale closure value
+  useEffect(() => { queryRef.current = query }, [query])
+
   // ESC to close
   useEffect(() => {
     if (!searchOpen) return
     const handleKey = (e) => { if (e.key === 'Escape') closeSearch() }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
+  }, [searchOpen, closeSearch])
+
+  /* Mobile back button — two-step behaviour:
+       1st back press while query is active → clear query (re-arm the intercept)
+       2nd back press (or 1st with no query) → close overlay
+     pushedCount tracks how many dummy states we've added so cleanup can pop
+     them all with history.go(-n) if the overlay is closed via button/backdrop. */
+  useEffect(() => {
+    if (!searchOpen) return
+    let pushedCount = 1
+    const closedByBack = { flag: false }
+    window.history.pushState({ overlay: 'search' }, '', window.location.href)
+    const onPopState = () => {
+      if (queryRef.current) {
+        setQuery('')
+        setResults([])
+        setSearched(false)
+        inputRef.current?.focus()
+        pushedCount++
+        window.history.pushState({ overlay: 'search' }, '', window.location.href)
+      } else {
+        closedByBack.flag = true
+        closeSearch()
+      }
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => {
+      window.removeEventListener('popstate', onPopState)
+      if (!closedByBack.flag) window.history.go(-pushedCount)
+    }
   }, [searchOpen, closeSearch])
 
   // Debounced search

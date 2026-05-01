@@ -73,6 +73,28 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Product found", productService.findByIdAdmin(id)));
     }
 
+    // ── Stock alerts ──────────────────────────────────────────────────────────
+    @GetMapping("/stock/out-of-stock")
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>> getOutOfStockProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+        PageRequestValidator.validate(page, size);
+        return ResponseEntity.ok(ApiResponse.success("Out of stock products",
+                productService.findOutOfStockAdmin(
+                        PageRequest.of(page, size, Sort.by("createdAt").descending()))));
+    }
+
+    @GetMapping("/stock/low-stock")
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>> getLowStockProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            @RequestParam(defaultValue = "5") int threshold) {
+        PageRequestValidator.validate(page, size);
+        return ResponseEntity.ok(ApiResponse.success("Low stock products",
+                productService.findLowStockAdmin(
+                        PageRequest.of(page, size, Sort.by("stockQuantity").ascending()), threshold)));
+    }
+
     // ── Dashboard ─────────────────────────────────────────────────────────────
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<AdminDashboardResponse>> getDashboard() {

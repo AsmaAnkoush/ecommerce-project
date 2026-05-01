@@ -26,6 +26,7 @@ const getNavItems = (t) => [
   { to: '/admin/users',      label: t('admin.users'),       icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
   { to: '/admin/reviews',    label: t('admin.reviews'),     icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
   { to: '/admin/offers',     label: t('admin.offers'),      icon: 'M7 7h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z' },
+  { to: '/admin/stock',      label: t('admin.stockAlerts'), icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', alert: true },
   { to: '/admin/settings',   label: t('admin.settings'),    icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
 ]
 
@@ -38,6 +39,7 @@ const getPageTitles = (t) => ({
   '/admin/users':      t('admin.users'),
   '/admin/reviews':    t('admin.reviews'),
   '/admin/offers':     t('admin.offers'),
+  '/admin/stock':      t('admin.stockAlerts'),
   '/admin/settings':   t('admin.settings'),
 })
 
@@ -102,11 +104,16 @@ function Sidebar({ onClose }) {
 
       {/* ── Scrollable navigation ── */}
       <nav className="flex-1 min-h-0 px-3 py-2 overflow-y-auto overscroll-contain space-y-1" style={{ scrollBehavior: 'smooth' }}>
-        {NAV_ITEMS.map(({ to, label, icon }) => (
+        {NAV_ITEMS.map(({ to, label, icon, alert }) => (
           <NavLink key={to} to={to} end={to === '/admin'} onClick={onClose} className={linkClass}>
-            <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-              <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-            </svg>
+            <span className="relative shrink-0">
+              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+              </svg>
+              {alert && (
+                <span className="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-amber-400 border border-white" />
+              )}
+            </span>
             {label}
           </NavLink>
         ))}

@@ -145,7 +145,6 @@ export default function ProductDetailPage() {
   // Variant selection
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
-  const [showMeasurements, setShowMeasurements] = useState(false)
 
   // Reviews state
   const [reviews, setReviews] = useState([])
@@ -637,64 +636,35 @@ export default function ProductDetailPage() {
                       </p>
                     )}
 
-                    {/* Measurements — toggle button + table; only rendered when the selected variant has any measurement */}
+                    {/* Measurements — auto-shown when selected variant has measurement data */}
                     {(() => {
                       if (!selectedVariant) return null
                       const fields = [
-                        { key: 'chest',      label: t('product.chest') },
-                        { key: 'waist',      label: t('product.waist') },
-                        { key: 'shoulders',  label: t('product.shoulders') },
-                        { key: 'backWidth',  label: t('product.backWidth') },
-                        { key: 'length',     label: t('product.length') },
+                        { key: 'chest',     label: t('product.chest') },
+                        { key: 'waist',     label: t('product.waist') },
+                        { key: 'shoulders', label: t('product.shoulders') },
+                        { key: 'backWidth', label: t('product.backWidth') },
+                        { key: 'length',    label: t('product.length') },
                       ].filter(f => selectedVariant[f.key] != null)
                       if (fields.length === 0) return null
                       return (
-                        <div className="mt-4">
-                          <button
-                            type="button"
-                            onClick={() => setShowMeasurements(v => !v)}
-                            aria-expanded={showMeasurements}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#6B1F2A] text-[#6B1F2A] text-xs font-medium tracking-wide hover:bg-[#6B1F2A] hover:text-white transition-all duration-200"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            {showMeasurements ? t('product.hideMeasurements') : t('product.viewMeasurements')}
-                            <svg className={`w-3 h-3 transition-transform duration-200 ${showMeasurements ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-
-                          <div
-                            className="overflow-hidden transition-all duration-300 ease-out"
-                            style={{ maxHeight: showMeasurements ? '320px' : '0', opacity: showMeasurements ? 1 : 0, marginTop: showMeasurements ? '12px' : 0 }}
-                          >
-                            <div className="rounded-xl border border-[#F0D5D8] bg-[#FDFAFB] p-4">
-                              <div className="flex items-baseline justify-between mb-3">
-                                <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B7B80]">
-                                  {t('product.measurements')}
-                                </p>
-                                <span className="text-[10px] text-[#B08A90]">({t('product.cm')})</span>
+                        <div className="mt-4 rounded-xl border border-[#F0D5D8] bg-[#FDFAFB] p-4 animate-fade-in">
+                          <div className="flex items-baseline justify-between mb-3">
+                            <p className="text-[11px] font-semibold tracking-[0.12em] text-[#6B1F2A]">
+                              {t('product.measurements')}
+                            </p>
+                            <span className="text-[10px] text-[#B08A90]">{t('product.cm')}</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {fields.map(f => (
+                              <div
+                                key={f.key}
+                                className="flex flex-col items-center gap-1 bg-white rounded-lg border border-[#F5E0E3] px-3 py-2.5"
+                              >
+                                <span className="text-[10px] text-[#9B7B80] tracking-wide text-center">{f.label}</span>
+                                <span className="text-sm font-semibold text-[#3D1A1E] nums-normal">{selectedVariant[f.key]}</span>
                               </div>
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-center text-sm" style={{ borderCollapse: 'collapse' }}>
-                                  <thead>
-                                    <tr className="border-b border-[#F0D5D8]">
-                                      {fields.map(f => (
-                                        <th key={f.key} className="px-3 py-2 font-semibold text-[#6B4E53] text-xs tracking-wide">{f.label}</th>
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    <tr>
-                                      {fields.map(f => (
-                                        <td key={f.key} className="px-3 py-2 font-medium text-[#3D1A1E] nums-normal">{selectedVariant[f.key]}</td>
-                                      ))}
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
+                            ))}
                           </div>
                         </div>
                       )
@@ -784,35 +754,6 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* ── Sticky Mobile CTA Bar ─────────────────────────────── */}
-      <div className="lg:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#F0D5D8] shadow-[0_-4px_20px_rgba(107,31,42,0.08)] px-4 py-3 animate-fade-in-up">
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-[#9B7B80] uppercase tracking-wider truncate">{product.name}</p>
-            <p className="text-base font-bold text-[#6B1F2A] nums-normal" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px' }}>
-              {hasDiscount ? formatPrice(product.discountPrice) : formatPrice(product.price)}
-            </p>
-          </div>
-          <button
-            onClick={handleAddToCart}
-            disabled={!canAddToCart}
-            className={`shrink-0 px-4 sm:px-6 h-12 rounded-full text-xs font-bold tracking-[0.1em] sm:tracking-[0.15em] uppercase flex items-center gap-1.5 sm:gap-2 transition-all duration-300 ${
-              added
-                ? 'bg-green-600 text-white'
-                : canAddToCart
-                ? 'bg-gradient-to-r from-[#6B1F2A] to-[#8B2535] text-white shadow-lg shadow-[#6B1F2A]/30 active:scale-95'
-                : 'bg-[#EDD8DC] text-[#B08A90]'
-            }`}
-          >
-            {added ? '✓' : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-            )}
-            {added ? '' : allSoldOut ? t('product.soldOut') : t('product.addToCart')}
-          </button>
-        </div>
-      </div>
 
       {/* ── Zoom / Lightbox Modal ─────────────────────────────── */}
       {zoomOpen && (
