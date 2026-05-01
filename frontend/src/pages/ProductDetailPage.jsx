@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useGalleryNav, useTouchNav } from '../hooks/useGalleryNav'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { Truck, Ruler } from 'lucide-react'
 import { getProduct } from '../api/productApi'
 import { getReviews, addReview, updateReview, deleteReview } from '../api/reviewApi'
 import { useCart } from '../context/CartContext'
@@ -12,47 +13,19 @@ import { useToast } from '../context/ToastContext'
 import ProductCard from '../components/product/ProductCard'
 import Spinner from '../components/ui/Spinner'
 import Badge from '../components/ui/Badge'
+import InfoCard from '../components/ui/InfoCard'
 import { SHIPPING_ZONES } from '../constants/shipping'
 import { formatLocalDate } from '../utils/dateUtils'
 
 function ShippingInfoTable() {
   const { t } = useLanguage()
   const formatPrice = useFormatPrice()
-
-  return (
-    <div className="rounded-2xl border border-[#F0D5D8] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#FDF8F9] border-b border-[#F0D5D8]">
-        <svg className="w-3.5 h-3.5 text-[#6B1F2A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0121 11.414V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-        </svg>
-        <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#9B7B80]">
-          {t('product.shippingInfo')}
-        </span>
-      </div>
-
-      {/* Horizontal grid: region name row then price row */}
-      <div className="grid grid-cols-3 bg-white">
-        {SHIPPING_ZONES.map(({ key, icon }, i) => (
-          <div
-            key={`r-${key}`}
-            className={`flex items-center justify-center gap-1.5 px-3 pt-3 pb-1.5 border-b border-[#F5E8EA] text-xs text-[#6B4E53]${i < 2 ? ' border-e border-[#F5E8EA]' : ''}`}
-          >
-            <span className="text-sm leading-none">{icon}</span>
-            <span>{t(`checkout.${key}`)}</span>
-          </div>
-        ))}
-        {SHIPPING_ZONES.map(({ key, price }, i) => (
-          <div
-            key={`p-${key}`}
-            className={`flex items-center justify-center px-3 pt-1.5 pb-3${i < 2 ? ' border-e border-[#F5E8EA]' : ''}`}
-          >
-            <span className="text-sm font-bold text-[#6B1F2A] nums-normal">{formatPrice(price)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  const items = SHIPPING_ZONES.map(({ key, icon, price }) => ({
+    emoji: icon,
+    label: t(`checkout.${key}`),
+    value: formatPrice(price),
+  }))
+  return <InfoCard title={t('product.shippingInfo')} icon={Truck} items={items} />
 }
 
 function ShareSection({ productName }) {
@@ -647,46 +620,17 @@ export default function ProductDetailPage() {
                       </p>
                     )}
 
-                    {/* Measurements — auto-shown when selected variant has measurement data */}
+                    {/* Measurements — uses InfoCard, identical design to shipping */}
                     {(() => {
                       if (!selectedVariant) return null
                       const KEYS = ['chest', 'waist', 'shoulders', 'backWidth', 'length']
-                      const fields = KEYS.filter(k => selectedVariant[k] != null).map(k => [k, selectedVariant[k]])
-                      if (fields.length === 0) return null
-                      const half = Math.ceil(fields.length / 2)
-                      const row1 = fields.slice(0, half)
-                      const row2 = fields.slice(half)
-                      while (row2.length < row1.length) row2.push(null)
-                      const cellStyle = { padding: '6px 12px', textAlign: 'center', whiteSpace: 'nowrap', minWidth: '72px' }
-                      const labelStyle = { color: '#9B7B80', fontSize: '12px' }
-                      const valueStyle = { fontWeight: 700, color: '#6B1F2A', fontSize: '12px', direction: 'ltr', display: 'inline-block' }
+                      const items = KEYS
+                        .filter(k => selectedVariant[k] != null)
+                        .map(k => ({ label: getMeasurementLabel(k), value: selectedVariant[k] }))
+                      if (items.length === 0) return null
                       return (
-                        <div dir="rtl" style={{ display: 'flex', justifyContent: 'center', marginTop: '14px', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ color: '#6B1F2A', fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em' }}>
-                            {t('product.measurements')}
-                          </span>
-                          <table style={{ borderCollapse: 'collapse' }}>
-                            <tbody>
-                              <tr>
-                                {row1.map(([k, v]) => (
-                                  <td key={k} style={cellStyle}>
-                                    <span style={labelStyle}>{getMeasurementLabel(k)} </span>
-                                    <span style={valueStyle}>{v}</span>
-                                  </td>
-                                ))}
-                              </tr>
-                              <tr>
-                                {row2.map((f, i) => (
-                                  <td key={f ? f[0] : `pad-${i}`} style={cellStyle}>
-                                    {f && <>
-                                      <span style={labelStyle}>{getMeasurementLabel(f[0])} </span>
-                                      <span style={valueStyle}>{f[1]}</span>
-                                    </>}
-                                  </td>
-                                ))}
-                              </tr>
-                            </tbody>
-                          </table>
+                        <div className="mt-4">
+                          <InfoCard title={t('product.measurements')} icon={Ruler} items={items} />
                         </div>
                       )
                     })()}

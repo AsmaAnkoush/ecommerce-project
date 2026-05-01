@@ -218,12 +218,12 @@ export default function ProductCard({ product }) {
 
           {/* Sizes — between name and price */}
           {uniqueSizes.length > 0 && (
-            <p className="text-[11px] font-medium text-[#5A1420] text-center px-2 mb-1.5 leading-5">
+            <p className="text-[9px] font-medium text-[#5A1420]/45 text-center px-2 mb-1.5 leading-5">
               {uniqueSizes.map((sz, i) => (
                 <span key={sz} className="whitespace-nowrap">
                   {sz}
                   {i < uniqueSizes.length - 1 && (
-                    <span className="mx-1 text-[#C4A0A6]" aria-hidden="true">•</span>
+                    <span className="mx-1 text-[15px] opacity-50" aria-hidden="true">·</span>
                   )}
                 </span>
               ))}
