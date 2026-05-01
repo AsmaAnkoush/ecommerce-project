@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { deleteProduct, toggleProductVisibility } from '../../api/productApi'
 import { getAdminProducts } from '../../api/adminApi'
 import Spinner from '../../components/ui/Spinner'
+import { parseServerDate } from '../../utils/dateUtils'
 import PageHeader from '../../components/layout/PageHeader'
 import { useFormatPrice } from '../../utils/formatPrice'
 import Badge from '../../components/ui/Badge'
@@ -343,7 +344,7 @@ export default function AdminProducts() {
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0" style={{ background: '#FDF6F7', border: '1px solid #F0DDE0' }}>
                             {p.imageUrl
-                              ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                              ? <img src={p.imageUrl} alt={p.name} className="w-full h-full object-contain p-1" />
                               : <div className="w-full h-full flex items-center justify-center font-bold text-sm" style={{ color: '#DFA3AD' }}>
                                   {(p.name || '?').charAt(0)}
                                 </div>
@@ -596,8 +597,8 @@ export default function AdminProducts() {
  */
 function CreatedAtCell({ value }) {
   if (!value) return <span className="text-[11px]" style={{ color: '#C4A0A6' }}>—</span>
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return <span className="text-[11px]" style={{ color: '#C4A0A6' }}>—</span>
+  const d = parseServerDate(value)
+  if (!d) return <span className="text-[11px]" style={{ color: '#C4A0A6' }}>—</span>
   const weekday = d.toLocaleDateString(undefined, { weekday: 'long' })
   const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })

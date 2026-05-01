@@ -92,7 +92,7 @@ export default function CartDrawer() {
                 <div key={item.id} className="flex gap-3 bg-white rounded-2xl p-3 border border-[#F5E0E3] shadow-[0_1px_6px_rgba(107,31,42,0.04)]">
                   {/* Image */}
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#F9F0F1] shrink-0">
-                    {item.productImage && <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />}
+                    {item.productImage && <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain p-1" />}
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import ReactCrop from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { useLanguage } from '../../context/LanguageContext'
@@ -28,12 +28,19 @@ function getCroppedFile(image, crop, fileName = 'cropped.jpg') {
     0, 0, pixelCrop.width, pixelCrop.height,
   )
 
-  return new Promise((resolve) => {
-    canvas.toBlob(
-      (blob) => resolve(new File([blob], fileName, { type: 'image/jpeg' })),
-      'image/jpeg',
-      0.92,
-    )
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(new File([blob], fileName, { type: 'image/jpeg' }))
+          else reject(new Error('Canvas export returned null'))
+        },
+        'image/jpeg',
+        0.92,
+      )
+    } catch (err) {
+      reject(err)
+    }
   })
 }
 
@@ -90,7 +97,29 @@ export default function ImageCropModal({ imageSrc, aspect: initialAspect = 3 / 4
   const [crop, setCrop]             = useState(null)
   const [lockAspect, setLockAspect] = useState(true)
   const [processing, setProcessing] = useState(false)
-  const imgRef = useRef(null)
+  const imgRef     = useRef(null)
+  const cropAreaRef = useRef(null)
+  // Explicit pixel max-dimensions for the img, measured once after mount.
+  // Avoids the circular max-height:100% CSS bug where the img's parent height
+  // is itself content-determined, causing portrait images to overflow and the
+  // crop selection overlay to visually misalign from the image content.
+  const [maxImgSize, setMaxImgSize] = useState({ w: 0, h: 0 })
+
+  // Resolved canvas-safe source for the image.
+  // Remote URLs are pre-fetched as blob: URLs so canvas.toBlob() never
+  // throws a SecurityError due to a tainted canvas. blob: / data: URLs
+  // are already canvas-safe and are used directly.
+  const [resolvedSrc,     setResolvedSrc]     = useState(null)
+  const [srcFetching,     setSrcFetching]     = useState(false)
+  const [srcFetchFailed,  setSrcFetchFailed]  = useState(false)
+
+  useLayoutEffect(() => {
+    if (!cropAreaRef.current) return
+    const { width, height } = cropAreaRef.current.getBoundingClientRect()
+    // p-3 = 12px each side (24px total); sm:p-5 = 20px each side (40px total)
+    const pad = window.innerWidth >= 640 ? 40 : 24
+    setMaxImgSize({ w: Math.max(1, width - pad), h: Math.max(1, height - pad) })
+  }, [])
 
   const activeAspect = lockAspect ? initialAspect : undefined
 
@@ -134,12 +163,39 @@ export default function ImageCropModal({ imageSrc, aspect: initialAspect = 3 / 4
     }
   }, [])
 
+  // Fetch remote images as a blob so the canvas is never tainted.
+  // Falls back to using imageSrc directly (+ crossOrigin attr) if CORS blocks the fetch.
+  useEffect(() => {
+    if (!imageSrc) return
+    if (/^(blob:|data:)/.test(imageSrc)) {
+      setResolvedSrc(imageSrc)
+      return
+    }
+    let blobUrl = null
+    setSrcFetching(true)
+    setSrcFetchFailed(false)
+    setResolvedSrc(null)
+    fetch(imageSrc, { mode: 'cors', credentials: 'omit' })
+      .then(r => { if (!r.ok) throw new Error('fetch'); return r.blob() })
+      .then(blob => { blobUrl = URL.createObjectURL(blob); setResolvedSrc(blobUrl) })
+      .catch(() => { setSrcFetchFailed(true); setResolvedSrc(imageSrc) })
+      .finally(() => setSrcFetching(false))
+    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl) }
+  }, [imageSrc])
+
   const handleConfirm = async () => {
     if (!imgRef.current || !crop?.width || !crop?.height) return
     setProcessing(true)
     try {
       const file = await getCroppedFile(imgRef.current, crop)
       onConfirm(file)
+    } catch (err) {
+      if (err?.name === 'SecurityError' || String(err).toLowerCase().includes('tainted')) {
+        alert(
+          'Could not crop this image due to browser security restrictions.\n' +
+          'Please re-upload the image locally and try cropping again.'
+        )
+      }
     } finally {
       setProcessing(false)
     }
@@ -190,48 +246,54 @@ export default function ImageCropModal({ imageSrc, aspect: initialAspect = 3 / 4
         overflow-hidden: clips ReactCrop handles at the boundary.
         touchAction:none on container: lets ReactCrop own all touch events
         (drag selection, resize handles) without browser scroll interference.
-        The inner absolute div gives ReactCrop a definite bounding box so
-        max-height:100% resolves correctly on all mobile browsers.
+        cropAreaRef is measured in useLayoutEffect; maxImgSize provides explicit
+        pixel constraints to the img so ReactCrop is never larger than the viewport.
       */}
       <div
+        ref={cropAreaRef}
         className="flex-1 min-h-0 relative overflow-hidden"
         style={{ background: '#1a1a1a', touchAction: 'none' }}
       >
         <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-5">
-          <ReactCrop
-            crop={crop}
-            onChange={c => setCrop(c)}
-            aspect={activeAspect}
-            minWidth={40}
-            minHeight={40}
-            keepSelection
-            ruleOfThirds
-            className="[&_.ReactCrop__crop-selection]:!border-2 [&_.ReactCrop__crop-selection]:!border-white/80 [&_.ReactCrop__crop-selection]:!rounded-lg"
-            style={{
-              maxHeight: '100%',
-              maxWidth: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <img
-              src={imageSrc}
-              alt="Crop preview"
-              onLoad={onImageLoad}
-              className="block select-none"
-              style={{
-                maxHeight: '100%',
-                maxWidth: '100%',
-                width: 'auto',
-                height: 'auto',
-                touchAction: 'none',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
-              draggable={false}
-            />
-          </ReactCrop>
+          {srcFetching && (
+            <div className="flex flex-col items-center gap-3 text-white/60">
+              <svg className="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <span className="text-xs tracking-wide">Loading image…</span>
+            </div>
+          )}
+          {!srcFetching && resolvedSrc && maxImgSize.w > 0 && (
+            <ReactCrop
+              crop={crop}
+              onChange={c => setCrop(c)}
+              aspect={activeAspect}
+              minWidth={40}
+              minHeight={40}
+              keepSelection
+              ruleOfThirds
+              className="[&_.ReactCrop__crop-selection]:!border-2 [&_.ReactCrop__crop-selection]:!border-white/80 [&_.ReactCrop__crop-selection]:!rounded-lg"
+            >
+              <img
+                src={resolvedSrc}
+                crossOrigin={srcFetchFailed ? 'anonymous' : undefined}
+                alt="Crop preview"
+                onLoad={onImageLoad}
+                className="block select-none"
+                style={{
+                  maxWidth: maxImgSize.w + 'px',
+                  maxHeight: maxImgSize.h + 'px',
+                  width: 'auto',
+                  height: 'auto',
+                  touchAction: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                }}
+                draggable={false}
+              />
+            </ReactCrop>
+          )}
         </div>
       </div>
 

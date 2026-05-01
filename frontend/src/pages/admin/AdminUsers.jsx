@@ -5,6 +5,7 @@ import PageHeader from '../../components/layout/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { useToast } from '../../context/ToastContext'
+import { formatLocalDate } from '../../utils/dateUtils'
 
 function RoleBadge({ role }) {
   const { t } = useLanguage()
@@ -19,10 +20,6 @@ function RoleBadge({ role }) {
       </span>
 }
 
-function formatDate(iso) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 export default function AdminUsers() {
   const { t } = useLanguage()
@@ -164,7 +161,7 @@ export default function AdminUsers() {
                           {user.orderCount ?? 0}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 align-middle">{formatDate(user.createdAt)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 align-middle">{formatLocalDate(user.createdAt)}</td>
                       <td className="px-6 py-4 align-middle">
                         <div className="flex items-center justify-end gap-2">
                           <button

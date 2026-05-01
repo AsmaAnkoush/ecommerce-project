@@ -2,62 +2,47 @@ import { useCallback } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 
 /**
- * Currency wording per language. Single source of truth — change here to
- * change every price label across the app.
- */
-const CURRENCY_LABEL = {
-  ar: 'شيكل',
-  en: 'ILS',
-}
-
-/**
- * Pure formatter — formats a number as a price string.
+ * Format a price as Israeli Shekel (₪).
  *
- * Always renders as an integer with thousand separators followed by the
- * currency word for the requested language.
+ * Always renders as "₪ {amount}" with 2 decimal places and thousand separators.
  *
  * Examples:
- *   formatPrice(120,    'ar') → "120 شيكل"
- *   formatPrice(120,    'en') → "120 ILS"
- *   formatPrice(1200,   'ar') → "1,200 شيكل"
- *   formatPrice(99999,  'en') → "99,999 ILS"
- *   formatPrice(null,   'ar') → "0 شيكل"
- *   formatPrice("250.7","en") → "251 ILS"
+ *   formatPrice(260)        → "₪ 260.00"
+ *   formatPrice(1200.5)     → "₪ 1,200.50"
+ *   formatPrice(99999)      → "₪ 99,999.00"
+ *   formatPrice(null)       → "₪ 0.00"
+ *   formatPrice(undefined)  → "₪ 0.00"
+ *   formatPrice("250.7")    → "₪ 250.70"
  *
- * Non-finite or missing values fall back to 0 so the UI never crashes on a
- * null/undefined price coming from the API.
- *
- * Prefer the `useFormatPrice()` hook inside React components so the display
- * re-renders automatically on language toggle. Use this raw function for
- * non-React contexts or tests.
- *
- * @param {number|string|null|undefined} value
- * @param {'ar'|'en'} [lang='ar']
+ * @param {number|string|null|undefined} amount
+ * @param {{ showSymbol?: boolean, decimals?: number, fallback?: string }} [options]
  * @returns {string}
  */
-export function formatPrice(value, lang = 'ar') {
-  const n = Number(value)
-  const safe = Number.isFinite(n) ? Math.round(n) : 0
-  const currency = CURRENCY_LABEL[lang] || CURRENCY_LABEL.ar
-  return `${safe.toLocaleString('en-US')} ${currency}`
+export function formatPrice(amount, { showSymbol = true, decimals = 2, fallback = '₪ 0.00' } = {}) {
+  if (amount === null || amount === undefined) return fallback
+  const n = Number(amount)
+  if (!Number.isFinite(n)) return fallback
+  const formatted = n.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
+  return showSymbol ? `₪ ${formatted}` : formatted
 }
 
 /**
- * React hook — returns a `formatPrice(value)` function pre-bound to the
- * current language from LanguageContext. Components that call this hook
- * automatically re-render when the user switches language, so prices flip
- * from "120 شيكل" to "120 ILS" instantly.
+ * React hook — returns a `formatPrice(value)` function for use in components.
+ * Components using this hook re-render automatically when the user switches
+ * language, keeping price labels in sync with the rest of the UI.
  *
  * Usage:
  *   const formatPrice = useFormatPrice()
- *   …
  *   <span>{formatPrice(product.price)}</span>
  *
  * @returns {(value: number|string|null|undefined) => string}
  */
 export function useFormatPrice() {
   const { lang } = useLanguage()
-  return useCallback((value) => formatPrice(value, lang), [lang])
+  return useCallback((value) => formatPrice(value), [lang])
 }
 
 export default formatPrice

@@ -133,8 +133,11 @@ public class OrderService {
     public OrderResponse archive(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        if (order.getStatus() != Order.OrderStatus.CONFIRMED && order.getStatus() != Order.OrderStatus.CANCELLED) {
-            throw new BadRequestException("Only confirmed or cancelled orders can be archived");
+        Order.OrderStatus s = order.getStatus();
+        if (s != Order.OrderStatus.CONFIRMED
+                && s != Order.OrderStatus.CANCELLED
+                && s != Order.OrderStatus.PARTIALLY_CONFIRMED) {
+            throw new BadRequestException("Only confirmed, partially confirmed, or cancelled orders can be archived");
         }
         order.setArchived(true);
         return toResponse(orderRepository.save(order));
@@ -212,57 +215,34 @@ public class OrderService {
 
     private static final int BEST_SELLER_THRESHOLD = 3;
 
+    /**
+     * Manual admin override for the whole-order status label.
+     * Does NOT deduct or restore stock — all stock changes flow through
+     * {@link #updateItemStatus} where each item is handled atomically.
+     */
     @Transactional
     public OrderResponse updateStatus(Long orderId, Order.OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-
-        Order.OrderStatus current = order.getStatus();
-
-        // Validate transitions: only PENDING can change
-        if (current == Order.OrderStatus.CONFIRMED) {
-            throw new BadRequestException("Confirmed orders cannot be changed");
-        }
-        if (current == Order.OrderStatus.CANCELLED) {
-            throw new BadRequestException("Cancelled orders cannot be changed");
-        }
-        // PENDING can only go to CONFIRMED or CANCELLED
-        if (current == Order.OrderStatus.PENDING
-                && status != Order.OrderStatus.CONFIRMED
-                && status != Order.OrderStatus.CANCELLED) {
-            throw new BadRequestException("Pending orders can only be confirmed or cancelled");
-        }
-
-        boolean becomingConfirmed = status == Order.OrderStatus.CONFIRMED;
-
         order.setStatus(status);
-        orderRepository.save(order);
-
-        if (becomingConfirmed) {
-            for (OrderItem item : order.getItems()) {
-                Product product = item.getProduct();
-                if (product == null) continue;
-                // Skip items already confirmed at item level — stock was already deducted then
-                if (item.getItemStatus() == ItemStatus.CONFIRMED) continue;
-
-                deductStock(product, item);
-
-                Long currentCount = product.getConfirmedOrderCount();
-                long newCount = (currentCount != null ? currentCount : 0L) + 1;
-                product.setConfirmedOrderCount(newCount);
-                if (newCount >= BEST_SELLER_THRESHOLD) {
-                    product.setIsBestSeller(true);
-                }
-                productRepository.save(product);
-            }
-        }
-
-        return toResponse(order);
+        return toResponse(orderRepository.save(order));
     }
 
-    /** Update a single item's fulfillment status.
-     *  CONFIRMED → deducts stock from the matching variant (or flat stock).
-     *  Once an item is CONFIRMED or CANCELLED it cannot be changed again. */
+    /**
+     * Update a single item's fulfillment status with full stock lifecycle:
+     *
+     * <ul>
+     *   <li>PENDING → CONFIRMED — deducts the item's quantity from the matching
+     *       variant (or flat product stock) using a pessimistic write lock.
+     *   <li>PENDING → CANCELLED — no stock change (nothing was reserved or deducted).
+     *   <li>CONFIRMED → CANCELLED — restores the previously deducted stock back to
+     *       the variant (or flat product stock).
+     *   <li>CANCELLED → anything — no-op; cancelled items are immutable.
+     * </ul>
+     *
+     * After any change the parent order's status is re-derived from all its
+     * items and persisted automatically.
+     */
     @Transactional
     public OrderResponse updateItemStatus(Long orderId, Long itemId, ItemStatus newStatus) {
         Order order = orderRepository.findById(orderId)
@@ -280,37 +260,59 @@ public class OrderService {
 
         ItemStatus current = item.getItemStatus() != null ? item.getItemStatus() : ItemStatus.PENDING;
 
-        if (current == ItemStatus.CONFIRMED) {
-            throw new BadRequestException("Item is already confirmed and cannot be changed");
-        }
+        // Cancelled items are terminal — never reopen them
         if (current == ItemStatus.CANCELLED) {
             throw new BadRequestException("Cancelled items cannot be changed");
+        }
+        // Confirming an already-confirmed item is a no-op
+        if (current == ItemStatus.CONFIRMED && newStatus == ItemStatus.CONFIRMED) {
+            return toResponse(order);
         }
 
         item.setItemStatus(newStatus);
         orderItemRepository.save(item);
 
-        if (newStatus == ItemStatus.CONFIRMED) {
-            Product product = item.getProduct();
+        Product product = item.getProduct();
+
+        if (newStatus == ItemStatus.CONFIRMED && current == ItemStatus.PENDING) {
+            // PENDING → CONFIRMED: deduct stock
             if (product == null) {
                 log.warn("[updateItemStatus] item {} has no linked product — skipping stock deduction", itemId);
             } else {
-                try {
-                    deductStock(product, item);
-                } catch (BadRequestException ex) {
-                    // Insufficient stock — surface this to the caller so the admin sees a clear error.
-                    throw ex;
-                } catch (Exception ex) {
-                    log.error("[updateItemStatus] stock deduction failed for item {} — skipping. Reason: {}", itemId, ex.getMessage(), ex);
-                }
+                deductStock(product, item);
                 long newCount = (product.getConfirmedOrderCount() != null ? product.getConfirmedOrderCount() : 0L) + 1;
                 product.setConfirmedOrderCount(newCount);
                 if (newCount >= BEST_SELLER_THRESHOLD) product.setIsBestSeller(true);
                 productRepository.save(product);
             }
+        } else if (newStatus == ItemStatus.CANCELLED && current == ItemStatus.CONFIRMED) {
+            // CONFIRMED → CANCELLED: restore stock that was previously deducted
+            if (product == null) {
+                log.warn("[updateItemStatus] item {} has no linked product — skipping stock restoration", itemId);
+            } else {
+                restoreStock(product, item);
+                productRepository.save(product);
+            }
         }
+        // PENDING → CANCELLED: no stock change (nothing was ever deducted)
+
+        // Re-derive and persist the order-level status from all item statuses
+        order.setStatus(deriveOrderStatus(order.getItems()));
+        orderRepository.save(order);
 
         return toResponse(order);
+    }
+
+    /** Derives the order-level status from the current itemStatus of all items. */
+    private Order.OrderStatus deriveOrderStatus(List<OrderItem> items) {
+        if (items == null || items.isEmpty()) return Order.OrderStatus.PENDING;
+        boolean anyPending    = items.stream().anyMatch(i -> i.getItemStatus() == null || i.getItemStatus() == ItemStatus.PENDING);
+        boolean allConfirmed  = items.stream().allMatch(i -> i.getItemStatus() == ItemStatus.CONFIRMED);
+        boolean allCancelled  = items.stream().allMatch(i -> i.getItemStatus() == ItemStatus.CANCELLED);
+        if (anyPending)   return Order.OrderStatus.PENDING;
+        if (allConfirmed) return Order.OrderStatus.CONFIRMED;
+        if (allCancelled) return Order.OrderStatus.CANCELLED;
+        return Order.OrderStatus.PARTIALLY_CONFIRMED;
     }
 
     /**
@@ -379,6 +381,47 @@ public class OrderService {
                     + " — available: " + flat + ", requested: " + qty);
         }
         locked.setStockQuantity(flat - qty);
+    }
+
+    /**
+     * Reverses a previous stock deduction for one order item.
+     * Mirrors {@link #deductStock}: uses the same variant-first, flat-fallback
+     * logic and the same pessimistic write lock so concurrent operations on the
+     * same row serialize correctly.
+     */
+    private void restoreStock(Product product, OrderItem item) {
+        int qty = item.getQuantity() != null ? item.getQuantity() : 0;
+        if (qty <= 0) {
+            log.warn("[restoreStock] item {} has qty={} — skipping", item.getId(), qty);
+            return;
+        }
+
+        String color = item.getColor();
+        String size  = item.getSize();
+
+        log.info("[restoreStock] productId={} size='{}' color='{}' qty={}",
+                product.getId(), size, color, qty);
+
+        if (color != null && !color.isBlank() && size != null && !size.isBlank()) {
+            var variantOpt = productVariantRepository.findForUpdate(product.getId(), color, size);
+            if (variantOpt.isPresent()) {
+                ProductVariant variant = variantOpt.get();
+                variant.setStockQuantity((variant.getStockQuantity() != null ? variant.getStockQuantity() : 0) + qty);
+                productVariantRepository.save(variant);
+                int total = productVariantRepository.findByProductId(product.getId())
+                        .stream()
+                        .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
+                        .sum();
+                product.setStockQuantity(total);
+                return;
+            }
+            log.warn("[restoreStock] no variant found for productId={} color='{}' size='{}' — falling back to flat stock",
+                    product.getId(), color, size);
+        }
+
+        // Flat-stock path
+        Product locked = productRepository.findByIdForUpdate(product.getId()).orElse(product);
+        locked.setStockQuantity((locked.getStockQuantity() != null ? locked.getStockQuantity() : 0) + qty);
     }
 
     public OrderResponse toResponse(Order order) {

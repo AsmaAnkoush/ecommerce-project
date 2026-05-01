@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react'
-
 const COLOR_MAP = {
   black:'#1A1A1A', white:'#F0EEE9', navy:'#1B2A4A', beige:'#F2EBD9',
   brown:'#7C4A2D', red:'#C0392B', green:'#2D6A4F', gray:'#8E8E8E',
@@ -10,8 +8,10 @@ const COLOR_MAP = {
 const resolveColor = (name) => name
   ? (COLOR_MAP[name.toLowerCase().split(' ')[0]] ?? name)
   : null
+
+import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { getAdminOrder, updateOrderStatus, deleteOrder } from '../../api/adminApi'
+import { getAdminOrder, updateOrderStatus, updateOrderItemStatus, deleteOrder } from '../../api/adminApi'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import Badge from '../../components/ui/Badge'
 import Spinner from '../../components/ui/Spinner'
@@ -19,10 +19,30 @@ import PageHeader from '../../components/layout/PageHeader'
 import { useFormatPrice } from '../../utils/formatPrice'
 import { useLanguage } from '../../context/LanguageContext'
 import { useToast } from '../../context/ToastContext'
+import { formatLocalDateTime } from '../../utils/dateUtils'
 
-const STATUS_VARIANT = { PENDING: 'warning', CONFIRMED: 'info', CANCELLED: 'danger' }
-const STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED']
+const ORDER_STATUS_VARIANT = {
+  PENDING: 'warning',
+  CONFIRMED: 'info',
+  CANCELLED: 'danger',
+  PARTIALLY_CONFIRMED: 'default',
+}
+const ITEM_STATUS_META = {
+  PENDING:   { label: 'itemPending',   cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
+  CONFIRMED: { label: 'itemConfirmed', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  CANCELLED: { label: 'itemCancelled', cls: 'bg-red-50 text-red-500 border border-red-200' },
+}
+const STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'PARTIALLY_CONFIRMED']
 const STATUS_STEPS = ['PENDING', 'CONFIRMED']
+
+function ItemStatusBadge({ status, t }) {
+  const meta = ITEM_STATUS_META[status] ?? ITEM_STATUS_META.PENDING
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${meta.cls}`}>
+      {t(`admin.${meta.label}`)}
+    </span>
+  )
+}
 
 export default function AdminOrderDetail() {
   const { t } = useLanguage()
@@ -36,25 +56,42 @@ export default function AdminOrderDetail() {
   const [statusSuccess, setStatusSuccess] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  // itemUpdating: { [itemId]: true } while an item action is in-flight
+  const [itemUpdating, setItemUpdating] = useState({})
 
-  useEffect(() => {
+  const loadOrder = () =>
     getAdminOrder(id)
       .then(res => setOrder(res.data?.data ?? null))
       .finally(() => setLoading(false))
-  }, [id])
+
+  useEffect(() => { loadOrder() }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStatusChange = async (status) => {
     if (status === order.status) return
     setUpdating(true)
     try {
-      await updateOrderStatus(order.id, status)
-      setOrder(o => ({ ...o, status }))
+      const res = await updateOrderStatus(order.id, status)
+      setOrder(res.data?.data ?? { ...order, status })
       setStatusSuccess(true)
       setTimeout(() => setStatusSuccess(false), 2500)
       toast(t('admin.toastStatusChanged'))
     } catch (err) {
       toast(err?.response?.data?.message || t('admin.toastError'), 'error')
     } finally { setUpdating(false) }
+  }
+
+  const handleItemAction = async (itemId, newStatus) => {
+    setItemUpdating(prev => ({ ...prev, [itemId]: true }))
+    try {
+      const res = await updateOrderItemStatus(order.id, itemId, newStatus)
+      // Backend returns the full updated order — sync it
+      setOrder(res.data?.data ?? order)
+      toast(t('admin.itemStatusUpdated'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.confirmItemError'), 'error')
+    } finally {
+      setItemUpdating(prev => ({ ...prev, [itemId]: false }))
+    }
   }
 
   const handleDelete = async () => {
@@ -108,18 +145,17 @@ export default function AdminOrderDetail() {
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">{t('admin.order')} #{order.id}</h1>
           <p className="text-sm text-gray-400 mt-0.5">
-            {new Date(order.createdAt).toLocaleString('en-US', {
-              year: 'numeric', month: 'long', day: 'numeric',
-              hour: '2-digit', minute: '2-digit',
-            })}
+            {formatLocalDateTime(order.createdAt)}
             {order.isGuest && <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{t('admin.guest')}</span>}
           </p>
         </div>
-        <Badge variant={STATUS_VARIANT[order.status] || 'default'}>{order.status}</Badge>
+        <Badge variant={ORDER_STATUS_VARIANT[order.status] || 'default'}>
+          {order.status === 'PARTIALLY_CONFIRMED' ? t('admin.partiallyConfirmed') : order.status}
+        </Badge>
       </div>
 
       {/* Progress tracker */}
-      {order.status !== 'CANCELLED' && (
+      {order.status !== 'CANCELLED' && order.status !== 'PARTIALLY_CONFIRMED' && (
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">{t('admin.orderProgress')}</h2>
           <div className="flex items-center">
@@ -148,61 +184,116 @@ export default function AdminOrderDetail() {
         {/* Items — takes 2/3 width */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-700">{t('admin.itemsOrdered')}</h2>
+              <span className="text-xs text-gray-400">{t('admin.fulfillmentStatus')}</span>
             </div>
 
             <div className="divide-y divide-gray-50">
-              {order.items.map(item => (
-                <div key={item.id} className="flex gap-4 px-5 py-4">
-                  {/* Image — variant-specific when available, with a small color-dot overlay */}
-                  <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
-                    {item.productImage
-                      ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
-                    }
-                    {item.color && (
-                      <span
-                        className="absolute bottom-1 end-1 w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                        style={{ backgroundColor: resolveColor(item.color) }}
-                        aria-label={item.color}
-                        title={item.color}
-                      />
-                    )}
-                  </div>
+              {order.items.map(item => {
+                const isBusy = !!itemUpdating[item.id]
+                const itemStatus = item.itemStatus || 'PENDING'
 
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
-
-                    {/* Variant chips */}
-                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                      <span className="inline-flex items-center gap-1.5 text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-md">
-                        <span className="text-gray-400 text-[10px] uppercase tracking-wide">{t('admin.SIZE')}</span>
-                        <span className="font-medium">{item.size || '—'}</span>
-                      </span>
-                      {item.color && (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
-                          <span className="text-gray-400 text-[10px]">{t('admin.COLOR')}</span>
+                return (
+                  <div key={item.id} className="px-5 py-4">
+                    <div className="flex gap-4">
+                      {/* Image */}
+                      <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
+                        {item.productImage
+                          ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain p-1" />
+                          : <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
+                        }
+                        {item.color && (
                           <span
-                            className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
+                            className="absolute bottom-1 end-1 w-4 h-4 rounded-full border-2 border-white shadow-sm"
                             style={{ backgroundColor: resolveColor(item.color) }}
                             aria-label={item.color}
                             title={item.color}
                           />
-                        </span>
-                      )}
+                        )}
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
+                          <ItemStatusBadge status={itemStatus} t={t} />
+                        </div>
+
+                        {/* Variant chips */}
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <span className="inline-flex items-center gap-1.5 text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-md">
+                            <span className="text-gray-400 text-[10px] uppercase tracking-wide">{t('admin.SIZE')}</span>
+                            <span className="font-medium">{item.size || '—'}</span>
+                          </span>
+                          {item.color && (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
+                              <span className="text-gray-400 text-[10px]">{t('admin.COLOR')}</span>
+                              <span
+                                className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
+                                style={{ backgroundColor: resolveColor(item.color) }}
+                                aria-label={item.color}
+                                title={item.color}
+                              />
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-xs text-gray-400">
+                            {item.quantity} × {formatPrice(item.unitPrice)}
+                          </p>
+                          <p className="font-bold text-gray-900 text-sm">{formatPrice(item.subtotal)}</p>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-gray-400">
-                        {item.quantity} × {formatPrice(item.unitPrice)}
-                      </p>
-                      <p className="font-bold text-gray-900 text-sm">{formatPrice(item.subtotal)}</p>
-                    </div>
+                    {/* Per-item action buttons — shown only for actionable states */}
+                    {itemStatus !== 'CANCELLED' && (
+                      <div className="flex items-center gap-2 mt-3 ms-20">
+                        {itemStatus === 'PENDING' && (
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleItemAction(item.id, 'CONFIRMED')}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors disabled:opacity-50"
+                          >
+                            {isBusy ? (
+                              <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                            {t('admin.confirmItem')}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleItemAction(item.id, 'CANCELLED')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                        >
+                          {isBusy ? (
+                            <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                          ) : (
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                          {t('admin.cancelItem')}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Total row */}
@@ -263,16 +354,21 @@ export default function AdminOrderDetail() {
             </div>
           )}
 
-          {/* Status update */}
+          {/* Status override */}
           <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{t('admin.updateStatus')}</h2>
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">{t('admin.updateStatus')}</h2>
+            <p className="text-[11px] text-gray-400 mb-3">{t('admin.confirmedHint')}</p>
             <select
               value={order.status}
               onChange={e => handleStatusChange(e.target.value)}
               disabled={updating}
               className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-gray-400 bg-white disabled:opacity-60"
             >
-              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              {STATUSES.map(s => (
+                <option key={s} value={s}>
+                  {s === 'PARTIALLY_CONFIRMED' ? t('admin.partiallyConfirmed') : s}
+                </option>
+              ))}
             </select>
             {updating && <p className="text-xs text-gray-400 mt-2">{t('admin.updating')}</p>}
             {statusSuccess && (

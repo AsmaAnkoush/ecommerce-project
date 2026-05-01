@@ -3,6 +3,7 @@ import { useParams, Link, useLocation } from 'react-router-dom'
 import { getOrder } from '../api/orderApi'
 import { useLanguage } from '../context/LanguageContext'
 import { useFormatPrice } from '../utils/formatPrice'
+import { formatShortDateTime } from '../utils/dateUtils'
 import Spinner from '../components/ui/Spinner'
 
 const CARD_BASE = 'bg-white border border-[#F0D5D8] rounded-2xl'
@@ -85,7 +86,7 @@ export default function OrderDetailPage() {
       <PageHero
         icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         title={t('orders.orderDetails')}
-        subtitle={`${t('orders.placedOn')} ${new Date(order.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}`}
+        subtitle={`${t('orders.placedOn')} ${formatShortDateTime(order.createdAt)}`}
       />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 space-y-6">
@@ -110,7 +111,7 @@ export default function OrderDetailPage() {
         {/* Status row */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="text-xs text-[#9B7B80] tracking-wide">
-            {t('orders.placedOn')} {new Date(order.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+            {t('orders.placedOn')} {formatShortDateTime(order.createdAt)}
           </p>
           <span className={[
             'inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold tracking-[0.12em] uppercase ring-1',
@@ -183,7 +184,7 @@ export default function OrderDetailPage() {
               <div key={item.id} className="flex gap-4 sm:gap-5 items-center py-4 sm:py-5 first:pt-0 last:pb-0">
                 <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-[#FDF0F2] to-[#F5DCE0] rounded-2xl overflow-hidden shrink-0 border border-[#F0D5D8]">
                   {item.productImage ? (
-                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain p-1" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[#DFA3AD] text-xs">—</div>
                   )}
@@ -269,14 +270,28 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Footer links */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-between pt-2">
-          <Link to="/orders" className="text-xs font-medium tracking-[0.12em] uppercase text-[#9B7B80] hover:text-[#6B1F2A] transition-colors inline-flex items-center gap-1">
-            ← {t('orders.backToOrders')}
-          </Link>
-          <Link to="/products" className="text-xs font-medium tracking-[0.12em] uppercase text-[#9B7B80] hover:text-[#6B1F2A] transition-colors inline-flex items-center gap-1">
-            {t('orders.continueShopping')} →
-          </Link>
+        {/* Action buttons */}
+        <div className="pt-6 border-t border-[#F0D5D8]">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-between">
+            <Link
+              to="/orders"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] rounded-full border border-[#6B1F2A]/25 bg-white text-[#6B1F2A] text-xs font-semibold uppercase tracking-[0.15em] hover:border-[#6B1F2A] hover:bg-[#FDF0F2] active:scale-95 transition-all duration-200"
+            >
+              <svg className="w-3.5 h-3.5 rtl:rotate-180 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              {t('orders.backToOrders')}
+            </Link>
+            <Link
+              to="/products"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] rounded-full bg-[#6B1F2A] text-white text-xs font-semibold uppercase tracking-[0.15em] hover:bg-[#551820] hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+            >
+              {t('orders.continueShopping')}
+              <svg className="w-3.5 h-3.5 rtl:rotate-180 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

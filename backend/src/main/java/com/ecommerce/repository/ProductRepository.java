@@ -1,5 +1,6 @@
 package com.ecommerce.repository;
 
+import com.ecommerce.entity.Order;
 import com.ecommerce.entity.Product;
 import com.ecommerce.entity.ProductSeason;
 import jakarta.persistence.LockModeType;
@@ -33,12 +34,40 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByActiveTrueAndIsNewTrueAndIsDeletedFalseOrderByCreatedAtDesc();
 
-    /** Dynamic "new arrivals" — products created after a cutoff and whose season
-     *  is in the supplied list (typically [currentSeason, ALL_SEASON]). */
+    /** New arrivals filtered by season — products created after a cutoff whose season
+     *  is in the supplied list (e.g. [SUMMER, ALL_SEASON]). */
     List<Product> findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(
             List<ProductSeason> seasons, LocalDateTime cutoff);
 
+    /** New arrivals without a season filter — all active products created after cutoff. */
+    List<Product> findByActiveTrueAndIsDeletedFalseAndCreatedAtAfterOrderByCreatedAtDesc(
+            LocalDateTime cutoff);
+
     List<Product> findByActiveTrueAndIsBestSellerTrueAndIsDeletedFalseOrderByConfirmedOrderCountDesc();
+
+    /**
+     * Live best-sellers: sum of confirmed order quantities per product.
+     * When season is null all seasons are included; otherwise products whose
+     * season matches the given season OR is ALL_SEASON are returned.
+     * Pass a {@code Pageable} with page=0 and size=limit to cap results.
+     */
+    @Query("""
+            SELECT oi.product, COALESCE(SUM(oi.quantity), 0)
+            FROM OrderItem oi
+            WHERE oi.order.status = :confirmedStatus
+              AND oi.product.active = true
+              AND oi.product.isDeleted = false
+              AND (:season IS NULL
+                   OR oi.product.season = :season
+                   OR oi.product.season = :allSeason)
+            GROUP BY oi.product
+            ORDER BY SUM(oi.quantity) DESC
+            """)
+    List<Object[]> findBestSellersByConfirmedQuantity(
+            @Param("confirmedStatus") Order.OrderStatus confirmedStatus,
+            @Param("season") ProductSeason season,
+            @Param("allSeason") ProductSeason allSeason,
+            Pageable pageable);
 
     List<Product> findByActiveTrueAndDiscountPriceIsNotNullAndIsDeletedFalse();
 

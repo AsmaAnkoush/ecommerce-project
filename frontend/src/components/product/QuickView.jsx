@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { X, Minus, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -13,16 +14,9 @@ const COLOR_MAP = {
   pink: '#F4A8B8', cream: '#FBF7ED', blue: '#1A56C4', yellow: '#F0C040',
   orange: '#D4600A', purple: '#6B2FA0',
 }
-const getColorHex = name => COLOR_MAP[name.toLowerCase()] ?? name.toLowerCase()
-const getBaseColor = name => name.split(' ')[0]
+const getColorHex = name => COLOR_MAP[name?.toLowerCase()] ?? (name?.toLowerCase() || '#888')
+const getBaseColor = name => name?.split(' ')[0] ?? ''
 
-/**
- * Product Quick-View modal.
- *
- * Controlled via UIContext: `openQuickView(product)` / `closeQuickView()`.
- * Shows the product image, name, price, color picker, and an Add-to-Cart
- * button — all without navigating away from the current page.
- */
 export default function QuickView() {
   const { quickViewProduct, closeQuickView } = useUI()
   const { addToCart } = useCart()
@@ -32,8 +26,10 @@ export default function QuickView() {
 
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize]   = useState(null)
+  const [quantity, setQuantity]           = useState(1)
   const [adding, setAdding]               = useState(false)
-  const [validationError, setValidationError] = useState('')
+  const [colorError, setColorError]       = useState(false)
+  const [sizeError, setSizeError]         = useState(false)
 
   const product = quickViewProduct
 
@@ -41,8 +37,10 @@ export default function QuickView() {
     if (!product) return
     setSelectedColor(null)
     setSelectedSize(null)
+    setQuantity(1)
     setAdding(false)
-    setValidationError('')
+    setColorError(false)
+    setSizeError(false)
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e) => { if (e.key === 'Escape') closeQuickView() }
@@ -55,7 +53,6 @@ export default function QuickView() {
 
   const hasVariants = !!product?.variants?.length
 
-  // All unique colors with aggregated stock, filtered by selected size when present.
   const colorAvailability = useMemo(() => {
     if (!product) return []
     if (hasVariants) {
@@ -74,7 +71,6 @@ export default function QuickView() {
     return []
   }, [product, hasVariants, selectedSize])
 
-  // All unique sizes, filtered by selected color when present.
   const sizeAvailability = useMemo(() => {
     if (!product || !hasVariants) return []
     const map = new Map()
@@ -88,30 +84,36 @@ export default function QuickView() {
 
   if (!product) return null
 
-  const hasDiscount = product.discountPrice && product.discountPrice < product.price
+  const hasDiscount   = product.discountPrice && Number(product.discountPrice) < Number(product.price)
   const sizeRequired  = sizeAvailability.length > 0
   const colorRequired = colorAvailability.length > 0
+
   const selectedVariant = hasVariants && selectedColor && selectedSize
     ? product.variants.find(v => v.color === selectedColor && v.size === selectedSize)
     : null
   const variantStock = selectedVariant?.stockQuantity ?? (hasVariants ? null : product.stockQuantity)
   const isOutOfStock = variantStock === 0 || (!hasVariants && product.stockQuantity === 0)
 
-  const canAdd =
-    !adding &&
-    !isOutOfStock &&
-    (!sizeRequired  || selectedSize)  &&
-    (!colorRequired || selectedColor)
+  // Resolve color-specific primary image when a color is selected
+  const displayImage = selectedColor && product.colorImages?.[selectedColor]
+    ? (() => {
+        const imgs = product.colorImages[selectedColor]
+        const primary = imgs.find(e => e.isPrimary)
+        return primary?.url ?? imgs[0]?.url ?? product.imageUrl
+      })()
+    : product.imageUrl || '/images/placeholder-product.jpg'
+
+  const isReadyToAdd = (!colorRequired || selectedColor) && (!sizeRequired || selectedSize)
 
   const handleAdd = async () => {
     if (adding || isOutOfStock) return
-    if ((sizeRequired && !selectedSize) || (colorRequired && !selectedColor)) {
-      setValidationError(t('product.selectSizeAndColor'))
-      return
-    }
+    let hasError = false
+    if (colorRequired && !selectedColor) { setColorError(true); hasError = true }
+    if (sizeRequired  && !selectedSize)  { setSizeError(true);  hasError = true }
+    if (hasError) return
     try {
       setAdding(true)
-      await addToCart(product.id, 1, product, selectedSize || null, selectedColor || null)
+      await addToCart(product.id, quantity, product, selectedSize || null, selectedColor || null)
       toast(t('cart.addedToast'))
       closeQuickView()
     } catch {
@@ -120,163 +122,256 @@ export default function QuickView() {
   }
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div onClick={closeQuickView} className="absolute inset-0 bg-[#3D1A1E]/50 backdrop-blur-sm animate-fade-in" />
+    /*
+     * Overlay: full-screen backdrop, click-outside closes, overflow-y-auto
+     * gives the whole overlay a scroll track so very-tall content on very-short
+     * screens is always reachable.
+     */
+    <div
+      className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      onClick={closeQuickView}
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Flex centering wrapper — min-h-full keeps vertical centering intact
+          while still allowing the outer div to scroll when content overflows */}
+      <div className="flex min-h-full items-center justify-center p-4">
 
-      <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-scale">
-        {/* Close */}
-        <button type="button" onClick={closeQuickView} aria-label={t('common.close')}
-          className="absolute top-4 end-4 z-10 w-9 h-9 rounded-full bg-white/90 border border-[#F0D5D8] flex items-center justify-center text-[#9B7B80] hover:text-[#6B1F2A] transition-all active:scale-95 shadow-sm">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/*
+         * Modal wrapper — relative so the close button can be positioned
+         * absolutely and stay visible even when the inner card scrolls.
+         * Stops click propagation so tapping the card doesn't close the modal.
+         */}
+        <div
+          className="relative w-full max-w-[90%] sm:max-w-md my-auto animate-fade-in-scale"
+          onClick={e => e.stopPropagation()}
+        >
 
-        <div className="flex flex-col sm:flex-row">
-          {/* Image */}
-          <div className="sm:w-1/2 aspect-[3/4] sm:aspect-auto relative overflow-hidden shrink-0"
-               style={{ background: 'linear-gradient(145deg, #FDF8F9 0%, #F5ECED 50%, #F0E4E6 100%)' }}>
-            {product.imageUrl ? (
-              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain p-4" style={{ mixBlendMode: 'multiply' }} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
-                <svg className="w-16 h-16 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14" /></svg>
-              </div>
-            )}
-            {isOutOfStock && (
-              <div className="absolute inset-0 bg-white/55 flex items-center justify-center">
-                <span className="bg-[#3D1A1E]/75 text-white text-xs px-4 py-2 rounded-full tracking-wider">{t('product.outOfStock')}</span>
-              </div>
-            )}
+          {/*
+           * Close button — sits OUTSIDE the scrollable card so it never
+           * scrolls out of view. z-20 keeps it above the card content.
+           */}
+          <button
+            type="button"
+            onClick={closeQuickView}
+            aria-label={t('common.close')}
+            className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#5A2A2F] hover:text-[#6B1F2A] hover:rotate-90 transition-all duration-300"
+          >
+            <X className="w-4 h-4" />
+          </button>
 
-            {/* Badges */}
-            <div className="absolute top-3 start-3 flex flex-col gap-1.5">
-              {hasDiscount && <span className="bg-[#6B1F2A] text-white text-[9px] font-semibold px-2.5 py-0.5 rounded-full tracking-wider">{t('product.sale')}</span>}
-              {product.isNew && <span className="bg-white/90 text-[#6B1F2A] text-[9px] font-semibold px-2.5 py-0.5 rounded-full border border-[#DFA3AD]/50">{t('product.newArrival')}</span>}
-              {product.isBestSeller && <span className="bg-amber-500 text-white text-[9px] font-semibold px-2.5 py-0.5 rounded-full">{t('product.bestSeller')}</span>}
+          {/*
+           * Scrollable card — max-h-[90vh] + overflow-y-auto is the primary
+           * scroll container for the modal content. The close button above is
+           * NOT inside here, so it is always accessible.
+           */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh]">
+
+            {/* ── Product image ────────────────────────────────────────
+                object-contain shows the FULL image without cropping.
+                h-auto + max-h-[260px] keeps it compact but unclipped.
+                pt-10 gives clearance so the image doesn't hide under the
+                close button that overlays the top-right corner.
+            */}
+            <div className="w-full bg-[#F5F0EC] flex items-center justify-center px-4 pt-10 pb-4 relative">
+              <img
+                src={displayImage}
+                alt={product.name}
+                className="w-full h-auto max-h-[260px] object-contain transition-opacity duration-300"
+                onError={(e) => { e.target.onerror = null; e.target.src = '/images/placeholder-product.jpg' }}
+              />
+
+              {isOutOfStock && (
+                <div className="absolute inset-0 bg-white/55 flex items-center justify-center">
+                  <span className="bg-[#3D1A1E]/75 text-white text-xs px-4 py-2 rounded-full tracking-wider backdrop-blur-sm">
+                    {t('product.outOfStock')}
+                  </span>
+                </div>
+              )}
+
+              {hasDiscount && (
+                <span className="absolute top-3 left-3 bg-[#6B1F2A]/85 text-white text-[9px] font-medium px-2.5 py-1 rounded-full tracking-wider backdrop-blur-sm">
+                  {t('product.sale')}
+                </span>
+              )}
             </div>
-          </div>
 
-          {/* Info */}
-          <div className="sm:w-1/2 p-6 sm:p-8 flex flex-col justify-between gap-5">
-            <div>
-              <h2 className="text-2xl font-light text-[#3D1A1E] leading-snug mb-3" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
+            {/* ── Content ────────────────────────────────────────────── */}
+            <div className="px-6 pt-5 pb-8 sm:px-7 text-center">
+
+              {/* Product name */}
+              <p className="text-[#5A2A2F] text-lg sm:text-xl font-medium tracking-wide mb-1 leading-snug">
                 {product.name}
-              </h2>
+              </p>
 
               {/* Price */}
-              <div className="flex items-baseline gap-2.5 mb-5">
+              <p className="text-[#6B1F2A] text-base sm:text-lg font-semibold mb-5">
                 {hasDiscount ? (
                   <>
-                    <span className="text-xl font-semibold text-[#6B1F2A] nums-normal" style={{ fontFamily: 'Cormorant Garamond, serif' }}>{formatPrice(product.discountPrice)}</span>
-                    <span className="text-sm text-[#B08A90] line-through">{formatPrice(product.price)}</span>
+                    <span>{formatPrice(product.discountPrice)}</span>
+                    <span className="text-sm text-gray-400 line-through ms-2 font-normal">
+                      {formatPrice(product.price)}
+                    </span>
                   </>
                 ) : (
-                  <span className="text-xl font-medium text-[#3D1A1E] nums-normal" style={{ fontFamily: 'Cormorant Garamond, serif' }}>{formatPrice(product.price)}</span>
+                  formatPrice(product.price)
                 )}
-              </div>
+              </p>
 
-              {/* Sizes */}
-              {sizeAvailability.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] font-semibold text-[#6B1F2A] uppercase tracking-[0.18em] mb-2.5">{t('product.selectYourSize')}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {sizeAvailability.map(({ size, available }) => {
-                      const selected = selectedSize === size
+              {/* Color selection */}
+              {colorAvailability.length > 0 && (
+                <div className="mb-5">
+                  <p className="text-[#5A2A2F] text-xs uppercase tracking-[0.2em] font-medium mb-2">
+                    {t('product.color')}
+                  </p>
+                  <div className={[
+                    'flex justify-center gap-2 flex-wrap rounded-xl transition-all duration-200',
+                    colorError ? 'ring-2 ring-red-300 p-2' : '',
+                  ].join(' ')}>
+                    {colorAvailability.map(entry => {
+                      const hex = getColorHex(getBaseColor(entry.color))
+                      const sel = selectedColor === entry.color
                       return (
-                        <button key={size} type="button"
-                          onClick={() => { if (available) { setSelectedSize(size); setValidationError('') } }}
-                          disabled={!available}
-                          aria-disabled={!available}
-                          title={!available ? t('admin.variantOutOfStock') : size}
+                        <button
+                          key={entry.color}
+                          type="button"
+                          onClick={() => {
+                            if (entry.available) {
+                              setSelectedColor(entry.color)
+                              setColorError(false)
+                            }
+                          }}
+                          disabled={!entry.available}
+                          title={entry.available ? entry.color : `${entry.color} — out of stock`}
                           className={[
-                            'relative min-w-[44px] h-10 px-3 rounded-full border text-[11px] font-semibold tracking-[0.1em] transition-all duration-200',
-                            selected
-                              ? 'border-[#6B1F2A] bg-[#6B1F2A] text-white shadow-sm'
+                            'w-8 h-8 rounded-full border border-gray-200 transition-all duration-200',
+                            entry.available ? 'cursor-pointer hover:scale-110' : 'opacity-40 cursor-not-allowed',
+                            sel && entry.available ? 'ring-2 ring-[#6B1F2A] ring-offset-2 scale-110' : '',
+                          ].join(' ')}
+                          style={{ backgroundColor: hex }}
+                        />
+                      )
+                    })}
+                  </div>
+                  {colorError && (
+                    <p className="text-red-500 text-xs mt-1.5">
+                      {t('product.selectColor') || 'Please select a color'}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Size selection */}
+              {sizeAvailability.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-[#5A2A2F] text-xs uppercase tracking-[0.2em] font-medium mb-2">
+                    {t('product.selectYourSize')}
+                  </p>
+                  <div className={[
+                    'flex flex-wrap justify-center gap-2 rounded-xl transition-all duration-200',
+                    sizeError ? 'ring-2 ring-red-300 p-2' : '',
+                  ].join(' ')}>
+                    {sizeAvailability.map(({ size, available }) => {
+                      const sel = selectedSize === size
+                      return (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => {
+                            if (available) {
+                              setSelectedSize(size)
+                              setSizeError(false)
+                            }
+                          }}
+                          disabled={!available}
+                          className={[
+                            'px-4 py-2 border rounded-lg text-sm font-medium transition-all duration-200',
+                            sel
+                              ? 'bg-[#6B1F2A] text-white border-[#6B1F2A]'
                               : !available
-                              ? 'border-[#F0D5D8] text-[#C4A0A6] bg-white opacity-50 line-through cursor-not-allowed'
-                              : 'border-[#E2CDD0] text-[#3D1A1E] bg-white hover:border-[#6B1F2A] hover:text-[#6B1F2A]',
+                              ? 'border-gray-200 text-gray-300 opacity-50 cursor-not-allowed line-through'
+                              : 'border-[#5A2A2F]/20 text-[#5A2A2F] hover:border-[#6B1F2A] hover:bg-[#6B1F2A]/5',
                           ].join(' ')}
                         >
                           {size}
-                          {!available && (
-                            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <svg className="w-full h-full" viewBox="0 0 48 48" fill="none" preserveAspectRatio="none">
-                                <line x1="6" y1="42" x2="42" y2="6" stroke="#C4A0A6" strokeWidth="1.5" strokeLinecap="round" />
-                              </svg>
-                            </span>
-                          )}
                         </button>
                       )
                     })}
                   </div>
-                </div>
-              )}
-
-              {/* Colors */}
-              {colorAvailability.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] font-semibold text-[#6B1F2A] uppercase tracking-[0.18em] mb-2.5">{t('product.color')}</p>
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    {colorAvailability.map(entry => {
-                      const hex = getColorHex(getBaseColor(entry.color))
-                      const selected = selectedColor === entry.color
-                      return (
-                        <button key={entry.color} type="button"
-                          onClick={() => { if (entry.available) { setSelectedColor(entry.color); setValidationError('') } }}
-                          disabled={!entry.available}
-                          aria-disabled={!entry.available}
-                          title={!entry.available ? t('admin.variantOutOfStock') : entry.color}
-                          className={[
-                            'relative w-7 h-7 rounded-full ring-1 ring-black/15 ring-offset-1 ring-offset-white transition-all duration-200',
-                            entry.available ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-40',
-                            selected && entry.available ? 'scale-110 ring-2 ring-[#6B1F2A] shadow-md' : '',
-                          ].join(' ')}
-                          style={{ backgroundColor: hex }}
-                        >
-                          {!entry.available && (
-                            <svg aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 24 24" fill="none">
-                              <line x1="3" y1="21" x2="21" y2="3" stroke="#8B3A44" strokeWidth="1.5" strokeLinecap="round" />
-                            </svg>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Stock hint — only shown when the selected variant is fully out of stock */}
-              {selectedVariant && isOutOfStock && (
-                <p className="text-[11px] mb-3 text-red-600 font-semibold">
-                  ❌ {t('admin.variantOutOfStock')}
-                </p>
-              )}
-
-              {validationError && (
-                <p className="text-[11px] text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
-                  {validationError}
-                </p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="space-y-3">
-              {!isOutOfStock && (
-                <button type="button" onClick={handleAdd} disabled={!canAdd}
-                  className="w-full flex items-center justify-center gap-2 bg-[#6B1F2A] text-white py-3.5 min-h-[44px] rounded-xl text-xs font-semibold tracking-[0.1em] uppercase hover:bg-[#7D2432] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-[#6B1F2A]/20">
-                  {adding ? (
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
+                  {sizeError && (
+                    <p className="text-red-500 text-xs mt-1.5">
+                      {t('product.selectSize') || 'Please select a size'}
+                    </p>
                   )}
-                  {t('product.addToCart')}
-                </button>
+                </div>
               )}
-              <Link to={`/products/${product.id}`} onClick={closeQuickView}
-                className="block text-center w-full border border-[#EDD8DC] text-[#6B1F2A] py-3 rounded-xl text-xs font-medium tracking-[0.12em] uppercase hover:bg-[#FDF0F2] hover:border-[#DFA3AD] transition-colors">
+
+              {/* Quantity */}
+              <div className="mb-6">
+                <p className="text-[#5A2A2F] text-xs uppercase tracking-[0.2em] font-medium mb-2">
+                  {t('product.quantity') || 'Quantity'}
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    className="w-8 h-8 rounded-full border border-[#5A2A2F]/20 flex items-center justify-center hover:border-[#6B1F2A] transition-colors duration-200"
+                  >
+                    <Minus className="w-3 h-3 text-[#5A2A2F]" />
+                  </button>
+                  <span className="w-12 text-center font-medium text-[#5A2A2F] tabular-nums">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(q => q + 1)}
+                    className="w-8 h-8 rounded-full border border-[#5A2A2F]/20 flex items-center justify-center hover:border-[#6B1F2A] transition-colors duration-200"
+                  >
+                    <Plus className="w-3 h-3 text-[#5A2A2F]" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Add to cart CTA */}
+              {!isOutOfStock ? (
+                <button
+                  type="button"
+                  onClick={handleAdd}
+                  disabled={adding}
+                  className={[
+                    'w-full py-3 sm:py-3.5 rounded-full text-sm uppercase tracking-[0.2em] font-semibold',
+                    'transition-all duration-300',
+                    isReadyToAdd && !adding
+                      ? 'bg-[#6B1F2A] text-white hover:bg-[#551820] hover:-translate-y-0.5 hover:shadow-lg'
+                      : adding
+                      ? 'bg-[#6B1F2A] text-white opacity-50 cursor-not-allowed'
+                      : 'bg-[#6B1F2A]/50 text-white/80 cursor-pointer',
+                  ].join(' ')}
+                >
+                  {adding ? (
+                    <svg className="animate-spin w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    t('product.addToCart')
+                  )}
+                </button>
+              ) : (
+                <p className="text-center text-sm text-red-500 font-medium py-3">
+                  {t('product.outOfStock')}
+                </p>
+              )}
+
+              {/* View details link */}
+              <Link
+                to={`/products/${product.id}`}
+                onClick={closeQuickView}
+                className="block text-center mt-3 text-xs text-[#6B1F2A]/60 hover:text-[#6B1F2A] underline underline-offset-2 transition-colors duration-200"
+              >
                 {t('product.viewDetails')}
               </Link>
+
             </div>
           </div>
         </div>

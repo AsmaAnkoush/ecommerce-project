@@ -139,7 +139,7 @@ export default function HomePage() {
   return (
     <div className="bg-[#FDF6F7] pb-12 overflow-x-hidden">
       <Hero innerRef={heroRef} inView={heroInView} activeSeason={activeSeason} />
-      <div className="space-y-6 sm:space-y-8 py-6 sm:py-8">
+      <div className="space-y-10 sm:space-y-14 lg:space-y-16 pt-8 sm:pt-10 lg:pt-12 pb-6">
         <CategorySection />
         <SeasonalCirclesSection />
         <NewArrivalsSection season={activeSeason} />

@@ -24,13 +24,11 @@ function SeasonCircle({ season, index }) {
         style={{ backgroundColor: '#F2D5DA' }}
       >
         {season.imageUrl ? (
-          <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4 overflow-hidden rounded-full">
-            <img
-              src={season.imageUrl}
-              alt={season.name}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
+          <img
+            src={season.imageUrl}
+            alt={season.name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
             <svg className="w-7 h-7 sm:w-10 sm:h-10 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.3}>
@@ -112,10 +110,10 @@ export default function SeasonalCirclesSection({ className = '' }) {
   }
 
   return (
-    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-4 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
+    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-4 sm:px-8 lg:px-12 max-w-6xl ${className}`}>
 
       {/* ── Title ──────────────────────────────────────────── */}
-      <div className="mb-8 sm:mb-12">
+      <div className="mb-6 sm:mb-8">
         <h2
           className="text-[24px] sm:text-[28px] lg:text-[42px] xl:text-[46px] leading-[1.4] pb-[0.15em] inline-block"
           style={{

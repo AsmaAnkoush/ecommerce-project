@@ -182,15 +182,17 @@ export default function AdminProductForm() {
   }, [id])
 
   useEffect(() => {
-    if (!showColorPicker) return
+    if (!showColorPicker && !showEditColorPicker) return
     document.body.style.overflow = 'hidden'
-    const handle = (e) => { if (e.key === 'Escape') setShowColorPicker(false) }
+    const handle = (e) => {
+      if (e.key === 'Escape') { setShowColorPicker(false); setShowEditColorPicker(false) }
+    }
     document.addEventListener('keydown', handle)
     return () => {
       document.removeEventListener('keydown', handle)
       document.body.style.overflow = ''
     }
-  }, [showColorPicker])
+  }, [showColorPicker, showEditColorPicker])
 
   // ── Centralized validation ─────────────────────────────────────────────────
   // Computed on every render — no state needed, always reflects current form.
@@ -281,9 +283,46 @@ export default function AdminProductForm() {
     setSizeInputs(prev => { const n = { ...prev }; delete n[color]; return n })
   }
 
+  const startEditColor = (color) => {
+    const found = [...NAMED_COLORS, ...customColors].find(c => c.name.toLowerCase() === color.toLowerCase())
+    setEditColorInput(color)
+    setEditColorHex(found?.hex ?? (/^#[0-9A-Fa-f]{6}$/i.test(color) ? color : '#888888'))
+    setEditingColor(color)
+    setShowEditColorPicker(false)
+  }
+
+  const cancelColorEdit = () => { setEditingColor(null); setShowEditColorPicker(false) }
+
+  const saveColorEdit = (oldColor) => {
+    const newName = editColorInput.trim()
+    if (!newName) return
+    setEditingColor(null)
+    setShowEditColorPicker(false)
+    if (newName === oldColor) return
+    if (colorEntries.some(e => e.color.toLowerCase() === newName.toLowerCase() && e.color !== oldColor)) return
+    setColorEntries(prev => prev.map(e => e.color === oldColor ? { ...e, color: newName } : e))
+    setColorPreviews(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
+    setSizeInputs(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
+    setExpandedSizes(prev => {
+      const n = new Set()
+      for (const key of prev) {
+        n.add(key.startsWith(`${oldColor}::`) ? `${newName}::${key.slice(oldColor.length + 2)}` : key)
+      }
+      return n
+    })
+  }
+
   // ── Per-color images ────────────────────────────────────────────────────────
   const handleColorImageFiles = async (color, files) => {
-    const fileArr = Array.from(files)
+    const fileArr = Array.from(files).filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast(`"${file.name}" is not an image`, 'error'); return false
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast(`"${file.name}" exceeds 5 MB`, 'error'); return false
+      }
+      return true
+    })
     if (!fileArr.length) return
     // All files → upload directly; original file is stored so admin can re-crop via the Crop button
     if (fileArr.length === 1) {
@@ -341,6 +380,34 @@ export default function AdminProductForm() {
         }
       : e
   ))
+
+  const removeColorImageWithConfirm = (color, idx) => {
+    if (!window.confirm('Remove this image?')) return
+    removeColorImage(color, idx)
+  }
+
+  const handleReplaceColorImage = async (color, idx, files) => {
+    const file = Array.from(files)[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast(`"${file.name}" is not an image`, 'error'); return }
+    if (file.size > 5 * 1024 * 1024) { toast(`"${file.name}" exceeds 5 MB`, 'error'); return }
+    const replaceUrl = colorEntries.find(e => e.color === color)?.imageUrls[idx]
+    if (!replaceUrl) return
+    setUploadingColor(color)
+    try {
+      const urls = await uploadImages([file])
+      if (!urls[0]) return
+      setColorEntries(prev => prev.map(e => {
+        if (e.color !== color) return e
+        return {
+          ...e,
+          imageUrls: e.imageUrls.map((u, i) => i === idx ? urls[0] : u),
+          primaryImageUrl: e.primaryImageUrl === replaceUrl ? urls[0] : e.primaryImageUrl,
+        }
+      }))
+      setOriginalFiles(prev => { const n = new Map(prev); n.delete(replaceUrl); n.set(urls[0], file); return n })
+    } finally { setUploadingColor(null) }
+  }
 
   // ── Sizes ───────────────────────────────────────────────────────────────────
   const getSizeInput = (color) => sizeInputs[color] ?? { ...EMPTY_SIZE_INPUT }
@@ -491,9 +558,8 @@ export default function AdminProductForm() {
 
   const handleCropButton = (url, color) => {
     const file = originalFiles.get(url)
-    if (!file) return
-    const blobSrc = URL.createObjectURL(file)
-    setCropSrc(blobSrc)
+    const blobSrc = file ? URL.createObjectURL(file) : null
+    setCropSrc(blobSrc || url)
     setCropTarget({ type: 'color', color, replaceUrl: url, cropBlobSrc: blobSrc })
   }
 
@@ -883,18 +949,60 @@ export default function AdminProductForm() {
                 ref={setFieldRef(`color::${color}`)}
                 className={`border rounded-2xl overflow-hidden shadow-sm ${colorErr ? 'border-red-400 ring-1 ring-red-300' : 'border-gray-200'}`}>
                 {/* Color header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full border border-gray-300 shadow-sm shrink-0" style={{ backgroundColor: color }} />
-                    <span className="font-semibold text-gray-800">{color}</span>
-                    <span className="text-xs text-gray-400">
-                      {imageUrls.length} img · {sizes.length} size{sizes.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <button type="button" onClick={() => removeColorEntry(color)}
-                    className="text-red-400 hover:text-red-600 transition-colors text-sm font-medium">
-                    {t('admin.delete')}
-                  </button>
+                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-100">
+                  {editingColor === color ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowEditColorPicker(s => !s)}
+                        className="w-8 h-8 rounded-lg border-2 border-gray-200 shadow-sm cursor-pointer hover:border-[#6B1F2A] transition-colors shrink-0"
+                        style={{ backgroundColor: editColorHex }}
+                        aria-label="Open color picker"
+                      />
+                      <input
+                        value={editColorInput}
+                        onChange={e => {
+                          setEditColorInput(e.target.value)
+                          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) setEditColorHex(e.target.value)
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); saveColorEdit(color) }
+                          else if (e.key === 'Escape') cancelColorEdit()
+                        }}
+                        autoFocus
+                        className="flex-1 min-w-0 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#6B1F2A]"
+                        placeholder="Color name or #hex"
+                      />
+                      <button type="button" onClick={() => saveColorEdit(color)}
+                        className="shrink-0 px-2.5 py-1 text-xs font-semibold bg-[#6B1F2A] text-white rounded-lg hover:bg-[#5A1923] transition-colors">
+                        {t('admin.save')}
+                      </button>
+                      <button type="button" onClick={cancelColorEdit}
+                        className="shrink-0 px-2.5 py-1 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                        {t('admin.cancel')}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-5 h-5 rounded-full border border-gray-300 shadow-sm shrink-0" style={{ backgroundColor: color }} />
+                        <span className="font-semibold text-gray-800 truncate">{color}</span>
+                        <span className="text-xs text-gray-400 shrink-0">
+                          {imageUrls.length} img · {sizes.length} size{sizes.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button type="button" onClick={() => startEditColor(color)}
+                          className="text-[#6B1F2A] hover:text-[#5A1923] transition-colors text-sm font-medium">
+                          {t('admin.edit')}
+                        </button>
+                        <button type="button" onClick={() => removeColorEntry(color)}
+                          className="text-red-400 hover:text-red-600 transition-colors text-sm font-medium">
+                          {t('admin.delete')}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="p-4 space-y-5">
@@ -910,79 +1018,116 @@ export default function AdminProductForm() {
                       {imageUrls.map((url, i) => {
                         const isMain = url === effectivePrimary
                         return (
-                          <div key={i} className={`relative w-24 h-24 rounded-xl overflow-hidden group transition-all ${isMain ? 'border-2 border-[#6B1F2A] ring-2 ring-[#FDF0F2]' : 'border border-gray-200'}`}>
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                            {isMain && (
-                              <span className="absolute top-1 start-1 text-[9px] font-semibold uppercase tracking-wide bg-[#6B1F2A] text-white px-1.5 py-0.5 rounded-md shadow-sm z-10">
-                                ⭐ {t('admin.main') || 'Main'}
-                              </span>
-                            )}
-                            <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1.5">
-                              <div className="flex items-center gap-1.5">
-                                <button type="button" onClick={() => setPrimaryColorImage(color, url)}
-                                  title={t('admin.setMain') || 'Set as main'}
-                                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${isMain ? 'bg-amber-400 text-white' : 'bg-white/20 hover:bg-amber-400/80 text-white'}`}>
-                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                  </svg>
-                                </button>
-                                {originalFiles.has(url) && (
-                                  <button type="button" onClick={() => handleCropButton(url, color)}
-                                    title="Crop image"
-                                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-sky-400/80 flex items-center justify-center transition-colors">
-                                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h3m0 0V3m0 3v12a3 3 0 003 3h12m-3 0v-3m0 3H3" />
-                                    </svg>
-                                  </button>
-                                )}
-                                <button type="button" onClick={() => removeColorImage(color, i)}
-                                  title={t('admin.delete') || 'Delete'}
-                                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-red-500/80 flex items-center justify-center transition-colors">
-                                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                              <div className="flex items-center gap-1.5">
+                          <div key={i} className="flex flex-col items-center gap-1">
+                            {/* Thumbnail */}
+                            <div className={`relative w-20 h-20 rounded-xl overflow-hidden ${isMain ? 'border-2 border-[#6B1F2A] ring-1 ring-[#FDF0F2]' : 'border border-gray-200'}`}>
+                              <img src={url} alt="" className="w-full h-full object-cover" />
+                              {isMain && (
+                                <span className="absolute top-1 left-1 text-[9px] font-semibold uppercase tracking-wide bg-[#6B1F2A] text-white px-1.5 py-0.5 rounded-md shadow-sm z-10">
+                                  ⭐ {t('admin.main') || 'Main'}
+                                </span>
+                              )}
+                            </div>
+                            {/* Always-visible action row */}
+                            <div className="flex items-center gap-0.5">
+                              <button type="button"
+                                onClick={() => { setPreviewImages(imageUrls); setPreviewIndex(i) }}
+                                title={t('admin.view') || 'View'}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-blue-600 transition-colors">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                              <button type="button"
+                                onClick={() => setPrimaryColorImage(color, url)}
+                                disabled={isMain}
+                                title={isMain ? (t('admin.main') || 'Main') : (t('admin.setMain') || 'Set as main')}
+                                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${isMain ? 'text-amber-400 cursor-default' : 'text-gray-400 hover:bg-amber-50 hover:text-amber-500'}`}>
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                </svg>
+                              </button>
+                              <label htmlFor={`replace-${color}-${i}`}
+                                title="Replace image"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6B1F2A] hover:bg-[#FDF0F2] cursor-pointer transition-colors">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              </label>
+                              <input id={`replace-${color}-${i}`} type="file" accept="image/*" className="sr-only"
+                                onChange={e => { handleReplaceColorImage(color, i, e.target.files); e.target.value = '' }} />
+                              <button type="button"
+                                onClick={() => handleCropButton(url, color)}
+                                title={t('admin.cropImage')}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-amber-600 hover:bg-amber-50 hover:text-amber-700 transition-colors">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4H8M16 4H20V8M4 16V20H8M20 16V20H16" />
+                                </svg>
+                              </button>
+                              <button type="button"
+                                onClick={() => removeColorImageWithConfirm(color, i)}
+                                title={t('admin.delete') || 'Delete'}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                            {/* Move buttons — only when there are multiple images */}
+                            {imageUrls.length > 1 && (
+                              <div className="flex items-center gap-0.5">
                                 <button type="button" onClick={() => moveColorImage(color, i, -1)} disabled={i === 0}
                                   title={t('admin.moveLeft') || 'Move left'}
-                                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  className="w-7 h-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                                   </svg>
                                 </button>
                                 <button type="button" onClick={() => moveColorImage(color, i, +1)} disabled={i === imageUrls.length - 1}
                                   title={t('admin.moveRight') || 'Move right'}
-                                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  className="w-7 h-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                   </svg>
                                 </button>
                               </div>
-                            </div>
+                            )}
                           </div>
                         )
                       })}
                       {previews.map((p, i) => (
-                        <div key={`cp-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
-                          <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
-                            <svg className="animate-spin w-4 h-4 text-[#6B1F2A]" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                            </svg>
+                        <div key={`cp-${i}`} className="flex flex-col items-center gap-1">
+                          <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
+                            <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
+                              <svg className="animate-spin w-4 h-4 text-[#6B1F2A]" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                              </svg>
+                            </div>
                           </div>
+                          <span className="text-[10px] text-gray-400">Uploading…</span>
                         </div>
                       ))}
-                      <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#6B1F2A] transition-colors text-gray-400 hover:text-[#6B1F2A]">
+                      <label htmlFor={`color-img-${color}`} className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#6B1F2A] transition-colors text-gray-400 hover:text-[#6B1F2A]">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
                         </svg>
                         <span className="text-xs mt-1">{uploadingColor === color ? '...' : 'Add'}</span>
-                        <input type="file" multiple accept="image/*" className="hidden"
-                          onChange={e => { handleColorImageFiles(color, e.target.files); e.target.value = '' }} />
                       </label>
+                      <input
+                        id={`color-img-${color}`}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={e => { handleColorImageFiles(color, e.target.files); e.target.value = '' }}
+                      />
                     </div>
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      {t('admin.multiImageHint') || 'Tap + to add · Select multiple images at once from your gallery'}
+                    </p>
                   </div>
 
                   {/* Sizes & Measurements */}
@@ -1097,6 +1242,67 @@ export default function AdminProductForm() {
           onClose={() => setPreviewImages(null)}
           onChange={setPreviewIndex}
         />
+      )}
+
+      {/* Edit color picker — fixed bottom-sheet modal */}
+      {showEditColorPicker && editingColor !== null && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 sm:p-4"
+          onClick={() => setShowEditColorPicker(false)}
+        >
+          <div
+            className="w-full sm:w-80 bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: 'min(92vh, 520px)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
+              <div className="w-9 h-1 rounded-full bg-gray-300" />
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+              <h3 className="font-semibold text-gray-900 text-sm">{t('admin.editColor')}</h3>
+              <button
+                type="button"
+                onClick={() => setShowEditColorPicker(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 flex flex-col items-center gap-4">
+              <HexColorPicker
+                color={editColorHex}
+                onChange={hex => { setEditColorHex(hex); setEditColorInput(hex) }}
+                style={{ width: '100%', maxWidth: '280px', height: 'min(240px, 60vw)' }}
+              />
+              <div className="w-full max-w-[280px] flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50">
+                <div className="w-5 h-5 rounded-md border border-gray-200 shrink-0" style={{ backgroundColor: editColorHex }} />
+                <span className="text-sm font-mono text-gray-400 select-none">#</span>
+                <input
+                  type="text"
+                  value={editColorHex.replace('#', '').toUpperCase()}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
+                    if (raw.length === 6) { setEditColorHex(`#${raw}`); setEditColorInput(`#${raw}`) }
+                  }}
+                  className="flex-1 text-sm font-mono uppercase bg-transparent focus:outline-none min-w-0"
+                  maxLength={6}
+                  placeholder="000000"
+                />
+              </div>
+            </div>
+            <div className="shrink-0 px-4 py-3 border-t border-gray-100 bg-white">
+              <button
+                type="button"
+                onClick={() => setShowEditColorPicker(false)}
+                className="w-full py-3 bg-[#6B1F2A] text-white rounded-xl font-semibold text-sm hover:bg-[#5A1923] transition-colors min-h-[48px]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Color picker — fixed bottom-sheet modal (mobile) / centered dialog (desktop) */}

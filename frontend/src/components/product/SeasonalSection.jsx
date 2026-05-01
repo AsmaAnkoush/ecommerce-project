@@ -83,7 +83,7 @@ export default function SeasonalSection({ season = 'WINTER', className = '' }) {
       ) : (
         <>
           {/* Grid: 2 cols mobile · 3 cols tablet · 4 cols desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {products.map((p, i) => (
               <div
                 key={p.id}

@@ -258,7 +258,7 @@ export default function AdminOffers() {
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0" style={{ background: '#FDF6F7', border: '1px solid #F0DDE0' }}>
                           {product.imageUrl
-                            ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                            ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain p-1" />
                             : <div className="w-full h-full flex items-center justify-center font-bold text-sm" style={{ color: '#DFA3AD' }}>
                                 {(product.name || '?').charAt(0)}
                               </div>

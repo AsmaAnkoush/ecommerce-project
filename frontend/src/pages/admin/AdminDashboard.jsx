@@ -120,7 +120,7 @@ function BestSellerRow({ item, rank }) {
         style={{ background: '#FDF0F2', border: '1px solid #F0DDE0' }}
       >
         {item.productImage
-          ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+          ? <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain p-1" />
           : <div className="w-full h-full flex items-center justify-center text-[#DFA3AD] text-xs font-bold">
               {(item.productName || '?').charAt(0)}
             </div>

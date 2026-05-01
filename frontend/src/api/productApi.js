@@ -3,7 +3,8 @@ import api from './axios'
 export const getProducts = (params) => api.get('/products', { params })
 export const getProduct = (id) => api.get(`/products/${id}`)
 export const getLatestProducts = () => api.get('/products/latest')
-export const getBestSellers = () => api.get('/products/best-sellers')
+export const getBestSellers = (season) =>
+  api.get('/products/best-sellers', season ? { params: { season } } : undefined)
 export const getNewArrivals = (season) =>
   api.get('/products/new-arrivals', season ? { params: { season } } : undefined)
 export const getOnSale = () => api.get('/products/on-sale')

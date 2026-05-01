@@ -125,7 +125,7 @@ export default function CartPage() {
                   className="w-20 h-24 sm:w-24 sm:h-28 bg-[#F9EEF0] rounded-xl overflow-hidden shrink-0 hover:opacity-90 transition-opacity border border-[#F0D5D8]"
                 >
                   {item.productImage ? (
-                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain p-1" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
                       <svg className="w-8 h-8 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">

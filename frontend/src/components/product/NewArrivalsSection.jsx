@@ -5,24 +5,6 @@ import { useLanguage } from '../../context/LanguageContext'
 import ProductCard from './ProductCard'
 import Spinner from '../ui/Spinner'
 
-const LIMIT = 8
-
-/**
- * "New Arrivals" homepage section.
- *
- *  - Fetches from the existing GET /api/products/new-arrivals endpoint, which
- *    on the backend returns active products with `isNew = true`, ordered by
- *    `createdAt DESC`. We re-sort defensively just in case the API ever ships
- *    them in a different order.
- *  - Caps the visible grid at 8 cards.
- *  - Renders the existing ProductCard, so styling, hover overlay, color
- *    picker, and add-to-cart behaviour all stay consistent with the rest of
- *    the store.
- *  - Empty state shows a localized "no new products" message.
- *  - "View All" navigates to /new-arrivals (a dedicated full-page list).
- *
- * Drop-in usage: `<NewArrivalsSection />` — no required props.
- */
 export default function NewArrivalsSection({ season = null, className = '' }) {
   const { t } = useLanguage()
   const [products, setProducts] = useState([])
@@ -34,23 +16,20 @@ export default function NewArrivalsSection({ season = null, className = '' }) {
     getNewArrivals(season)
       .then(res => {
         if (cancelled) return
-        const list = res.data?.data ?? []
-        // Backend already filters by createdAt (3-day window) and season — just sort newest-first
-        const sorted = [...list].sort((a, b) =>
-          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-        )
-        setProducts(sorted.slice(0, LIMIT))
+        setProducts(res.data?.data ?? [])
       })
       .catch(() => { if (!cancelled) setProducts([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [season])
 
+  if (!loading && products.length === 0) return null
+
   return (
-    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
+    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 max-w-6xl ${className}`}>
 
       {/* ── Header: title + inline View All ────────────────── */}
-      <div className="flex items-end justify-between mb-10 sm:mb-14 gap-3">
+      <div className="flex items-end justify-between mb-6 sm:mb-8 gap-3">
         <div className="flex-1 min-w-0">
           <div>
             <h2
@@ -92,14 +71,10 @@ export default function NewArrivalsSection({ season = null, className = '' }) {
         <div className="flex justify-center py-14">
           <Spinner size="lg" />
         </div>
-      ) : products.length === 0 ? (
-        <p className="text-center py-12 text-sm text-[#9B7B80] tracking-wide">
-          {t('home.noNewArrivals')}
-        </p>
       ) : (
         <>
           {/* Grid: 2 cols mobile · 3 cols tablet · 4 cols desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {products.map((p, i) => (
               <div
                 key={p.id}

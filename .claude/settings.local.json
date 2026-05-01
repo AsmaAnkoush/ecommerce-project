@@ -56,7 +56,14 @@
       "Bash(sed -n '36,52p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/product/BestSellersSection.jsx)",
       "Bash(sed -n '38,54p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/product/SeasonalSection.jsx)",
       "Bash(sed -n '119,135p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/category/CategorySection.jsx)",
-      "Bash(sed -n '117,133p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/seasonal/SeasonalCirclesSection.jsx)"
+      "Bash(sed -n '117,133p' C:/Users/user/Desktop/ecommerce-project/frontend/src/components/seasonal/SeasonalCirclesSection.jsx)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:unpkg.com)",
+      "Bash(mvn clean *)",
+      "Bash(git diff *)",
+      "Bash(wmic logicaldisk *)",
+      "Bash(mkdir -p /d/temp)",
+      "Read(//d//**)"
     ]
   }
 }

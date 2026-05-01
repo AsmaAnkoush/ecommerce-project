@@ -417,7 +417,7 @@ export default function ProductsPage() {
           § 5  PRODUCT GRID / LIST
          ────────────────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {Array.from({ length: 8 }, (_, i) => <ProductSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
@@ -446,7 +446,7 @@ export default function ProductsPage() {
       ) : (
         <>
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
               {products.map((p, idx) => (
                 <div key={p.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(idx * 40, 400)}ms` }}>
                   <ProductCard product={p} />

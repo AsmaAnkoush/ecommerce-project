@@ -7,6 +7,7 @@ import com.ecommerce.dto.response.ProductResponse;
 import com.ecommerce.dto.response.ProductVariantResponse;
 import com.ecommerce.entity.Category;
 import com.ecommerce.entity.DiscountType;
+import com.ecommerce.entity.Order;
 import com.ecommerce.entity.ProductSeason;
 import com.ecommerce.entity.Product;
 import com.ecommerce.entity.ProductImage;
@@ -25,6 +26,7 @@ import com.ecommerce.repository.SeasonRepository;
 import com.ecommerce.repository.WishlistItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -77,26 +78,59 @@ public class ProductService {
 
     /**
      * Dynamic "new arrivals": active, non-deleted products created within the
-     * last 3 days whose season matches the requested season (or ALL_SEASON).
-     * When {@code season} is null, falls back to calendar-based detection.
+     * last 3 days. When {@code season} is non-null only that season (+ ALL_SEASON)
+     * is included; when null all seasons are returned (no calendar fallback).
      */
-    public List<ProductResponse> findNew(ProductSeason season) {
+    public List<ProductResponse> findNew(ProductSeason season, int limit) {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(3);
-        ProductSeason resolved = (season != null) ? season : currentSeason();
-        List<ProductSeason> seasons = List.of(resolved, ProductSeason.ALL_SEASON);
-        return toResponses(productRepository
-                .findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(seasons, cutoff));
+        List<Product> raw;
+        if (season != null) {
+            List<ProductSeason> seasons = List.of(season, ProductSeason.ALL_SEASON);
+            raw = productRepository
+                    .findByActiveTrueAndIsDeletedFalseAndSeasonInAndCreatedAtAfterOrderByCreatedAtDesc(seasons, cutoff);
+        } else {
+            raw = productRepository
+                    .findByActiveTrueAndIsDeletedFalseAndCreatedAtAfterOrderByCreatedAtDesc(cutoff);
+        }
+        List<Product> limited = limit > 0 ? raw.stream().limit(limit).toList() : raw;
+        return toResponses(limited);
     }
 
-    /** Northern-hemisphere split: Apr–Sep → SUMMER, Oct–Mar → WINTER. */
-    private ProductSeason currentSeason() {
-        Month m = LocalDateTime.now().getMonth();
-        int v = m.getValue();
-        return (v >= 4 && v <= 9) ? ProductSeason.SUMMER : ProductSeason.WINTER;
-    }
-
-    public List<ProductResponse> findBestSellers() {
-        return toResponses(productRepository.findByActiveTrueAndIsBestSellerTrueAndIsDeletedFalseOrderByConfirmedOrderCountDesc());
+    /**
+     * Live best-sellers ranked by total units sold in CONFIRMED orders.
+     * When {@code season} is null all seasons qualify; otherwise only the given
+     * season (+ ALL_SEASON tagged products) are included. {@code limit} caps the
+     * result (0 = unlimited).
+     */
+    public List<ProductResponse> findBestSellers(ProductSeason season, int limit) {
+        Pageable pageable = limit > 0
+                ? PageRequest.of(0, limit)
+                : Pageable.unpaged();
+        List<Object[]> rows = productRepository.findBestSellersByConfirmedQuantity(
+                Order.OrderStatus.CONFIRMED, season, ProductSeason.ALL_SEASON, pageable);
+        Map<Long, double[]> stats = new java.util.HashMap<>();
+        List<Product> products = new ArrayList<>();
+        for (Object[] row : rows) {
+            Product p = (Product) row[0];
+            products.add(p);
+            // row[1] is the live unit count — store it temporarily keyed by id
+            stats.put(p.getId(), new double[]{ Double.NaN, 0, ((Number) row[1]).doubleValue() });
+        }
+        // Batch-load review stats then merge live unit count
+        Map<Long, double[]> reviewStats = fetchStats(products);
+        return products.stream().map(p -> {
+            double[] rev = reviewStats.get(p.getId());
+            double[] live = stats.get(p.getId());
+            double[] merged = new double[]{
+                rev != null ? rev[0] : Double.NaN,
+                rev != null ? rev[1] : 0,
+                live != null ? live[2] : 0
+            };
+            ProductResponse r = toResponse(p, merged);
+            // Overwrite confirmedOrderCount with the live aggregated units sold
+            r.setConfirmedOrderCount((long) merged[2]);
+            return r;
+        }).toList();
     }
 
     public List<ProductResponse> findBySeason(ProductSeason season) {

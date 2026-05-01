@@ -6,6 +6,7 @@ import { useUI } from '../context/UIContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useFormatPrice } from '../utils/formatPrice'
 import Spinner from '../components/ui/Spinner'
+import { formatLocalDate } from '../utils/dateUtils'
 
 const CARD_BASE = 'bg-white border border-[#F0D5D8] rounded-2xl'
 const CARD_SHADOW = { boxShadow: '0 2px 12px rgba(107,31,42,0.05)' }
@@ -152,7 +153,7 @@ export default function OrdersPage() {
                       <StatusBadge status={order.status} t={t} />
                     </div>
                     <p className="text-[11px] text-[#9B7B80] tracking-wide">
-                      {new Date(order.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      {formatLocalDate(order.createdAt, 'ar-EG', { month: 'long', day: 'numeric' })}
                     </p>
                     {order.shippingAddress && (
                       <p className="text-[11px] text-[#B08A90] mt-0.5 truncate max-w-xs">
@@ -178,7 +179,7 @@ export default function OrdersPage() {
                     {order.items.slice(0, 5).map((item) => (
                       <div key={item.id} className="w-11 h-11 bg-[#F9EEF0] rounded-xl overflow-hidden border border-[#F0D5D8] shrink-0">
                         {item.productImage ? (
-                          <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+                          <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain p-1" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[#DFA3AD]">
                             <svg className="w-4 h-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">

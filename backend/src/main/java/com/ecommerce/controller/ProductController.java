@@ -59,14 +59,17 @@ public class ProductController {
     }
 
     @GetMapping("/best-sellers")
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> getBestSellers() {
-        return ResponseEntity.ok(ApiResponse.success("Best sellers", productService.findBestSellers()));
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getBestSellers(
+            @RequestParam(required = false) ProductSeason season,
+            @RequestParam(defaultValue = "8") int limit) {
+        return ResponseEntity.ok(ApiResponse.success("Best sellers", productService.findBestSellers(season, limit)));
     }
 
     @GetMapping("/new-arrivals")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getNewArrivals(
-            @RequestParam(required = false) ProductSeason season) {
-        return ResponseEntity.ok(ApiResponse.success("New arrivals", productService.findNew(season)));
+            @RequestParam(required = false) ProductSeason season,
+            @RequestParam(defaultValue = "8") int limit) {
+        return ResponseEntity.ok(ApiResponse.success("New arrivals", productService.findNew(season, limit)));
     }
 
     @GetMapping("/on-sale")

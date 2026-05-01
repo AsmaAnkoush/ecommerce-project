@@ -75,7 +75,7 @@ public class Order {
     }
 
     public enum OrderStatus {
-        PENDING, CONFIRMED, CANCELLED;
+        PENDING, CONFIRMED, CANCELLED, PARTIALLY_CONFIRMED;
 
         @com.fasterxml.jackson.annotation.JsonCreator
         public static OrderStatus fromValue(String value) {

@@ -34,7 +34,7 @@ public class CategoryService {
     private List<Category> attachCounts(List<Category> categories) {
         Map<Long, Long> counts = new HashMap<>();
         for (Object[] row : categoryRepository.countProductsPerCategory()) {
-            counts.put((Long) row[0], (Long) row[1]);
+            counts.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
         }
         categories.forEach(c -> c.setProductCount(counts.getOrDefault(c.getId(), 0L)));
         return categories;

@@ -10,6 +10,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -65,6 +67,26 @@ public class GlobalExceptionHandler {
                         .message("Validation failed")
                         .data(errors)
                         .build());
+    }
+
+    /** S3Exception carries a structured AWS error code — surface it directly so the
+     *  caller sees e.g. "InvalidAccessKeyId", "NoSuchBucket", or "AccessDenied"
+     *  instead of a generic 500. */
+    @ExceptionHandler(S3Exception.class)
+    public ResponseEntity<ApiResponse<Void>> handleS3Exception(S3Exception ex) {
+        String code = ex.awsErrorDetails().errorCode();
+        String message = ex.awsErrorDetails().errorMessage();
+        log.error("[S3] {} — {}", code, message);
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error("S3 error [" + code + "]: " + message));
+    }
+
+    /** Catches lower-level AWS SDK failures (network timeout, credential parse error, etc.). */
+    @ExceptionHandler(SdkException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSdkException(SdkException ex) {
+        log.error("[S3] SDK error — {}: {}", ex.getClass().getSimpleName(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error("S3 connection error: " + ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

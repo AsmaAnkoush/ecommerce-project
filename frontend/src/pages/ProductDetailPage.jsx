@@ -13,6 +13,7 @@ import ProductCard from '../components/product/ProductCard'
 import Spinner from '../components/ui/Spinner'
 import Badge from '../components/ui/Badge'
 import { SHIPPING_ZONES } from '../constants/shipping'
+import { formatLocalDate } from '../utils/dateUtils'
 
 function ShippingInfoTable() {
   const { t } = useLanguage()
@@ -1004,7 +1005,7 @@ export default function ProductDetailPage() {
                       <div>
                         <p className="font-semibold text-[#1A0A0D] text-sm">{review.userName}</p>
                         <p className="text-[11px] text-[#B08A90]">
-                          {new Date(review.createdAt).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {formatLocalDate(review.createdAt, language === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                     </div>

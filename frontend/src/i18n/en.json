@@ -666,6 +666,7 @@
     "setMain": "Set as main",
     "moveLeft": "Move left",
     "moveRight": "Move right",
+    "multiImageHint": "Tap + to add · Select multiple images at once from your gallery",
     "archive": "Archive",
     "archived": "Archived",
     "archivedOrders": "Archived Orders",
@@ -754,7 +755,18 @@
     "aspectLocked": "Locked",
     "aspectFree": "Free",
     "lockedAspect": "3:4 Locked",
-    "freeResize": "Free Resize"
+    "freeResize": "Free Resize",
+    "editColor": "Edit Color",
+    "confirmItem": "Confirm",
+    "cancelItem": "Cancel",
+    "itemPending": "Pending",
+    "itemConfirmed": "Confirmed",
+    "itemCancelled": "Cancelled",
+    "partiallyConfirmed": "Partially Confirmed",
+    "itemStatusUpdated": "Item status updated",
+    "confirmItemError": "Failed to update item status",
+    "itemFulfillment": "Fulfillment",
+    "fulfillmentStatus": "Item Status"
   },
 
   "common": {

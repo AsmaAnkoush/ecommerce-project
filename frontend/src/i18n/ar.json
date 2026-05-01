@@ -668,6 +668,7 @@
     "setMain": "تعيين كصورة رئيسية",
     "moveLeft": "نقل لليسار",
     "moveRight": "نقل لليمين",
+    "multiImageHint": "اضغط + للإضافة · يمكنك اختيار عدة صور في نفس الوقت",
     "archive": "أرشفة",
     "archived": "مؤرشف",
     "archivedOrders": "الطلبات المؤرشفة",
@@ -756,7 +757,18 @@
     "aspectLocked": "مثبت",
     "aspectFree": "حر",
     "lockedAspect": "نسبة 3:4 مثبتة",
-    "freeResize": "حجم حر"
+    "freeResize": "حجم حر",
+    "editColor": "تعديل اللون",
+    "confirmItem": "تأكيد",
+    "cancelItem": "إلغاء",
+    "itemPending": "قيد الانتظار",
+    "itemConfirmed": "مؤكد",
+    "itemCancelled": "ملغي",
+    "partiallyConfirmed": "مؤكد جزئياً",
+    "itemStatusUpdated": "تم تحديث حالة المنتج",
+    "confirmItemError": "فشل تحديث حالة المنتج",
+    "itemFulfillment": "التنفيذ",
+    "fulfillmentStatus": "حالة المنتج"
   },
 
   "common": {

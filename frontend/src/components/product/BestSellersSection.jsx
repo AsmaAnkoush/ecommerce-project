@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getBestSellers, getSeasonProducts } from '../../api/productApi'
+import { getBestSellers } from '../../api/productApi'
 import { useLanguage } from '../../context/LanguageContext'
 import ProductCard from './ProductCard'
 import Spinner from '../ui/Spinner'
@@ -13,26 +13,23 @@ export default function BestSellersSection({ season = null, className = '' }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    const request = season ? getSeasonProducts(season) : getBestSellers()
-    request
+    getBestSellers(season)
       .then(res => {
         if (cancelled) return
-        const list = res.data?.data ?? []
-        const sorted = [...list].sort((a, b) =>
-          Number(b.confirmedOrderCount || 0) - Number(a.confirmedOrderCount || 0)
-        )
-        setProducts(sorted)
+        setProducts(res.data?.data ?? [])
       })
       .catch(() => { if (!cancelled) setProducts([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [season])
 
+  if (!loading && products.length === 0) return null
+
   return (
-    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 py-10 sm:py-12 lg:py-14 max-w-6xl ${className}`}>
+    <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-6 sm:px-8 lg:px-12 max-w-6xl ${className}`}>
 
       {/* ── Header: title + inline View All ────────────────── */}
-      <div className="flex items-end justify-between mb-10 sm:mb-14 gap-3">
+      <div className="flex items-end justify-between mb-6 sm:mb-8 gap-3">
         <div className="flex-1 min-w-0">
           <div>
             <h2
@@ -74,14 +71,10 @@ export default function BestSellersSection({ season = null, className = '' }) {
         <div className="flex justify-center py-14">
           <Spinner size="lg" />
         </div>
-      ) : products.length === 0 ? (
-        <p className="text-center py-12 text-sm text-[#9B7B80] tracking-wide">
-          {t('home.noBestSellers')}
-        </p>
       ) : (
         <>
           {/* Grid: 2 cols mobile · 3 cols tablet · 4 cols desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {products.map((p, i) => (
               <div
                 key={p.id}

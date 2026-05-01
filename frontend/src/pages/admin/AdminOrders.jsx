@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAdminOrders, updateOrderStatus, updateOrderItemStatus, archiveOrder, getArchivedOrders, deleteOrder } from '../../api/adminApi'
+import { formatLocalDate, formatLocalTime } from '../../utils/dateUtils'
 import Spinner from '../../components/ui/Spinner'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { useToast } from '../../context/ToastContext'
@@ -133,7 +134,7 @@ function OrderDetail({ order, updating, onStatusChange, onArchive, archiving, on
               {/* Image */}
               <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-[#EDD8DC]" style={{ background: '#FDF0F2' }}>
                 {item.productImage && (
-                  <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+                  <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain p-1" />
                 )}
               </div>
 
@@ -575,10 +576,10 @@ export default function AdminOrders() {
                           {order.createdAt ? (
                             <div className="whitespace-nowrap">
                               <p className="text-sm font-medium" style={{ color: '#3D1A1E' }}>
-                                {new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                {formatLocalDate(order.createdAt)}
                               </p>
                               <p className="text-[11px] tabular-nums mt-0.5" style={{ color: '#9B7B80' }}>
-                                {new Date(order.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                {formatLocalTime(order.createdAt)}
                               </p>
                             </div>
                           ) : <span className="text-sm text-gray-400">—</span>}
