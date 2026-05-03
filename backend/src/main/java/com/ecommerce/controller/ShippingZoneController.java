@@ -18,7 +18,7 @@ public class ShippingZoneController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<ShippingZoneResponse>>> getAll() {
-        List<ShippingZoneResponse> zones = shippingZoneRepository.findAllByOrderByDisplayOrderAsc()
+        List<ShippingZoneResponse> zones = shippingZoneRepository.findAllByActiveIsTrueOrderByDisplayOrderAsc()
                 .stream()
                 .map(z -> ShippingZoneResponse.builder()
                         .id(z.getId())
@@ -27,6 +27,7 @@ public class ShippingZoneController {
                         .price(z.getPrice())
                         .deliveryDays(z.getDeliveryDays())
                         .icon(z.getIcon())
+                        .active(z.isActive())
                         .build())
                 .toList();
         return ResponseEntity.ok(ApiResponse.success("Shipping zones retrieved", zones));

@@ -14,17 +14,28 @@ import ProductCard from '../components/product/ProductCard'
 import Spinner from '../components/ui/Spinner'
 import Badge from '../components/ui/Badge'
 import InfoCard from '../components/ui/InfoCard'
-import { SHIPPING_ZONES } from '../constants/shipping'
+import { getShippingZones } from '../api/shippingApi'
 import { formatLocalDate } from '../utils/dateUtils'
 
 function ShippingInfoTable() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const formatPrice = useFormatPrice()
-  const items = SHIPPING_ZONES.map(({ key, icon, price }) => ({
-    emoji: icon,
-    label: t(`checkout.${key}`),
-    value: formatPrice(price),
+  const [zones, setZones] = useState([])
+
+  useEffect(() => {
+    getShippingZones()
+      .then(data => { if (Array.isArray(data)) setZones(data) })
+      .catch(() => {})
+  }, [])
+
+  if (!zones.length) return null
+
+  const items = zones.map(zone => ({
+    emoji: zone.icon,
+    label: lang === 'ar' ? zone.nameAr : zone.nameEn,
+    value: formatPrice(zone.price),
   }))
+
   return <InfoCard title={t('product.shippingInfo')} icon={Truck} items={items} />
 }
 
@@ -95,16 +106,6 @@ function ShareSection({ productName }) {
   )
 }
 
-function getMeasurementLabel(key) {
-  switch (key) {
-    case 'chest':     return 'الصدر'
-    case 'waist':     return 'الخصر'
-    case 'length':    return 'الطول'
-    case 'shoulders': return 'الكتف'
-    case 'backWidth': return 'الظهر'
-    default:          return key
-  }
-}
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -514,7 +515,7 @@ export default function ProductDetailPage() {
               {hasDiscount ? (
                 <>
                   <span
-                    className="text-base sm:text-lg font-semibold text-[#8B2F3A] leading-none nums-normal"
+                    className="text-lg sm:text-xl font-semibold text-[#8B2F3A] leading-none nums-normal"
                     style={{ fontFamily: 'Cormorant Garamond, serif' }}
                   >
                     {formatPrice(product.discountPrice)}
@@ -528,7 +529,7 @@ export default function ProductDetailPage() {
                 </>
               ) : (
                 <span
-                  className="text-base sm:text-lg font-semibold text-[#8B2F3A] leading-none nums-normal"
+                  className="text-lg sm:text-xl font-semibold text-[#8B2F3A] leading-none nums-normal"
                   style={{ fontFamily: 'Cormorant Garamond, serif' }}
                 >
                   {formatPrice(product.price)}
@@ -621,10 +622,10 @@ export default function ProductDetailPage() {
                     {/* Measurements — uses InfoCard, identical design to shipping */}
                     {(() => {
                       if (!selectedVariant) return null
-                      const KEYS = ['chest', 'waist', 'shoulders', 'backWidth', 'length']
+                      const KEYS = ['shoulders', 'chest', 'waist', 'hip', 'length']
                       const items = KEYS
                         .filter(k => selectedVariant[k] != null)
-                        .map(k => ({ label: getMeasurementLabel(k), value: selectedVariant[k] }))
+                        .map(k => ({ label: t(`product.${k}`), value: selectedVariant[k] }))
                       if (items.length === 0) return null
                       return (
                         <div className="mt-4">

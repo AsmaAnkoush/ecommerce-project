@@ -61,6 +61,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
 import AdminStock from './pages/admin/AdminStock'
+import AdminShippingZones from './pages/admin/AdminShippingZones'
 
 function StoreLayout({ children }) {
   return (
@@ -123,6 +124,7 @@ export default function App() {
                   <Route path="/admin/reviews" element={<ProtectedRoute adminOnly><AdminLayout><AdminReviews /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/offers" element={<ProtectedRoute adminOnly><AdminLayout><AdminOffers /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/stock" element={<ProtectedRoute adminOnly><AdminLayout><AdminStock /></AdminLayout></ProtectedRoute>} />
+                  <Route path="/admin/shipping-zones" element={<ProtectedRoute adminOnly><AdminLayout><AdminShippingZones /></AdminLayout></ProtectedRoute>} />
                   <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminLayout><AdminSettings /></AdminLayout></ProtectedRoute>} />
 
                   <Route path="*" element={<Navigate to="/" replace />} />

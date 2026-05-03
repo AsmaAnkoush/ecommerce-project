@@ -121,8 +121,9 @@ export default function AuthForms({ mode, onSwitchMode, onSuccess }) {
       }
       if (onSuccess) onSuccess()
       // Admin lands directly in the admin panel; everyone else stays where they were.
+      // Uses replace() so pressing Back from /admin doesn't re-open the login drawer.
       if (userData?.role === 'ADMIN' && typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin')) {
-        window.location.assign('/admin')
+        window.location.replace('/admin')
       }
     } catch (err) {
       setApiError(

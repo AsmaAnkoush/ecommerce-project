@@ -133,6 +133,16 @@ public class AdminController {
                 orderService.updateItemStatus(orderId, itemId, status)));
     }
 
+    @PatchMapping("/orders/{id}/confirm-all")
+    public ResponseEntity<ApiResponse<OrderResponse>> confirmAllItems(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("All items confirmed", orderService.confirmAllItems(id)));
+    }
+
+    @PatchMapping("/orders/{id}/cancel-all")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelAllItems(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("All items cancelled", orderService.cancelAllItems(id)));
+    }
+
     @PatchMapping("/orders/{id}/archive")
     public ResponseEntity<ApiResponse<OrderResponse>> archiveOrder(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Order archived", orderService.archive(id)));

@@ -46,5 +46,8 @@ public class ProductVariant {
     private BigDecimal backWidth;
 
     @Column(precision = 6, scale = 1)
+    private BigDecimal hip;
+
+    @Column(precision = 6, scale = 1)
     private BigDecimal length;
 }

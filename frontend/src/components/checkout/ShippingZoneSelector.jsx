@@ -2,7 +2,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { useFormatPrice } from '../../utils/formatPrice'
 
 export default function ShippingZoneSelector({ zones, selectedId, onChange, hasError }) {
-  const { language, t } = useLanguage()
+  const { lang, t } = useLanguage()
   const formatPrice = useFormatPrice()
 
   return (
@@ -14,7 +14,7 @@ export default function ShippingZoneSelector({ zones, selectedId, onChange, hasE
     >
       {zones.map((zone, idx) => {
         const selected = zone.id === selectedId
-        const name = language === 'ar' ? zone.nameAr : zone.nameEn
+        const name = lang === 'ar' ? zone.nameAr : zone.nameEn
         const isLast = idx === zones.length - 1
 
         return (

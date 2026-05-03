@@ -66,7 +66,18 @@
       "Read(//d//**)",
       "Bash(findstr /i \"crop\\\\|zoom\\\\|applyCrop\\\\|processing\\\\|aspect\")",
       "Bash(npx vite *)",
-      "Bash(npx rimraf *)"
+      "Bash(npx rimraf *)",
+      "Bash(npx --yes esbuild src/pages/admin/AdminProductForm.jsx --bundle=false --loader:.jsx=jsx)",
+      "Bash(npx --yes esbuild src/pages/admin/AdminProductForm.jsx --bundle=false --loader:.jsx=jsx --outfile=NUL)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npx --yes esbuild src/api/uploadApi.js --bundle=false --outfile=NUL)",
+      "Bash(Get-ChildItem -Path \"D:\\\\ecommerce-project\\\\backend\\\\src\\\\main\" -Recurse -Filter \"*.sql\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Copy-Item *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\ecommerce-project\" -Directory)",
+      "Bash(Select-Object Name)",
+      "PowerShell(head *)",
+      "Bash(Copy-Item *)"
     ]
   }
 }

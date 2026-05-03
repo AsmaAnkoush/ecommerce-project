@@ -144,8 +144,8 @@ public class OrderService {
         Order.OrderStatus s = order.getStatus();
         if (s != Order.OrderStatus.CONFIRMED
                 && s != Order.OrderStatus.CANCELLED
-                && s != Order.OrderStatus.PARTIALLY_CONFIRMED) {
-            throw new BadRequestException("Only confirmed, partially confirmed, or cancelled orders can be archived");
+                && s != Order.OrderStatus.PARTIALLY_CONFIRMED) { // PARTIALLY_CONFIRMED kept for backward DB compat
+            throw new BadRequestException("Only confirmed or cancelled orders can be archived");
         }
         order.setArchived(true);
         return toResponse(orderRepository.save(order));
@@ -318,6 +318,72 @@ public class OrderService {
         return toResponse(order);
     }
 
+    /**
+     * Confirms every PENDING item in the order in one transaction.
+     * Stock is deducted per item exactly as in {@link #updateItemStatus}.
+     * Order status is re-derived once after all items are processed.
+     */
+    @Transactional
+    public OrderResponse confirmAllItems(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        for (OrderItem item : order.getItems()) {
+            ItemStatus current = item.getItemStatus() != null ? item.getItemStatus() : ItemStatus.PENDING;
+            if (current != ItemStatus.PENDING) continue;
+
+            item.setItemStatus(ItemStatus.CONFIRMED);
+            orderItemRepository.save(item);
+
+            Product product = item.getProduct();
+            if (product != null) {
+                deductStock(product, item);
+                long newCount = (product.getConfirmedOrderCount() != null ? product.getConfirmedOrderCount() : 0L) + 1;
+                product.setConfirmedOrderCount(newCount);
+                if (newCount >= BEST_SELLER_THRESHOLD) product.setIsBestSeller(true);
+                productRepository.save(product);
+            } else {
+                log.warn("[confirmAllItems] item {} has no linked product — skipping stock deduction", item.getId());
+            }
+        }
+
+        order.setStatus(deriveOrderStatus(order.getItems()));
+        return toResponse(orderRepository.save(order));
+    }
+
+    /**
+     * Cancels every non-cancelled item in the order in one transaction.
+     * CONFIRMED → CANCELLED restores previously deducted stock.
+     * PENDING → CANCELLED has no stock effect.
+     * Order status is re-derived once after all items are processed.
+     */
+    @Transactional
+    public OrderResponse cancelAllItems(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        for (OrderItem item : order.getItems()) {
+            ItemStatus current = item.getItemStatus() != null ? item.getItemStatus() : ItemStatus.PENDING;
+            if (current == ItemStatus.CANCELLED) continue;
+
+            item.setItemStatus(ItemStatus.CANCELLED);
+            orderItemRepository.save(item);
+
+            if (current == ItemStatus.CONFIRMED) {
+                Product product = item.getProduct();
+                if (product != null) {
+                    restoreStock(product, item);
+                    productRepository.save(product);
+                } else {
+                    log.warn("[cancelAllItems] item {} has no linked product — skipping stock restoration", item.getId());
+                }
+            }
+        }
+
+        order.setStatus(deriveOrderStatus(order.getItems()));
+        return toResponse(orderRepository.save(order));
+    }
+
     /** Derives the order-level status from the current itemStatus of all items. */
     private Order.OrderStatus deriveOrderStatus(List<OrderItem> items) {
         if (items == null || items.isEmpty()) return Order.OrderStatus.PENDING;
@@ -327,7 +393,7 @@ public class OrderService {
         if (anyPending)   return Order.OrderStatus.PENDING;
         if (allConfirmed) return Order.OrderStatus.CONFIRMED;
         if (allCancelled) return Order.OrderStatus.CANCELLED;
-        return Order.OrderStatus.PARTIALLY_CONFIRMED;
+        return Order.OrderStatus.PENDING;
     }
 
     /**
@@ -486,7 +552,9 @@ public class OrderService {
                 .id(order.getId())
                 .items(items)
                 .totalAmount(order.getTotalAmount())
-                .status(order.getStatus().name())
+                .status(order.getStatus() == Order.OrderStatus.PARTIALLY_CONFIRMED
+                        ? Order.OrderStatus.PENDING.name()
+                        : order.getStatus().name())
                 .shippingAddress(order.getShippingAddress())
                 .city(order.getCity())
                 .customerName(order.getCustomerName())
@@ -499,6 +567,7 @@ public class OrderService {
                 .createdAt(order.getCreatedAt())
                 .shippingZoneNameEn(order.getShippingZone() != null ? order.getShippingZone().getNameEn() : null)
                 .shippingZoneNameAr(order.getShippingZone() != null ? order.getShippingZone().getNameAr() : null)
+                .shippingZoneDeliveryDays(order.getShippingZone() != null ? order.getShippingZone().getDeliveryDays() : null)
                 .shippingCost(order.getShippingCost())
                 .build();
     }

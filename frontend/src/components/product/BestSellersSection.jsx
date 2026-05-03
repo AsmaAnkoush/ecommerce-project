@@ -29,8 +29,8 @@ export default function BestSellersSection({ season = null, className = '' }) {
     <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-3 sm:px-4 lg:px-6 max-w-6xl ${className}`}>
 
       {/* ── Header: title + inline View All ────────────────── */}
-      <div className="flex items-end justify-between mb-6 sm:mb-8 gap-3">
-        <div className="flex-1 min-w-0">
+      <div className="relative mb-6 sm:mb-8 text-center">
+        <div>
           <div>
             <h2
               className="text-[24px] sm:text-[28px] lg:text-[42px] xl:text-[46px] leading-[1.4] pb-[0.15em] inline-block"
@@ -47,7 +47,7 @@ export default function BestSellersSection({ season = null, className = '' }) {
               {t('home.bestSellers')}
             </h2>
 
-            <div className="flex items-center gap-2.5 mt-3 sm:mt-4">
+            <div className="flex items-center justify-center gap-2.5 mt-3 sm:mt-4">
               <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />
               <span className="w-1.5 h-1.5 rounded-full bg-[#6B1F2A]/60" />
               <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />
@@ -56,7 +56,7 @@ export default function BestSellersSection({ season = null, className = '' }) {
         </div>
         <Link
           to="/best-sellers"
-          className="group inline-flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] lg:text-[12px] font-semibold tracking-[0.18em] sm:tracking-[0.22em] uppercase text-[#6B1F2A] border border-[#6B1F2A]/40 rounded-full px-3.5 py-2 sm:px-5 sm:py-2.5 lg:px-6 lg:py-3 bg-white/40 backdrop-blur-sm hover:bg-[#6B1F2A] hover:text-white hover:border-[#6B1F2A] hover:shadow-[0_8px_20px_rgba(107,31,42,0.25)] hover:-translate-y-0.5 transition-all duration-300 ease-out whitespace-nowrap shrink-0 self-end mb-1"
+          className="absolute end-0 bottom-0 group inline-flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] lg:text-[12px] font-semibold tracking-[0.18em] sm:tracking-[0.22em] uppercase text-[#6B1F2A] border border-[#6B1F2A]/40 rounded-full px-3.5 py-2 sm:px-5 sm:py-2.5 lg:px-6 lg:py-3 bg-white/40 backdrop-blur-sm hover:bg-[#6B1F2A] hover:text-white hover:border-[#6B1F2A] hover:shadow-[0_8px_20px_rgba(107,31,42,0.25)] hover:-translate-y-0.5 transition-all duration-300 ease-out whitespace-nowrap"
           style={{ fontFamily: "'Montserrat', sans-serif" }}
         >
           {t('home.viewAll')}

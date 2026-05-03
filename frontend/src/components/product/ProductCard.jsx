@@ -207,10 +207,10 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* ── Info section ─────────────────────────────── */}
-        <div className="pt-3 pb-2 text-center">
+        <div className="pt-2 pb-1 text-center">
           {/* Product name */}
           <p
-            className="text-[#5A2A2F] text-sm sm:text-base font-medium tracking-wide mb-1.5 line-clamp-1"
+            className="text-[#5A2A2F] text-sm sm:text-base font-medium tracking-wide mb-1 line-clamp-1"
             style={{ fontFamily: "'Montserrat', 'Poppins', sans-serif", letterSpacing: '0.03em' }}
           >
             {product.name}
@@ -218,7 +218,7 @@ export default function ProductCard({ product }) {
 
           {/* Sizes — between name and price */}
           {uniqueSizes.length > 0 && (
-            <p className="text-[9px] font-medium text-[#5A1420]/45 text-center px-2 mb-1.5 leading-5">
+            <p className="text-xs font-medium text-[#5A1420]/45 text-center px-2 mb-1 leading-4">
               {uniqueSizes.map((sz, i) => (
                 <span key={sz} className="whitespace-nowrap">
                   {sz}

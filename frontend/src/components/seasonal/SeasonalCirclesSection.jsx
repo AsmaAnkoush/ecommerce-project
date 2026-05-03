@@ -10,7 +10,7 @@ function SeasonCircle({ season, index }) {
     <Link
       to={to}
       className="group flex flex-col items-center text-center animate-fade-in-up
-                 shrink-0 w-[88px] sm:w-[110px] lg:w-[130px] snap-center
+                 shrink-0 w-[78px] sm:w-[96px] lg:w-[114px] snap-center
                  overflow-visible opacity-0"
       style={{ animationDelay: `${Math.min(index * 100, 600)}ms` }}
     >
@@ -43,7 +43,7 @@ function SeasonCircle({ season, index }) {
       </div>
 
       <span
-        className="mt-2.5 sm:mt-4 text-[10px] sm:text-[15px] font-semibold
+        className="mt-2 sm:mt-3 text-[10px] sm:text-[13px] font-semibold
                    tracking-[0.06em] sm:tracking-[0.10em] text-[#3D1218]
                    group-hover:text-[#6B1F2A] transition-all duration-200
                    leading-tight"
@@ -113,7 +113,7 @@ export default function SeasonalCirclesSection({ className = '' }) {
     <section className={`relative mx-3 sm:mx-5 lg:mx-auto px-4 sm:px-8 lg:px-12 max-w-6xl ${className}`}>
 
       {/* ── Title ──────────────────────────────────────────── */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-6 sm:mb-8 text-center">
         <h2
           className="text-[24px] sm:text-[28px] lg:text-[42px] xl:text-[46px] leading-[1.4] pb-[0.15em] inline-block"
           style={{
@@ -129,7 +129,7 @@ export default function SeasonalCirclesSection({ className = '' }) {
           {t('home.shopBySeason')}
         </h2>
 
-        <div className="flex items-center gap-2.5 mt-3 sm:mt-4">
+        <div className="flex items-center justify-center gap-2.5 mt-3 sm:mt-4">
           <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />
           <span className="w-1.5 h-1.5 rounded-full bg-[#6B1F2A]/60" />
           <span className="h-px w-10 sm:w-14 bg-[#6B1F2A]/50" />

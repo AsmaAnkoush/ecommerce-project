@@ -10,6 +10,8 @@ export const getAdminOrder = (id) => api.get(`/admin/orders/${id}`)
 export const updateOrderStatus = (id, status) => api.patch(`/admin/orders/${id}/status`, null, { params: { status } })
 export const updateOrderItemStatus = (orderId, itemId, status) =>
   api.patch(`/admin/orders/${orderId}/items/${itemId}/status`, null, { params: { status } })
+export const confirmAllOrderItems = (orderId) => api.patch(`/admin/orders/${orderId}/confirm-all`)
+export const cancelAllOrderItems  = (orderId) => api.patch(`/admin/orders/${orderId}/cancel-all`)
 export const archiveOrder = (id) => api.patch(`/admin/orders/${id}/archive`)
 export const deleteOrder = (id) => api.delete(`/admin/orders/${id}`)
 export const getArchivedOrders = (params) => api.get('/admin/orders/archived', { params })

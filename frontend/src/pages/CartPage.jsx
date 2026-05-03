@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import CartIcon from '../components/ui/CartIcon'
 import { useCart } from '../context/CartContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useToast } from '../context/ToastContext'
@@ -18,9 +19,7 @@ function PageHero({ icon, title, subtitle, count, countLabel }) {
       <div className="absolute -bottom-16 -start-16 w-64 h-64 rounded-full bg-[#E8B4BC] opacity-10 blur-3xl" />
       <div className="relative max-w-3xl mx-auto px-5 sm:px-8 py-8 sm:py-10 text-center flex flex-col items-center gap-2">
         <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white shadow-[0_3px_12px_rgba(107,31,42,0.1)]">
-          <svg className="w-[18px] h-[18px] text-[#6B1F2A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-          </svg>
+          {icon}
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-[#6B1F2B] tracking-[0.04em] sm:tracking-[0.06em] leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
           {title}
@@ -103,7 +102,7 @@ export default function CartPage() {
   return (
     <div className="bg-[#FDF6F7] min-h-screen">
       <PageHero
-        icon="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+        icon={<CartIcon className="w-[18px] h-[18px] text-[#6B1F2A]" strokeWidth={1.5} />}
         title={t('cart.title')}
         count={cart.totalItems}
         countLabel={cart.totalItems === 1 ? t('cart.piece') : t('cart.pieces')}

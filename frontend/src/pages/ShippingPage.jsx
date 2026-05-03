@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
 import { useFormatPrice } from '../utils/formatPrice'
 import { useSiteSettings } from '../context/SiteSettingsContext'
+import CartIcon from '../components/ui/CartIcon'
 
 const FACEBOOK_URL    = 'https://www.facebook.com/iwear.boutique'
 const INSTAGRAM_URL   = 'https://www.instagram.com/iwear1_boutique/'
@@ -50,7 +51,7 @@ export default function ShippingPage() {
   ]
 
   const STEPS = [
-    { num: '1', text: t('shipping.step1'), icon: 'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z' },
+    { num: '1', text: t('shipping.step1'), icon: <CartIcon className="w-6 h-6" strokeWidth={1.8} /> },
     { num: '2', text: t('shipping.step2'), icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
     { num: '3', text: t('shipping.step3'), icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
     { num: '4', text: t('shipping.step4'), icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
@@ -161,9 +162,11 @@ export default function ShippingPage() {
               <div key={s.num} className="card-hover group relative bg-white rounded-2xl p-5 border border-[#F0D5D8] hover:border-[#DFA3AD] text-center"
                 style={{ boxShadow: '0 2px 12px rgba(107,31,42,0.05)' }}>
                 <div className="relative inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-[#6B1F2A] to-[#8B2535] text-white mb-3 shadow-[0_6px_18px_rgba(107,31,42,0.25)] group-hover:scale-110 transition-transform duration-400">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
-                  </svg>
+                  {typeof s.icon === 'string' ? (
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
+                    </svg>
+                  ) : s.icon}
                   <span className="absolute -top-1 -end-1 w-5 h-5 rounded-full bg-white text-[10px] font-bold text-[#6B1F2A] flex items-center justify-center border border-[#DFA3AD] nums-normal">
                     {i + 1}
                   </span>

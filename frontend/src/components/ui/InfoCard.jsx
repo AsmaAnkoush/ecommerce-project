@@ -17,7 +17,7 @@ export default function InfoCard({ title, icon: Icon, items }) {
         {items.map((item, i) => (
           <div
             key={`lbl-${i}`}
-            className={`flex items-center justify-center gap-1 px-2 pt-2.5 pb-1 border-b border-[#F5E8EA] text-[10px] text-[#6B4E53]${i < items.length - 1 ? ' border-e border-[#F5E8EA]' : ''}`}
+            className={`flex items-center justify-center gap-1 px-2 pt-3 pb-1.5 border-b border-[#F5E8EA] text-[10px] text-[#6B4E53] leading-relaxed${i < items.length - 1 ? ' border-e border-[#F5E8EA]' : ''}`}
           >
             {item.emoji && <span className="text-[11px] leading-none">{item.emoji}</span>}
             <span className="whitespace-nowrap">{item.label}</span>
@@ -27,9 +27,9 @@ export default function InfoCard({ title, icon: Icon, items }) {
         {items.map((item, i) => (
           <div
             key={`val-${i}`}
-            className={`flex items-center justify-center px-2 pt-1 pb-2.5${i < items.length - 1 ? ' border-e border-[#F5E8EA]' : ''}`}
+            className={`flex items-center justify-center px-2 pt-1.5 pb-4${i < items.length - 1 ? ' border-e border-[#F5E8EA]' : ''}`}
           >
-            <span className="text-xs font-bold text-[#6B1F2A] nums-normal" dir="ltr">
+            <span className="text-xs font-bold text-[#6B1F2A] nums-normal leading-relaxed" dir="ltr">
               {item.value}
             </span>
           </div>

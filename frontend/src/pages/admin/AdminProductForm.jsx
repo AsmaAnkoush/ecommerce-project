@@ -19,10 +19,10 @@ const SEASONS = [
   { value: 'WINTER', label: 'Winter' },
 ]
 const MEASUREMENT_FIELDS = [
+  { key: 'shoulders', tKey: 'product.shoulders' },
   { key: 'chest',     tKey: 'product.chest' },
   { key: 'waist',     tKey: 'product.waist' },
-  { key: 'shoulders', tKey: 'product.shoulders' },
-  { key: 'backWidth', tKey: 'product.backWidth' },
+  { key: 'hip',       tKey: 'product.hip' },
   { key: 'length',    tKey: 'product.length' },
 ]
 const NAMED_COLORS = [
@@ -43,7 +43,7 @@ const NAMED_COLORS = [
 ]
 const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '38', '40', '42', '44', '46']
 const MAX_COLOR_IMAGES = 10
-const EMPTY_SIZE_INPUT = { size: '', stockQuantity: 0, chest: '', waist: '', shoulders: '', backWidth: '', length: '' }
+const EMPTY_SIZE_INPUT = { size: '', stockQuantity: 0, shoulders: '', chest: '', waist: '', hip: '', length: '' }
 const inputCls = 'w-full px-3 py-2.5 border border-[#EDD8DC] rounded-xl text-sm focus:outline-none focus:border-[#DFA3AD] input-focus-glow bg-white'
 
 const loadCustomColors = () => {
@@ -97,7 +97,7 @@ export default function AdminProductForm() {
   const [uploadingGeneral, setUploadingGeneral] = useState(false)
   const generalInputRef = useRef()
 
-  // Color entries: [{color, imageUrls: string[], sizes: [{size, stockQuantity, chest, waist, shoulders, backWidth, length}]}]
+  // Color entries: [{color, imageUrls: string[], sizes: [{size, stockQuantity, shoulders, chest, waist, hip, length}]}]
   const [colorEntries, setColorEntries] = useState([])
   const [newColorInput, setNewColorInput] = useState(() => {
     if (isEdit) return ''
@@ -154,26 +154,31 @@ export default function AdminProductForm() {
         setGeneralImages([...new Set(p.imageUrls ?? [])])
         if (p.colorImages || p.variants?.length) {
           const map = {}
+          const allColors = [...NAMED_COLORS, ...loadCustomColors()]
+          const lookupHex = (name) => {
+            const found = allColors.find(c => c.name.toLowerCase() === name.toLowerCase())
+            return found?.hex ?? (/^#[0-9A-Fa-f]{6}$/i.test(name) ? name : '#888888')
+          }
           if (p.colorImages) {
             Object.entries(p.colorImages).forEach(([color, entries]) => {
               const urls = [...new Set(entries.map(e => e.url))]
               const primary = entries.find(e => e.isPrimary)?.url || null
-              map[color] = { color, imageUrls: urls, sizes: [], primaryImageUrl: primary }
+              map[color] = { color, colorHex: lookupHex(color), imageUrls: urls, sizes: [], primaryImageUrl: primary }
             })
           }
           if (p.variants) {
             p.variants.forEach(v => {
               if (!v.color) return
-              if (!map[v.color]) map[v.color] = { color: v.color, imageUrls: [], sizes: [] }
+              if (!map[v.color]) map[v.color] = { color: v.color, colorHex: lookupHex(v.color), imageUrls: [], sizes: [] }
               const alreadyExists = map[v.color].sizes.some(s => s.size === v.size)
               if (!alreadyExists) {
                 map[v.color].sizes.push({
                   size: v.size,
                   stockQuantity: v.stockQuantity ?? 0,
+                  shoulders: v.shoulders ?? '',
                   chest: v.chest ?? '',
                   waist: v.waist ?? '',
-                  shoulders: v.shoulders ?? '',
-                  backWidth: v.backWidth ?? '',
+                  hip: v.hip ?? '',
                   length: v.length ?? '',
                 })
               }
@@ -217,8 +222,9 @@ export default function AdminProductForm() {
     for (const c of colorEntries) {
       const key = `color::${c.color}`
       const imgs = (c.imageUrls || []).filter(Boolean)
+      const hasStagedForColor = (stagedFiles[c.color] || []).length > 0
       const validSizes = c.sizes.filter(s => s.size?.toString().trim())
-      if (imgs.length === 0)
+      if (imgs.length === 0 && !hasStagedForColor)
         errs[key] = `Please upload at least one image for "${c.color}"`
       else if (validSizes.length === 0)
         errs[key] = `Please add at least one size for "${c.color}"`
@@ -230,6 +236,10 @@ export default function AdminProductForm() {
 
   const validationErrors = getValidationErrors()
   const isFormValid = Object.keys(validationErrors).length === 0
+
+  // True while any upload is in-flight. Save must wait for these to finish so
+  // we never build a payload that races a half-completed upload.
+  const hasPendingUploads = uploadingMain || uploadingGeneral || uploadingColor !== null
 
   // Refs used to scroll to the first invalid field on submit.
   const fieldRefs = useRef({})
@@ -269,7 +279,7 @@ export default function AdminProductForm() {
     const name = newColorInput.trim()
     if (!name) return
     if (colorEntries.some(e => e.color.toLowerCase() === name.toLowerCase())) return
-    setColorEntries(prev => [...prev, { color: name, imageUrls: [], sizes: [], primaryImageUrl: null }])
+    setColorEntries(prev => [...prev, { color: name, colorHex: newColorHex, imageUrls: [], sizes: [], primaryImageUrl: null }])
     const isHex = /^#[0-9A-Fa-f]{6}$/.test(name)
     const alreadySaved = NAMED_COLORS.some(c => c.name === name) || customColors.some(c => c.name === name)
     if (!isHex && !alreadySaved) {
@@ -309,7 +319,7 @@ export default function AdminProductForm() {
     setShowEditColorPicker(false)
     if (newName === oldColor) return
     if (colorEntries.some(e => e.color.toLowerCase() === newName.toLowerCase() && e.color !== oldColor)) return
-    setColorEntries(prev => prev.map(e => e.color === oldColor ? { ...e, color: newName } : e))
+    setColorEntries(prev => prev.map(e => e.color === oldColor ? { ...e, color: newName, colorHex: editColorHex } : e))
     setColorPreviews(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
     setSizeInputs(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
     setStagedFiles(prev => { const n = { ...prev }; if (oldColor in n) { n[newName] = n[oldColor]; delete n[oldColor] } return n })
@@ -352,6 +362,9 @@ export default function AdminProductForm() {
   const uploadStagedFiles = async (color) => {
     const staged = stagedFiles[color] || []
     if (!staged.length || uploadingColor) return
+    // Capture the IDs of exactly the files being uploaded so that any files the
+    // user adds WHILE this upload is in-flight are preserved, not silently deleted.
+    const uploadedIds = new Set(staged.map(s => s.id))
     setUploadingColor(color)
     try {
       const compressed = await Promise.all(staged.map(s => compressImage(s.file)))
@@ -365,9 +378,12 @@ export default function AdminProductForm() {
         return n
       })
       setStagedFiles(prev => {
+        // Only remove the files that were part of this batch; keep any that
+        // were added after the upload started.
+        staged.forEach(s => URL.revokeObjectURL(s.previewUrl))
+        const remaining = (prev[color] || []).filter(s => !uploadedIds.has(s.id))
         const n = { ...prev }
-        ;(n[color] || []).forEach(s => URL.revokeObjectURL(s.previewUrl))
-        delete n[color]
+        if (remaining.length === 0) { delete n[color] } else { n[color] = remaining }
         return n
       })
     } catch {
@@ -498,10 +514,10 @@ export default function AdminProductForm() {
         sizes: [...e.sizes, {
           size: sz,
           stockQuantity: parseInt(inp.stockQuantity) || 0,
+          shoulders: inp.shoulders || null,
           chest: inp.chest || null,
           waist: inp.waist || null,
-          shoulders: inp.shoulders || null,
-          backWidth: inp.backWidth || null,
+          hip: inp.hip || null,
           length: inp.length || null,
         }],
       }
@@ -703,10 +719,79 @@ export default function AdminProductForm() {
       return
     }
 
+    // Block submit if any upload is still running so we never build a payload
+    // that races against in-flight URLs being added to colorEntries.
+    if (hasPendingUploads) {
+      setError(t('admin.uploadInProgress') || 'Please wait for image uploads to finish')
+      return
+    }
+
     setSaving(true)
     try {
+      // ── 1. FLUSH STAGED FILES ──────────────────────────────────────────────
+      // Files the user picked but never clicked the per-color "Upload" button
+      // for live in `stagedFiles`. They MUST be uploaded before we save the
+      // product, otherwise they get silently dropped and only some of the
+      // user's images make it to the backend.
+      const colorsWithStaged = Object.keys(stagedFiles).filter(
+        c => (stagedFiles[c] || []).length > 0
+      )
+
+      const newlyUploadedByColor = {}
+      let totalSelectedNew = 0
+      let totalUploadedNew = 0
+
+      for (const color of colorsWithStaged) {
+        const staged = stagedFiles[color] || []
+        if (!staged.length) continue
+        totalSelectedNew += staged.length
+        console.log(`[Submit] flushing ${staged.length} staged image(s) for "${color}"`)
+
+        // Compress in parallel, upload in one multipart request — uploadImages
+        // throws if the backend returns fewer URLs than files sent.
+        const compressed = await Promise.all(staged.map(s => compressImage(s.file)))
+        const urls = await uploadImages(compressed)
+        totalUploadedNew += urls.length
+        newlyUploadedByColor[color] = urls
+      }
+
+      // Sync React state so the UI reflects the just-uploaded URLs and the
+      // staging area clears (also revokes the local blob previews).
+      if (colorsWithStaged.length) {
+        setColorEntries(prev => prev.map(e => {
+          const fresh = newlyUploadedByColor[e.color]
+          if (!fresh) return e
+          return { ...e, imageUrls: [...new Set([...e.imageUrls, ...fresh])] }
+        }))
+        setStagedFiles(prev => {
+          const n = { ...prev }
+          for (const color of colorsWithStaged) {
+            ;(n[color] || []).forEach(s => URL.revokeObjectURL(s.previewUrl))
+            delete n[color]
+          }
+          return n
+        })
+      }
+
+      // ── 2. BUILD MERGED ENTRIES ────────────────────────────────────────────
+      // setColorEntries above is queued, so we can't read it back synchronously
+      // — merge locally for this submit's payload.
+      const mergedColorEntries = colorEntries.map(e => ({
+        ...e,
+        imageUrls: [...new Set([...e.imageUrls, ...(newlyUploadedByColor[e.color] || [])])],
+      }))
+
+      const totalAlreadyUploaded = colorEntries.reduce((s, e) => s + (e.imageUrls?.length || 0), 0)
+      const totalSelected = totalAlreadyUploaded + totalSelectedNew
+      const totalUploaded = totalAlreadyUploaded + totalUploadedNew
+      console.log(`[Submit] selected images: ${totalSelected}, uploaded URLs: ${totalUploaded}`)
+      if (totalSelected !== totalUploaded) {
+        throw new Error(`Image count mismatch: selected ${totalSelected}, uploaded ${totalUploaded}`)
+      }
+
+      // ── 3. BUILD PAYLOAD ───────────────────────────────────────────────────
       // Main image priority: explicit primary on the first color → first image of first color.
-      const firstColor = colorEntries[0]
+      const firstColor = mergedColorEntries[0]
       const mainImageUrl =
         (firstColor?.primaryImageUrl && firstColor.imageUrls.includes(firstColor.primaryImageUrl))
           ? firstColor.primaryImageUrl
@@ -716,7 +801,7 @@ export default function AdminProductForm() {
         name: form.name,
         description: form.description || null,
         price: parseFloat(form.price),
-        stockQuantity: colorEntries.reduce((sum, e) => sum + e.sizes.reduce((s2, sz) => s2 + (parseInt(sz.stockQuantity) || 0), 0), 0),
+        stockQuantity: mergedColorEntries.reduce((sum, e) => sum + e.sizes.reduce((s2, sz) => s2 + (parseInt(sz.stockQuantity) || 0), 0), 0),
         imageUrl: mainImageUrl,
         brand: null,
         size: null,
@@ -729,7 +814,7 @@ export default function AdminProductForm() {
         discountType: form.discountType || null,
         discountValue: form.discountValue ? parseFloat(form.discountValue) : null,
         imageUrls: [],
-        colorImages: colorEntries.map(e => {
+        colorImages: mergedColorEntries.map(e => {
           const urls = [...new Set(e.imageUrls.filter(Boolean))]
           return {
             color: e.color,
@@ -737,17 +822,17 @@ export default function AdminProductForm() {
             primaryImageUrl: e.primaryImageUrl && urls.includes(e.primaryImageUrl) ? e.primaryImageUrl : null,
           }
         }),
-        variants: colorEntries.flatMap(e =>
+        variants: mergedColorEntries.flatMap(e =>
           e.sizes
             .filter(s => s.size && s.size.toString().trim())
             .map(s => ({
               color: e.color,
               size: s.size,
               stockQuantity: parseInt(s.stockQuantity) || 0,
+              shoulders: s.shoulders ?? null,
               chest: s.chest ?? null,
               waist: s.waist ?? null,
-              shoulders: s.shoulders ?? null,
-              backWidth: s.backWidth ?? null,
+              hip: s.hip ?? null,
               length: s.length ?? null,
             }))
         ),
@@ -831,7 +916,14 @@ export default function AdminProductForm() {
             </>
           )}
           <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>{t('admin.cancel')}</Button>
-          <Button type="submit" loading={saving} disabled={!isFormValid || saving}>{t('admin.save')}</Button>
+          <Button
+            type="submit"
+            loading={saving}
+            disabled={!isFormValid || saving || hasPendingUploads}
+            title={hasPendingUploads ? (t('admin.uploadInProgress') || 'Image uploads in progress…') : undefined}
+          >
+            {hasPendingUploads ? (t('admin.uploading') || 'Uploading…') : t('admin.save')}
+          </Button>
         </div>
       </div>
 
@@ -1024,7 +1116,7 @@ export default function AdminProductForm() {
           )}
 
           {colorEntries.map(entry => {
-            const { color, imageUrls, sizes, primaryImageUrl } = entry
+            const { color, colorHex, imageUrls, sizes, primaryImageUrl } = entry
             const effectivePrimary = (primaryImageUrl && imageUrls.includes(primaryImageUrl))
               ? primaryImageUrl
               : imageUrls[0]
@@ -1073,7 +1165,7 @@ export default function AdminProductForm() {
                   ) : (
                     <>
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-5 h-5 rounded-full border border-gray-300 shadow-sm shrink-0" style={{ backgroundColor: color }} />
+                        <div className="w-5 h-5 rounded-full border border-gray-300 shadow-sm shrink-0" style={{ backgroundColor: colorHex || color }} />
                         <span className="font-semibold text-gray-800 truncate">{color}</span>
                         <span className="text-xs text-gray-400 shrink-0">
                           {imageUrls.length} img · {sizes.length} size{sizes.length !== 1 ? 's' : ''}
@@ -1390,7 +1482,14 @@ export default function AdminProductForm() {
 
       <div className="flex justify-end gap-3 pb-8">
         <Button type="button" variant="secondary" onClick={() => navigate('/admin/products')}>{t('admin.cancel')}</Button>
-        <Button type="submit" loading={saving} disabled={!isFormValid || saving}>{t('admin.save')}</Button>
+        <Button
+          type="submit"
+          loading={saving}
+          disabled={!isFormValid || saving || hasPendingUploads}
+          title={hasPendingUploads ? (t('admin.uploadInProgress') || 'Image uploads in progress…') : undefined}
+        >
+          {hasPendingUploads ? (t('admin.uploading') || 'Uploading…') : t('admin.save')}
+        </Button>
       </div>
 
       {/* Crop modal */}
@@ -1442,7 +1541,7 @@ export default function AdminProductForm() {
             <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 flex flex-col items-center gap-4">
               <HexColorPicker
                 color={editColorHex}
-                onChange={hex => { setEditColorHex(hex); setEditColorInput(hex) }}
+                onChange={hex => setEditColorHex(hex)}
                 style={{ width: '100%', maxWidth: '280px', height: 'min(240px, 60vw)' }}
               />
               <div className="w-full max-w-[280px] flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50">
@@ -1508,7 +1607,7 @@ export default function AdminProductForm() {
             <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 flex flex-col items-center gap-4">
               <HexColorPicker
                 color={newColorHex}
-                onChange={hex => { setNewColorHex(hex); setNewColorInput(hex) }}
+                onChange={hex => setNewColorHex(hex)}
                 style={{ width: '100%', maxWidth: '280px', height: 'min(240px, 60vw)' }}
               />
               <div className="w-full max-w-[280px] flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5 bg-gray-50">

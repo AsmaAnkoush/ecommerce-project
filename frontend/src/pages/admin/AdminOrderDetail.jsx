@@ -11,7 +11,7 @@ const resolveColor = (name) => name
 
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { getAdminOrder, updateOrderStatus, updateOrderItemStatus, deleteOrder } from '../../api/adminApi'
+import { getAdminOrder, updateOrderItemStatus, confirmAllOrderItems, cancelAllOrderItems, deleteOrder } from '../../api/adminApi'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import Badge from '../../components/ui/Badge'
 import Spinner from '../../components/ui/Spinner'
@@ -25,14 +25,12 @@ const ORDER_STATUS_VARIANT = {
   PENDING: 'warning',
   CONFIRMED: 'info',
   CANCELLED: 'danger',
-  PARTIALLY_CONFIRMED: 'default',
 }
 const ITEM_STATUS_META = {
   PENDING:   { label: 'itemPending',   cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
   CONFIRMED: { label: 'itemConfirmed', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
   CANCELLED: { label: 'itemCancelled', cls: 'bg-red-50 text-red-500 border border-red-200' },
 }
-const STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'PARTIALLY_CONFIRMED']
 const STATUS_STEPS = ['PENDING', 'CONFIRMED']
 
 function ItemStatusBadge({ status, t }) {
@@ -45,15 +43,14 @@ function ItemStatusBadge({ status, t }) {
 }
 
 export default function AdminOrderDetail() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const { toast } = useToast()
   const formatPrice = useFormatPrice()
   const { id } = useParams()
   const navigate = useNavigate()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(false)
-  const [statusSuccess, setStatusSuccess] = useState(false)
+  const [bulkUpdating, setBulkUpdating] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   // itemUpdating: { [itemId]: true } while an item action is in-flight
@@ -66,18 +63,26 @@ export default function AdminOrderDetail() {
 
   useEffect(() => { loadOrder() }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleStatusChange = async (status) => {
-    if (status === order.status) return
-    setUpdating(true)
+  const handleConfirmAll = async () => {
+    setBulkUpdating(true)
     try {
-      const res = await updateOrderStatus(order.id, status)
-      setOrder(res.data?.data ?? { ...order, status })
-      setStatusSuccess(true)
-      setTimeout(() => setStatusSuccess(false), 2500)
+      const res = await confirmAllOrderItems(order.id)
+      setOrder(res.data?.data ?? order)
       toast(t('admin.toastStatusChanged'))
     } catch (err) {
       toast(err?.response?.data?.message || t('admin.toastError'), 'error')
-    } finally { setUpdating(false) }
+    } finally { setBulkUpdating(false) }
+  }
+
+  const handleCancelAll = async () => {
+    setBulkUpdating(true)
+    try {
+      const res = await cancelAllOrderItems(order.id)
+      setOrder(res.data?.data ?? order)
+      toast(t('admin.toastStatusChanged'))
+    } catch (err) {
+      toast(err?.response?.data?.message || t('admin.toastError'), 'error')
+    } finally { setBulkUpdating(false) }
   }
 
   const handleItemAction = async (itemId, newStatus) => {
@@ -150,12 +155,12 @@ export default function AdminOrderDetail() {
           </p>
         </div>
         <Badge variant={ORDER_STATUS_VARIANT[order.status] || 'default'}>
-          {order.status === 'PARTIALLY_CONFIRMED' ? t('admin.partiallyConfirmed') : order.status}
+          {t('status.' + order.status)}
         </Badge>
       </div>
 
       {/* Progress tracker */}
-      {order.status !== 'CANCELLED' && order.status !== 'PARTIALLY_CONFIRMED' && (
+      {order.status !== 'CANCELLED' && (
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">{t('admin.orderProgress')}</h2>
           <div className="flex items-center">
@@ -184,9 +189,54 @@ export default function AdminOrderDetail() {
         {/* Items — takes 2/3 width */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold text-gray-700">{t('admin.itemsOrdered')}</h2>
-              <span className="text-xs text-gray-400">{t('admin.fulfillmentStatus')}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                {(() => {
+                  const hasPending = order.items.some(i => (i.itemStatus || 'PENDING') === 'PENDING')
+                  const allCancelled = order.items.every(i => (i.itemStatus || 'PENDING') === 'CANCELLED')
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        disabled={!hasPending || bulkUpdating}
+                        onClick={handleConfirmAll}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {bulkUpdating ? (
+                          <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        {t('admin.confirmAll')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={allCancelled || bulkUpdating}
+                        onClick={handleCancelAll}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {bulkUpdating ? (
+                          <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                        {t('admin.cancelAll')}
+                      </button>
+                    </>
+                  )
+                })()}
+              </div>
             </div>
 
             <div className="divide-y divide-gray-50">
@@ -336,6 +386,24 @@ export default function AdminOrderDetail() {
             {order.trackingNumber && (
               <p className="text-xs text-gray-400 mt-2">{t('orders.tracking')}: <span className="font-medium text-gray-700">{order.trackingNumber}</span></p>
             )}
+            {(order.shippingZoneNameEn || order.shippingZoneNameAr) && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-400 mb-1.5">{t('admin.shippingZone')}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-800">
+                    {lang === 'ar' ? (order.shippingZoneNameAr || order.shippingZoneNameEn) : (order.shippingZoneNameEn || order.shippingZoneNameAr)}
+                  </p>
+                  {order.shippingCost != null && (
+                    <p className="text-sm font-bold text-gray-900 shrink-0">{formatPrice(order.shippingCost)}</p>
+                  )}
+                </div>
+                {order.shippingZoneDeliveryDays && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {order.shippingZoneDeliveryDays} {t('checkout.days')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
@@ -353,28 +421,6 @@ export default function AdminOrderDetail() {
               <p className="text-sm text-gray-800">{order.paymentMethod}</p>
             </div>
           )}
-
-          {/* Status override */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">{t('admin.updateStatus')}</h2>
-            <p className="text-[11px] text-gray-400 mb-3">{t('admin.confirmedHint')}</p>
-            <select
-              value={order.status}
-              onChange={e => handleStatusChange(e.target.value)}
-              disabled={updating}
-              className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-gray-400 bg-white disabled:opacity-60"
-            >
-              {STATUSES.map(s => (
-                <option key={s} value={s}>
-                  {s === 'PARTIALLY_CONFIRMED' ? t('admin.partiallyConfirmed') : s}
-                </option>
-              ))}
-            </select>
-            {updating && <p className="text-xs text-gray-400 mt-2">{t('admin.updating')}</p>}
-            {statusSuccess && (
-              <p className="text-xs text-green-600 mt-2 font-medium">{t('admin.statusUpdated')}</p>
-            )}
-          </div>
 
           {/* Danger zone */}
           <div className="bg-white rounded-2xl shadow-sm p-5 border border-red-100">

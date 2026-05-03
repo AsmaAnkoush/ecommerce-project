@@ -20,9 +20,9 @@ public class ProductVariantRequest {
     private Integer stockQuantity;
 
     // Measurements in cm (all optional)
+    private BigDecimal shoulders;
     private BigDecimal chest;
     private BigDecimal waist;
-    private BigDecimal shoulders;
-    private BigDecimal backWidth;
+    private BigDecimal hip;
     private BigDecimal length;
 }

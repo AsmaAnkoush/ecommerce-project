@@ -18,4 +18,5 @@ public class ShippingZoneResponse {
     private BigDecimal price;
     private String deliveryDays;
     private String icon;
+    private boolean active;
 }

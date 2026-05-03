@@ -29,4 +29,7 @@ public class ShippingZone {
 
     @Column(name = "display_order")
     private Integer displayOrder = 0;
+
+    @Column(nullable = false)
+    private boolean active = true;
 }

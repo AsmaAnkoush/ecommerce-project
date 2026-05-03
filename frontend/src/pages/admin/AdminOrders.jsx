@@ -23,11 +23,11 @@ const resolveColor = (name) => name
 
 /* ─── Status config ─────────────────────────────────────────────────────── */
 const STATUS_CONFIG = {
-  PENDING:    { label: 'Pending',    bg: '#FFFBEB', text: '#92400E', border: '#FCD34D', dot: '#F59E0B' },
-  CONFIRMED:  { label: 'Confirmed',  bg: '#ECFDF5', text: '#065F46', border: '#A7F3D0', dot: '#10B981' },
-  CANCELLED:  { label: 'Cancelled',  bg: '#FEF2F2', text: '#991B1B', border: '#FECACA', dot: '#EF4444' },
+  PENDING:               { label: 'Pending',    bg: '#FFFBEB', text: '#92400E', border: '#FCD34D', dot: '#F59E0B' },
+  CONFIRMED:             { label: 'Confirmed',  bg: '#ECFDF5', text: '#065F46', border: '#A7F3D0', dot: '#10B981' },
+  CANCELLED:             { label: 'Cancelled',  bg: '#FEF2F2', text: '#991B1B', border: '#FECACA', dot: '#EF4444' },
 }
-const ALL_STATUSES = ['PENDING','CONFIRMED','CANCELLED']
+const ALL_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED']
 
 const TAB_KEYS = ['ALL', 'PENDING', 'CONFIRMED', 'CANCELLED', 'ARCHIVED']
 
@@ -388,14 +388,11 @@ export default function AdminOrders() {
   const handleItemStatusChange = async (orderId, itemId, status) => {
     setUpdatingItem(itemId)
     try {
-      await updateOrderItemStatus(orderId, itemId, status)
-      const updateItems = list => list.map(o =>
-        o.id === orderId
-          ? { ...o, items: o.items.map(i => i.id === itemId ? { ...i, itemStatus: status } : i) }
-          : o
-      )
-      setOrders(updateItems)
-      setArchivedOrders(updateItems)
+      const res = await updateOrderItemStatus(orderId, itemId, status)
+      const updatedOrder = res?.data?.data
+      const updateList = list => list.map(o => o.id === orderId ? (updatedOrder ?? o) : o)
+      setOrders(updateList)
+      setArchivedOrders(updateList)
       toast(t('admin.statusUpdated') || 'Item status updated')
     } catch (err) {
       toast(err?.response?.data?.message || t('admin.failedSave'), 'error')

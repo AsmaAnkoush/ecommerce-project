@@ -13,8 +13,9 @@ function resolvePage(pathname, t) {
     { match: '/admin/users',             title: 'admin.users',             sub: 'admin.headerUsersSub',      icon: '👥', color: '#7B1E2B' },
     { match: '/admin/reviews',           title: 'admin.reviews',           sub: 'admin.headerReviewsSub',    icon: '⭐', color: '#7B1E2B' },
     { match: '/admin/offers',            title: 'admin.offersDiscounts',   sub: 'admin.headerOffersSub',     icon: '🏷️', color: '#7B1E2B' },
-    { match: '/admin/settings',          title: 'admin.websiteSettings',   sub: 'admin.headerSettingsSub',   icon: '⚙️', color: '#7B1E2B' },
-    { match: '/admin',                   title: 'admin.dashboard',         sub: 'admin.headerDashboardSub',  icon: '📊', color: '#7B1E2B' },
+    { match: '/admin/settings',          title: 'admin.websiteSettings',   sub: 'admin.headerSettingsSub',      icon: '⚙️', color: '#7B1E2B' },
+    { match: '/admin/shipping-zones',    title: 'admin.shippingZones',     sub: 'admin.headerShippingZonesSub', icon: '🚚', color: '#7B1E2B' },
+    { match: '/admin',                   title: 'admin.dashboard',         sub: 'admin.headerDashboardSub',     icon: '📊', color: '#7B1E2B' },
   ]
   for (const entry of map) {
     if (typeof entry.match === 'string' ? pathname === entry.match || pathname.startsWith(entry.match + '/')

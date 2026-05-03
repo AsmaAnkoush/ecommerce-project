@@ -8,6 +8,7 @@ import { useUI } from '../context/UIContext'
 import { useToast } from '../context/ToastContext'
 import { useFormatPrice } from '../utils/formatPrice'
 import { useLanguage } from '../context/LanguageContext'
+import CartIcon from '../components/ui/CartIcon'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import ShippingZoneSelector from '../components/checkout/ShippingZoneSelector'
@@ -18,13 +19,6 @@ const CARD_BASE = 'bg-white border border-[#F0D5D8] rounded-2xl'
 const CARD_SHADOW = { boxShadow: '0 2px 12px rgba(107,31,42,0.05)' }
 const PRIMARY_BTN = 'btn-primary-pill'
 
-// Fallback used when the API is unreachable (backend not yet deployed, etc.).
-// IDs 1-3 match the seeded rows created by DataMigrationRunner.
-const FALLBACK_ZONES = [
-  { id: 1, nameEn: 'West Bank',  nameAr: 'الضفة الغربية', price: 20, deliveryDays: '1-2', icon: '📦' },
-  { id: 2, nameEn: 'Jerusalem',  nameAr: 'القدس',          price: 30, deliveryDays: '1-2', icon: '🏛️' },
-  { id: 3, nameEn: 'Inside 48', nameAr: 'داخل الـ 48',   price: 70, deliveryDays: '1-2', icon: '🚚' },
-]
 
 function PageHero({ icon, title, subtitle, children }) {
   return (
@@ -34,9 +28,11 @@ function PageHero({ icon, title, subtitle, children }) {
       <div className="absolute -bottom-16 -start-16 w-64 h-64 rounded-full bg-[#E8B4BC] opacity-10 blur-3xl" />
       <div className="relative max-w-3xl mx-auto px-5 sm:px-8 py-8 sm:py-10 text-center flex flex-col items-center gap-2">
         <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white shadow-[0_3px_12px_rgba(107,31,42,0.1)]">
-          <svg className="w-[18px] h-[18px] text-[#6B1F2A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-          </svg>
+          {typeof icon === 'string' ? (
+            <svg className="w-[18px] h-[18px] text-[#6B1F2A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+            </svg>
+          ) : icon}
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-[#6B1F2B] tracking-[0.04em] sm:tracking-[0.06em] leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
           {title}
@@ -71,24 +67,22 @@ export default function CheckoutPage() {
   const [phoneTouched, setPhoneTouched] = useState(false)
   const [zones, setZones]               = useState([])
   const [zonesLoading, setZonesLoading] = useState(true)
+  const [zonesLoadError, setZonesLoadError] = useState(false)
   const [selectedZone, setSelectedZone] = useState(null)
   const [zoneError, setZoneError]       = useState(false)
 
-  useEffect(() => {
+  const loadZones = () => {
+    setZonesLoading(true)
+    setZonesLoadError(false)
     getShippingZones()
       .then(data => {
-        console.log('[Checkout] shipping zones:', data)
-        const resolved = Array.isArray(data) && data.length > 0 ? data : FALLBACK_ZONES
-        setZones(resolved)
-        setSelectedZone(resolved[0])
+        if (Array.isArray(data) && data.length > 0) setZones(data)
       })
-      .catch(err => {
-        console.error('[Checkout] shipping zones fetch failed — using fallback:', err)
-        setZones(FALLBACK_ZONES)
-        setSelectedZone(FALLBACK_ZONES[0])
-      })
+      .catch(() => setZonesLoadError(true))
       .finally(() => setZonesLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadZones() }, [])
 
   const handleZoneChange = (zone) => {
     setSelectedZone(zone)
@@ -191,7 +185,7 @@ export default function CheckoutPage() {
     return (
       <div className="bg-[#FDF6F7] min-h-screen">
         <PageHero
-          icon="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+          icon={<CartIcon className="w-[18px] h-[18px] text-[#6B1F2A]" strokeWidth={1.5} />}
           title={t('checkout.cartEmpty')}
           subtitle={t('orders.noOrdersSub')}
         />
@@ -293,7 +287,12 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <Input label={t('checkout.addressLabel')} name="shippingAddress" placeholder={t('checkout.addressPlaceholder')} value={form.shippingAddress} onChange={handleChange} required />
+              <div>
+                <Input label={t('checkout.addressLabel')} name="shippingAddress" placeholder={t('checkout.addressPlaceholder')} value={form.shippingAddress} onChange={handleChange} required />
+                <p className="mt-1 text-[10px] text-[#B08A90] tracking-wide leading-relaxed">
+                  {t('checkout.addressHelper')}
+                </p>
+              </div>
               <Input label={t('checkout.city')} name="city" placeholder={t('checkout.cityPlaceholder')} value={form.city} onChange={handleChange} />
 
               {/* Shipping zone selector */}
@@ -307,6 +306,17 @@ export default function CheckoutPage() {
                       <div key={i} className="animate-pulse h-12 rounded-xl bg-[#F9EEF0]" />
                     ))}
                   </div>
+                ) : zonesLoadError ? (
+                  <div className="flex items-center justify-between px-4 py-3 border border-red-200 bg-red-50/40 rounded-xl text-xs text-red-600">
+                    <span>{t('checkout.zonesLoadError')}</span>
+                    <button type="button" onClick={loadZones} className="font-semibold underline underline-offset-2 hover:text-red-800 transition-colors">
+                      {t('checkout.retry')}
+                    </button>
+                  </div>
+                ) : zones.length === 0 ? (
+                  <p className="px-4 py-3 border border-[#EDD8DC] rounded-xl text-xs text-[#9B7B80] text-center italic">
+                    {t('checkout.noDeliveryAreas')}
+                  </p>
                 ) : (
                   <ShippingZoneSelector zones={zones} selectedId={selectedZone?.id ?? null} onChange={handleZoneChange} hasError={zoneError} />
                 )}
@@ -378,7 +388,7 @@ export default function CheckoutPage() {
                   {formatPrice(Number(cart.totalPrice) + Number(selectedZone?.price || 0))}
                 </span>
               </div>
-              <Button type="submit" size="lg" className="w-full" loading={loading}>
+              <Button type="submit" size="lg" className="w-full" loading={loading} disabled={zones.length === 0}>
                 {t('checkout.confirmOrder')}
               </Button>
             </div>

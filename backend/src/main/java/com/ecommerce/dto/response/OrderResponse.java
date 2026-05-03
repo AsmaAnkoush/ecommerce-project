@@ -31,6 +31,7 @@ public class OrderResponse {
     private LocalDateTime createdAt;
     private String shippingZoneNameEn;
     private String shippingZoneNameAr;
+    private String shippingZoneDeliveryDays;
     private BigDecimal shippingCost;
 
     @Data

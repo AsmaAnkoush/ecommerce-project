@@ -47,19 +47,34 @@ public class DataMigrationRunner implements CommandLineRunner {
 
     private void seedShippingZones() {
         try {
+            // Backfill active=true for legacy rows added before the column existed
+            backfill("shipping_zones", "active", "true", "BOOLEAN");
+
             Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM shipping_zones", Integer.class);
             if (count == null || count == 0) {
-                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)",
-                        "West Bank", "الضفة الغربية", "20.00", "1-2", "📦", 1);
-                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)",
-                        "Jerusalem", "القدس", "30.00", "1-2", "🏛️", 2);
-                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)",
-                        "Inside 48", "داخل الـ 48", "70.00", "1-2", "🚚", 3);
-                log.info("Seeded 3 shipping zones");
+                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        "West Bank", "الضفة الغربية", "20.00", "1-2", "📦", 1, true);
+                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        "Jerusalem", "القدس", "30.00", "1-2", "🏛️", 2, true);
+                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        "Abu Ghosh", "أبو غوش", "45.00", "1-2", "🏡", 3, true);
+                jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        "Inside 48 Areas", "مناطق الداخل 48", "70.00", "2-3", "🚚", 4, true);
+                log.info("Seeded 4 shipping zones");
             } else {
-                // Normalize any rows that still carry the old value
-                int updated = jdbc.update("UPDATE shipping_zones SET delivery_days = '1-2' WHERE delivery_days != '1-2'");
-                if (updated > 0) log.info("Normalized {} shipping zone(s) delivery_days → 1-2", updated);
+                // Idempotently add Abu Ghosh if missing
+                Integer abuGhoshCount = jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM shipping_zones WHERE name_en = 'Abu Ghosh'", Integer.class);
+                if (abuGhoshCount == null || abuGhoshCount == 0) {
+                    jdbc.update("UPDATE shipping_zones SET display_order = 4 WHERE name_en IN ('Inside 48', 'Inside 48 Areas')");
+                    jdbc.update("INSERT INTO shipping_zones (name_en, name_ar, price, delivery_days, icon, display_order, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            "Abu Ghosh", "أبو غوش", "45.00", "1-2", "🏡", 3, true);
+                    log.info("Added Abu Ghosh shipping zone");
+                }
+                // Normalize Inside 48 name and delivery_days
+                jdbc.update("UPDATE shipping_zones SET name_en = 'Inside 48 Areas', name_ar = 'مناطق الداخل 48' WHERE name_en = 'Inside 48'");
+                int fixed = jdbc.update("UPDATE shipping_zones SET delivery_days = '2-3' WHERE name_en = 'Inside 48 Areas' AND delivery_days != '2-3'");
+                if (fixed > 0) log.info("Normalized Inside 48 Areas delivery_days to 2-3");
             }
         } catch (Exception ex) {
             log.debug("Could not seed/normalize shipping_zones: {}", ex.getMessage());

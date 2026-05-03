@@ -156,8 +156,8 @@ export default function Navbar() {
             className="flex flex-col items-center hover:opacity-75 transition-opacity select-none shrink-0 mx-auto md:mx-0"
           >
             <img
-              src="/images/iwear-logo.jpg"
-              alt="I Wear Logo"
+              src="/images/navbar-logo.png"
+              alt="I Wear Boutique Logo"
               className="h-14 md:h-[72px] max-w-[200px] object-contain"
             />
           </Link>
