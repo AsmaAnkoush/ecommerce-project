@@ -17,16 +17,16 @@ function Hero({ innerRef, inView, activeSeason }) {
       className="relative bg-[#F5DCE2] overflow-hidden w-full"
       style={{ fontFamily: "'Montserrat', 'Poppins', sans-serif" }}
     >
-      <div className="grid grid-cols-[50%_50%] lg:grid-cols-[45%_55%] h-[440px] sm:h-[540px] md:h-[600px] lg:h-[calc(100vh-100px)] lg:max-h-[640px] lg:min-h-[500px] overflow-visible">
+      <div className="grid grid-cols-[50%_50%] lg:grid-cols-[45%_55%] h-[440px] sm:h-[540px] md:h-[600px] lg:h-[calc(100vh-100px)] lg:max-h-[640px] lg:min-h-[500px] overflow-hidden">
 
         {/* ── Text Column ──────────────────────────────── */}
         <div
-          className={`flex flex-col justify-start pt-8 sm:pt-12 md:pt-16 lg:pt-20 xl:pt-24 items-start pl-5 pr-2 sm:pl-10 sm:pr-4 md:pl-14 lg:pl-[10vw] lg:pr-2 xl:pl-[12vw] overflow-visible ${
+          className={`flex flex-col justify-start pt-4 sm:pt-8 md:pt-10 lg:pt-14 xl:pt-16 items-start pl-5 pr-2 sm:pl-10 sm:pr-4 md:pl-14 lg:pl-[10vw] lg:pr-2 xl:pl-[12vw] overflow-visible ${
             inView ? 'animate-fade-in-up' : 'opacity-0'
           }`}
         >
-          {/* Content group — all four elements centered as one unit */}
-          <div className="flex flex-col items-start w-full ml-8 sm:ml-12 md:ml-16 lg:ml-20 xl:ml-24">
+          {/* Content group — shifted slightly left */}
+          <div className="flex flex-col items-start w-full ml-4 sm:ml-8 md:ml-10 lg:ml-12 xl:ml-14">
 
             {/* I WEAR logo image */}
             <img
@@ -108,10 +108,10 @@ function Hero({ innerRef, inView, activeSeason }) {
             alt="فستان برغندي أنيق من مجموعة I Wear by Areej"
             loading="eager"
             fetchpriority="high"
-            className="h-full w-auto max-w-none object-contain object-center"
+            className="h-[calc(100%+15px)] w-auto max-w-none object-contain object-center"
             style={{
               filter: 'drop-shadow(0 8px 20px rgba(107, 31, 42, 0.12))',
-              transform: 'translateY(-16px)',
+              transform: 'translateY(-1px)',
             }}
           />
         </div>
