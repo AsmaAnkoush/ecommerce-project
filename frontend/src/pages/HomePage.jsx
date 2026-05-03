@@ -111,6 +111,7 @@ function Hero({ innerRef, inView, activeSeason }) {
             className="h-full w-auto max-w-none object-contain object-center"
             style={{
               filter: 'drop-shadow(0 8px 20px rgba(107, 31, 42, 0.12))',
+              transform: 'translateY(-16px)',
             }}
           />
         </div>
