@@ -34,7 +34,7 @@ function Hero({ innerRef, inView, activeSeason }) {
               alt="I WEAR by Areej"
               loading="eager"
               fetchpriority="high"
-              className="w-[75vw] max-w-[300px] sm:w-full sm:max-w-[420px] md:max-w-[500px] lg:max-w-[480px] xl:max-w-[560px] 2xl:max-w-[640px] h-auto block -mb-6 sm:-mb-10 md:-mb-14 lg:-mb-12 xl:-mb-16 2xl:-mb-20 -ml-15 sm:-ml-10 md:-ml-14 lg:-ml-12 xl:-ml-16 2xl:-ml-20"
+              className="w-[75vw] max-w-[300px] sm:w-full sm:max-w-[420px] md:max-w-[500px] lg:max-w-[480px] xl:max-w-[560px] 2xl:max-w-[640px] h-auto block -mb-6 sm:-mb-10 md:-mb-14 lg:-mb-12 xl:-mb-16 2xl:-mb-20 -ml-20 sm:-ml-10 md:-ml-14 lg:-ml-12 xl:-ml-16 2xl:-ml-20"
               style={{
                 filter: 'drop-shadow(0 2px 6px rgba(107, 31, 42, 0.12))',
               }}
