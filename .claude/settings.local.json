@@ -77,7 +77,19 @@
       "Bash(Get-ChildItem -Path \"D:\\\\ecommerce-project\" -Directory)",
       "Bash(Select-Object Name)",
       "PowerShell(head *)",
-      "Bash(Copy-Item *)"
+      "Bash(Copy-Item *)",
+      "PowerShell([System.Environment]::GetEnvironmentVariable\\(\"AWS_ACCESS_KEY_ID\", \"Process\"\\); [System.Environment]::GetEnvironmentVariable\\(\"AWS_SECRET_ACCESS_KEY\", \"Process\"\\); [System.Environment]::GetEnvironmentVariable\\(\"AWS_REGION\", \"Process\"\\); [System.Environment]::GetEnvironmentVariable\\(\"AWS_BUCKET_NAME\", \"Process\"\\))",
+      "Bash(curl *)",
+      "Bash(Get-ChildItem D:\\\\ecommerce-project\\\\backend -Recurse -Include \"*.log\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName, Length, LastWriteTime)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(netstat *)",
+      "PowerShell(Start-Sleep -Seconds 5; Invoke-RestMethod -Uri \"http://localhost:8080/api/upload/debug-s3\" -Method GET | ConvertTo-Json -Depth 5)",
+      "PowerShell(Start-Sleep -Seconds 8; try { Invoke-RestMethod -Uri \"http://localhost:8080/api/upload/debug-s3\" -Method GET | ConvertTo-Json -Depth 5 } catch { $_.Exception.Response.StatusCode.value__; $_.Exception.Message })",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(try { Invoke-RestMethod -Uri \"http://localhost:8080/api/upload/debug-s3\" -Method GET | ConvertTo-Json -Depth 5 } catch { $resp = $_.Exception.Response; $body = New-Object System.IO.StreamReader\\($resp.GetResponseStream\\(\\)\\); Write-Host \"HTTP $\\($resp.StatusCode.value__\\):\"; Write-Host $body.ReadToEnd\\(\\) })",
+      "PowerShell(Start-Sleep -Seconds 8; try { Invoke-RestMethod -Uri \"http://localhost:8080/api/upload/debug-s3\" -Method GET | ConvertTo-Json -Depth 5 } catch { $resp = $_.Exception.Response; $body = New-Object System.IO.StreamReader\\($resp.GetResponseStream\\(\\)\\); Write-Host \"HTTP $\\($resp.StatusCode.value__\\):\"; Write-Host $body.ReadToEnd\\(\\) })",
+      "PowerShell(Start-Sleep -Seconds 7; try { Invoke-RestMethod -Uri \"http://localhost:8080/api/upload/debug-s3\" -Method GET | ConvertTo-Json -Depth 5 } catch { $resp = $_.Exception.Response; $body = New-Object System.IO.StreamReader\\($resp.GetResponseStream\\(\\)\\); Write-Host \"HTTP $\\($resp.StatusCode.value__\\):\"; Write-Host $body.ReadToEnd\\(\\) })"
     ]
   }
 }

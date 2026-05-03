@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/upload")
@@ -24,6 +25,16 @@ public class UploadController {
             "image/jpeg", "image/png", "image/webp", "image/gif"
     );
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    /**
+     * Public S3 connectivity check — no auth required.
+     * Returns exact error code, message, and diagnosis.
+     * REMOVE this endpoint before going to production.
+     */
+    @GetMapping("/debug-s3")
+    public ResponseEntity<Map<String, Object>> debugS3() {
+        return ResponseEntity.ok(s3Service.diagnose());
+    }
 
     @PostMapping("/images")
     @PreAuthorize("hasRole('ADMIN')")

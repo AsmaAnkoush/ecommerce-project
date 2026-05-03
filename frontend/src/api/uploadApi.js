@@ -3,14 +3,11 @@ import api from './axios'
 /**
  * Upload one or more image files in a single multipart request.
  *
- * Why the count check: a partial backend failure (e.g. one file rejected by
- * S3) would otherwise return fewer URLs than files and the caller would
- * silently lose images. Throwing here forces the caller to handle it.
- *
  * @param {File[]} files
- * @returns {Promise<string[]>} array of URL paths in the same order as `files`
+ * @param {(percent: number) => void} [onProgress]  optional 0-100 progress callback
+ * @returns {Promise<string[]>} S3 URLs in the same order as `files`
  */
-export const uploadImages = async (files) => {
+export const uploadImages = async (files, onProgress) => {
   const fileArr = Array.from(files || []).filter(Boolean)
   if (!fileArr.length) return []
 
@@ -20,9 +17,16 @@ export const uploadImages = async (files) => {
   console.log(`[uploadImages] sending ${fileArr.length} file(s)`)
 
   // Do NOT set Content-Type manually — the browser must add the
-  // `; boundary=...` part for multipart/form-data parsing to work.
+  // "; boundary=..." part for multipart/form-data parsing to work.
   const res = await api.post('/upload/images', formData, {
-    timeout: 120000,
+    timeout: 120_000,
+    onUploadProgress: onProgress
+      ? (evt) => {
+          if (evt.total) {
+            onProgress(Math.round((evt.loaded * 100) / evt.total))
+          }
+        }
+      : undefined,
   })
 
   const urls = res?.data?.data ?? []

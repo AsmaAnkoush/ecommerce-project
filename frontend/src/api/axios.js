@@ -7,8 +7,14 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Attach JWT token — skip for auth endpoints
+// Attach JWT token — skip for auth endpoints.
+// For multipart requests (FormData), delete the default Content-Type so the
+// browser can inject the correct multipart/form-data boundary automatically.
 api.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+
   const isAuthEndpoint = config.url?.startsWith('/auth')
   const token = getToken()
   if (token && !isAuthEndpoint) {
